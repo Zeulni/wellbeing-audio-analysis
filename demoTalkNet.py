@@ -258,19 +258,68 @@ def visualization(tracks, scores, args):
 	flist = glob.glob(os.path.join(args.pyframesPath, '*.jpg'))
 	flist.sort()
 	faces = [[] for i in range(len(flist))]
+	
+	# *Pick one track (e.g. one of the 7 as in in the sample)
 	for tidx, track in enumerate(tracks):
 		score = scores[tidx]
+		# *Go through each frame in the selected track
 		for fidx, frame in enumerate(track['track']['frame'].tolist()):
 			s = score[max(fidx - 2, 0): min(fidx + 3, len(score) - 1)] # average smoothing
 			s = numpy.mean(s)
+			# *Store for each frame the bounding box and score (for each of the detected faces/tracks over time)
 			faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
 	firstImage = cv2.imread(flist[0])
 	fw = firstImage.shape[1]
 	fh = firstImage.shape[0]
 	vOut = cv2.VideoWriter(os.path.join(args.pyaviPath, 'video_only.avi'), cv2.VideoWriter_fourcc(*'XVID'), 25, (fw,fh))
 	colorDict = {0: 0, 1: 255}
+ 
+	# From the faces list, remove the entries in each frame where the score is below 0
+	SpeakingFaces = [[] for i in range(len(flist))]
+	for fidx, frame in enumerate(faces):
+		SpeakingFaces[fidx] = [x for x in frame if x['score'] >= 0]
+  
+	# Create one list per track, where the entry is a list of the frames where the track is speaking
+	trackSpeakingFaces = [[] for i in range(len(tracks))]
+	for fidx, frame in enumerate(SpeakingFaces):
+		for face in frame:
+			trackSpeakingFaces[face['track']].append(fidx)
+ 
+	# Create one list per track containing the start and end frame of the speaking segments
+	trackSpeakingSegments = [[] for i in range(len(tracks))]
+	for tidx, track in enumerate(trackSpeakingFaces):
+		# *If the track is empty, skip it
+		if len(track) == 0:
+			continue
+		
+		trackSpeakingSegments[tidx] = [[track[0], track[0]]]
+		for i in range(1, len(track)):
+			if track[i] - track[i-1] == 1:
+				trackSpeakingSegments[tidx][-1][1] = track[i]
+			else:
+				trackSpeakingSegments[tidx].append([track[i], track[i]])
+    
+    # Divide all number in trackSpeakingSegments by 25 (apart from 0) to get the time in seconds
+	numberOfFrames = 25
+	trackSpeakingSegments = [[[float(w/numberOfFrames) if w != 0 else w for w in x] for x in y] for y in trackSpeakingSegments]
+ 
+	# Using the trackSpeakingSegments, create the ffmpeg command to cut the video
+ 	# Combining the path of videoFolder and videoName to get the path of the video
+	videoPath = os.path.join(args.videoFolder, args.videoName + '.avi')
+	# Go through each track
+	for tidx, track in enumerate(trackSpeakingSegments):
+		# Go through each segment
+		for sidx, segment in enumerate(track):
+			# Create the ffmpeg command
+			command = 'ffmpeg -i %s -ss %s -to %s -c copy %s -loglevel panic' % (videoPath, segment[0], segment[1], os.path.join(args.pyaviPath, 'track_%s_segment_%s.avi' % (tidx, sidx)))
+   			# Execute the command
+			os.system(command)
+ 
+	# tqdm for progress bar
+	# *Go through each frame
 	for fidx, fname in tqdm.tqdm(enumerate(flist), total = len(flist)):
 		image = cv2.imread(fname)
+		# *Within each frame go through each face and draw the bounding box
 		for face in faces[fidx]:
 			clr = colorDict[int((face['score'] >= 0))]
 			txt = round(face['score'], 1)
@@ -373,8 +422,8 @@ def main():
 	# └── pywork
 	#     ├── faces.pckl (face detection result)
 	#     ├── scene.pckl (scene detection result)
-	#     ├── scores.pckl (ASD result)
-	#     └── tracks.pckl (face tracking result)
+	#     ├── scores.pckl (ASD result) - score values over time whether one speaks, for each detected face (video)
+	#     └── tracks.pckl (face tracking result) - face bounding boxes over time for each detected face (video), per track x frames (e.g. in sample 7 tracks each ~500 frames)
 	# ```
 
 	# Initialization 
