@@ -253,8 +253,8 @@ def evaluate_network(files, args):
 		allScores.append(allScore)	
 	return allScores
 
-def visualization(tracks, scores, args):
-	# CPU: visulize the result for video format
+def speakerSeparation(tracks, scores, args):
+    # CPU: visulize the result for video format
 	flist = glob.glob(os.path.join(args.pyframesPath, '*.jpg'))
 	flist.sort()
 	faces = [[] for i in range(len(flist))]
@@ -268,12 +268,7 @@ def visualization(tracks, scores, args):
 			s = numpy.mean(s)
 			# *Store for each frame the bounding box and score (for each of the detected faces/tracks over time)
 			faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
-	firstImage = cv2.imread(flist[0])
-	fw = firstImage.shape[1]
-	fh = firstImage.shape[0]
-	vOut = cv2.VideoWriter(os.path.join(args.pyaviPath, 'video_only.avi'), cv2.VideoWriter_fourcc(*'XVID'), 25, (fw,fh))
-	colorDict = {0: 0, 1: 255}
- 
+
 	# From the faces list, remove the entries in each frame where the score is below 0
 	SpeakingFaces = [[] for i in range(len(flist))]
 	for fidx, frame in enumerate(faces):
@@ -305,15 +300,39 @@ def visualization(tracks, scores, args):
  
 	# Using the trackSpeakingSegments, create the ffmpeg command to cut the video
  	# Combining the path of videoFolder and videoName to get the path of the video
-	videoPath = os.path.join(args.videoFolder, args.videoName + '.avi')
+	#videoPath = os.path.join(args.videoFolder, args.videoName + '.avi')
 	# Go through each track
 	for tidx, track in enumerate(trackSpeakingSegments):
 		# Go through each segment
 		for sidx, segment in enumerate(track):
 			# Create the ffmpeg command
-			command = 'ffmpeg -i %s -ss %s -to %s -c copy %s -loglevel panic' % (videoPath, segment[0], segment[1], os.path.join(args.pyaviPath, 'track_%s_segment_%s.avi' % (tidx, sidx)))
-   			# Execute the command
+			# command = 'ffmpeg -i %s -threads %d -ss %s -to %s -c copy %s -loglevel panic' % (args.videoPath, args.nDataLoaderThread, segment[0], segment[1], os.path.join(args.pyaviPath, 'track_%s_segment_%s.mp4' % (tidx, sidx)))
+			command = 'ffmpeg -i %s -threads %d -ss %s -to %s -c:v libx264 -crf 22 -c:a copy %s -loglevel panic' % (args.videoPath, args.nDataLoaderThread, segment[0], segment[1], os.path.join(args.pyaviPath, 'track_%s_segment_%s.mp4' % (tidx, sidx)))
+
+      		# Execute the command
 			os.system(command)
+ 
+
+def visualization(tracks, scores, args):
+	# CPU: visulize the result for video format
+	flist = glob.glob(os.path.join(args.pyframesPath, '*.jpg'))
+	flist.sort()
+	faces = [[] for i in range(len(flist))]
+	
+	# *Pick one track (e.g. one of the 7 as in in the sample)
+	for tidx, track in enumerate(tracks):
+		score = scores[tidx]
+		# *Go through each frame in the selected track
+		for fidx, frame in enumerate(track['track']['frame'].tolist()):
+			s = score[max(fidx - 2, 0): min(fidx + 3, len(score) - 1)] # average smoothing
+			s = numpy.mean(s)
+			# *Store for each frame the bounding box and score (for each of the detected faces/tracks over time)
+			faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
+	firstImage = cv2.imread(flist[0])
+	fw = firstImage.shape[1]
+	fh = firstImage.shape[0]
+	vOut = cv2.VideoWriter(os.path.join(args.pyaviPath, 'video_only.avi'), cv2.VideoWriter_fourcc(*'XVID'), 25, (fw,fh))
+	colorDict = {0: 0, 1: 255}
  
 	# tqdm for progress bar
 	# *Go through each frame
@@ -503,6 +522,7 @@ def main():
 	else:
 		# Visualization, save the result as the new video	
 		visualization(vidTracks, scores, args)	
+		speakerSeparation(vidTracks, scores, args)	
 
 if __name__ == '__main__':
     main()
