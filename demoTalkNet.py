@@ -26,7 +26,7 @@ parser.add_argument('--pretrainModel',         type=str, default="pretrain_TalkS
 parser.add_argument('--nDataLoaderThread',     type=int,   default=10,   help='Number of workers')
 parser.add_argument('--facedetScale',          type=float, default=0.25, help='Scale factor for face detection, the frames will be scale to 0.25 orig')
 parser.add_argument('--minTrack',              type=int,   default=10,   help='Number of min frames for each shot')
-parser.add_argument('--numFailedDet',          type=int,   default=10,   help='Number of missed detections allowed before tracking is stopped')
+parser.add_argument('--numFailedDet',          type=int,   default=25,   help='Number of missed detections allowed before tracking is stopped (25 frames means 1 second)')
 parser.add_argument('--minFaceSize',           type=int,   default=1,    help='Minimum face size in pixels')
 parser.add_argument('--cropScale',             type=float, default=0.40, help='Scale bounding box')
 
@@ -37,6 +37,9 @@ parser.add_argument('--evalCol',               dest='evalCol', action='store_tru
 parser.add_argument('--colSavePath',           type=str, default="/data08/col",  help='Path for inputs, tmps and outputs')
 
 args = parser.parse_args()
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Device: ", device)
 
 if os.path.isfile(args.pretrainModel) == False: # Download the pretrained model
     Link = "1AbN9fCf9IexMxEKXLQY2KYBlb-IhSEea"
@@ -95,7 +98,7 @@ def scene_detect(args):
 def inference_video(args):
 	# GPU: Face detection, output is the list contains the face location and score in this frame
 	# DET = S3FD(device='cuda')
-	DET = S3FD(device='cpu')
+	DET = S3FD(device=device)
 	flist = glob.glob(os.path.join(args.pyframesPath, '*.jpg'))
 	flist.sort()
 	dets = []
@@ -215,7 +218,9 @@ def evaluate_network(files, args):
 	# durationSet = {1,2,4,6} # To make the result more reliable
 	durationSet = {1,1,1,2,2,2,3,3,4,5,6} # Use this line can get more reliable result
 	for file in tqdm.tqdm(files, total = len(files)):
-		fileName = os.path.splitext(file.split('\\')[-1])[0] # Load audio and video
+		#fileName = os.path.splitext(file.split('\\')[-1])[0] # Load audio and video
+		filename_full = os.path.basename(file)
+		fileName, _ = os.path.splitext(filename_full)
 		_, audio = wavfile.read(os.path.join(args.pycropPath, fileName + '.wav'))
 		audioFeature = python_speech_features.mfcc(audio, 16000, numcep = 13, winlen = 0.025, winstep = 0.010)
 		video = cv2.VideoCapture(os.path.join(args.pycropPath, fileName + '.avi'))
@@ -240,8 +245,8 @@ def evaluate_network(files, args):
 			scores = []
 			with torch.no_grad():
 				for i in range(batchSize):
-					inputA = torch.FloatTensor(audioFeature[i * duration * 100:(i+1) * duration * 100,:]).unsqueeze(0)
-					inputV = torch.FloatTensor(videoFeature[i * duration * 25: (i+1) * duration * 25,:,:]).unsqueeze(0)
+					inputA = torch.FloatTensor(audioFeature[i * duration * 100:(i+1) * duration * 100,:]).unsqueeze(0).to(device)
+					inputV = torch.FloatTensor(videoFeature[i * duration * 25: (i+1) * duration * 25,:,:]).unsqueeze(0).to(device)
 					embedA = s.model.forward_audio_frontend(inputA)
 					embedV = s.model.forward_visual_frontend(inputV)	
 					embedA, embedV = s.model.forward_cross_attention(embedA, embedV)
@@ -268,8 +273,8 @@ def speakerSeparation(tracks, scores, args):
 			s = numpy.mean(s)
 			# *Store for each frame the bounding box and score (for each of the detected faces/tracks over time)
 			faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
-
-	# From the faces list, remove the entries in each frame where the score is below 0
+ 
+ 	# From the faces list, remove the entries in each frame where the score is below 0
 	SpeakingFaces = [[] for i in range(len(flist))]
 	for fidx, frame in enumerate(faces):
 		SpeakingFaces[fidx] = [x for x in frame if x['score'] >= 0]
@@ -294,13 +299,12 @@ def speakerSeparation(tracks, scores, args):
 			else:
 				trackSpeakingSegments[tidx].append([track[i], track[i]])
     
+    
     # Divide all number in trackSpeakingSegments by 25 (apart from 0) to get the time in seconds
 	numberOfFrames = 25
 	trackSpeakingSegments = [[[float(w/numberOfFrames) if w != 0 else w for w in x] for x in y] for y in trackSpeakingSegments]
  
 	# Using the trackSpeakingSegments, create the ffmpeg command to cut the video
- 	# Combining the path of videoFolder and videoName to get the path of the video
-	#videoPath = os.path.join(args.videoFolder, args.videoName + '.avi')
 	# Go through each track
 	for tidx, track in enumerate(trackSpeakingSegments):
 		# Go through each segment
@@ -311,6 +315,69 @@ def speakerSeparation(tracks, scores, args):
 
       		# Execute the command
 			os.system(command)
+   
+   	# Store the bounding boxes (x and y values) for each track by going through the face list
+	trackListx = [[] for i in range(len(tracks))]
+	trackListy = [[] for i in range(len(tracks))]
+	for fidx, frame in enumerate(faces):
+		for face in frame:
+			trackListx[face['track']].append(face['x'])
+			trackListy[face['track']].append(face['y'])
+   
+   # Calculate the average x and y value for each track
+	trackAvgx = [[] for i in range(len(tracks))]
+	for tidx, track in enumerate(trackListx):
+		trackAvgx[tidx] = numpy.mean(track)
+	trackAvgy = [[] for i in range(len(tracks))]
+	for tidx, track in enumerate(trackListy):
+		trackAvgy[tidx] = numpy.mean(track)
+  
+	# Sidenote: 
+ 	# - x and y values are flipped (in contrast to normal convention)
+	# - I make the assumption people do not change the place during one video I get as input (-> close new bounding boxes are the same). 
+ 	# 	Otherwise I would have to use face verification with the stored videos in pycrop 
+ 
+	# Calculate the distance between the tracks
+	trackDist = numpy.zeros((len(tracks), len(tracks)))
+	for i in range(len(tracks)):
+		for j in range(len(tracks)):
+			trackDist[i,j] = math.sqrt((trackAvgx[i] - trackAvgx[j])**2 + (trackAvgy[i] - trackAvgy[j])**2)
+   
+    # Do make it independent of the image size in pixel, we need to normalize the distances
+	trackDist = trackDist / numpy.max(trackDist)
+ 
+ 
+	# Create a list of the tracks that are close to each other (if the distance is below 0.2)
+	threshold = 0.15
+	trackClose = [[] for i in range(len(tracks))]
+	for i in range(len(tracks)):
+		for j in range(len(tracks)):
+			if trackDist[i,j] < threshold and i != j:
+				trackClose[i].append(j)
+
+	# TODO: That only works for one clustering!? what if more clusters are there? - Insert values to test it
+	# Check for these tracks if they are speaking at the same time
+	# If no, store the track number in the list trackCloseSpeaking
+	trackCloseSpeaking = []
+	for i in range(len(tracks)):
+		for j in range(len(trackClose[i])):
+			if trackSpeakingSegments[i] != trackSpeakingSegments[trackClose[i][j]]:
+				trackCloseSpeaking.append(i)
+				break
+
+	# TODO: Only three speaker lines - Insert values to test it
+	# Merge the tracks (in the list trackSpeakingSegments) that are close to each other and are not speaking at the same time
+	# Go through each track
+	for i in range(len(tracks)):
+		# If the track is in the list trackCloseSpeaking, go through each track that is close to it
+		if i in trackCloseSpeaking:
+			for j in range(len(trackClose[i])):
+				# If the track is not in the list trackCloseSpeaking, merge the tracks
+				if trackClose[i][j] not in trackCloseSpeaking:
+					trackSpeakingSegments[i] = trackSpeakingSegments[i] + trackSpeakingSegments[trackClose[i][j]]
+					trackSpeakingSegments[trackClose[i][j]] = []
+
+	print("Test ---")
  
 
 def visualization(tracks, scores, args):
