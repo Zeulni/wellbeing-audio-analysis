@@ -40,6 +40,7 @@ parser.add_argument('--evalCol',               dest='evalCol', action='store_tru
 parser.add_argument('--colSavePath',           type=str, default="/data08/col",  help='Path for inputs, tmps and outputs')
 
 parser.add_argument('--thresholdSamePerson',   type=str, default=0.15,  help='If a two face tracks (see folder pycrop) are close together (-> below that threshold) and are not speaking at the same time, then it is the same person')
+parser.add_argument('--createTrackVideos',     type=bool, default=True,  help='If enabled, it will create a video for each track, where only the segments where the person is speaking are included')
 
 args = parser.parse_args()
 
@@ -263,6 +264,29 @@ def evaluate_network(files, args):
 		allScores.append(allScore)	
 	return allScores
 
+def cutTrackVideos(trackSpeakingSegments, args):
+    # Using the trackSpeakingSegments, extract for each track the video segments from the original video (with moviepy)
+	# Concatenate all the different subclip per track into one video
+	# Go through each track
+	for tidx, track in enumerate(trackSpeakingSegments):
+		# Check whether the track is empty
+		if len(track) == 0:
+			continue
+
+		# Only create the video if the output file does not exist
+		cuttedFileName = os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx))
+		if os.path.exists(cuttedFileName):
+			continue
+   
+		# Create the list of subclips
+		clips = []
+		for segment in track:
+			clips.append(VideoFileClip(args.videoPath).subclip(segment[0], segment[1]))
+		# Concatenate the clips
+		final_clip = concatenate_videoclips(clips)
+		# Write the final video
+		final_clip.write_videofile(cuttedFileName, threads=args.nDataLoaderThread, logger=None)
+
 def clusterTracks(tracks, faces, trackSpeakingSegments, trackSpeakingFaces, args):
     
    	# Store the bounding boxes (x and y values) for each track by going through the face list
@@ -377,32 +401,9 @@ def speakerSeparation(tracks, scores, args):
     # Divide all number in trackSpeakingSegments by 25 (apart from 0) to get the time in seconds
 	trackSpeakingSegments = [[[round(float(w/args.numFramesPerSec),2) if w != 0 else w for w in x] for x in y] for y in trackSpeakingSegments]
 
+	if args.createTrackVideos:
+		cutTrackVideos(trackSpeakingSegments, args)   
 
- 
-	# Using the trackSpeakingSegments, extract for each track the video segments from the original video (with moviepy)
-	# Concatenate all the different subclip per track into one video
-	# Go through each track
-	for tidx, track in enumerate(trackSpeakingSegments):
-		# Check whether the track is empty
-		if len(track) == 0:
-			continue
-
-		# Only create the video if the output file does not exist
-		cuttedFileName = os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx))
-		if os.path.exists(cuttedFileName):
-			continue
-   
-		# Create the list of subclips
-		clips = []
-		for segment in track:
-			clips.append(VideoFileClip(args.videoPath).subclip(segment[0], segment[1]))
-		# Concatenate the clips
-		final_clip = concatenate_videoclips(clips)
-		# Write the final video
-		final_clip.write_videofile(cuttedFileName, threads=args.nDataLoaderThread, logger=None)
-     
-
-  
 	# Sidenote: 
  	# - x and y values are flipped (in contrast to normal convention)
 	# - I make the assumption people do not change the place during one video I get as input 
