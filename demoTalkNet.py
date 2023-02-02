@@ -517,6 +517,19 @@ def main():
 	args.pyframesPath = os.path.join(args.savePath, 'pyframes')
 	args.pyworkPath = os.path.join(args.savePath, 'pywork')
 	args.pycropPath = os.path.join(args.savePath, 'pycrop')
+ 
+ 
+	# Assumption: If pickle files in pywork folder exist, preprocessing is done and all the other files exist (to rerun delete pickle files)
+	# If 4 pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
+	if os.path.exists(os.path.join(args.pyworkPath, 'scores.pckl')) and os.path.exists(os.path.join(args.pyworkPath, 'tracks.pckl')):
+		with open(os.path.join(args.pyworkPath, 'scores.pckl'), 'rb') as f:
+			scores = pickle.load(f)
+		with open(os.path.join(args.pyworkPath, 'tracks.pckl'), 'rb') as f:
+			tracks = pickle.load(f)
+		speakerSeparation(tracks, scores, args)
+		return
+
+ 
 	if os.path.exists(args.savePath):
 		rmtree(args.savePath)
 	os.makedirs(args.pyaviPath, exist_ok = True) # The path for the input video, input audio, output video
