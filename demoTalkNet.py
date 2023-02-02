@@ -396,17 +396,19 @@ def speakerSeparation(tracks, scores, args):
 	# Calculate tracks that belong together 
 	sameTracks = clusterTracks(tracks, faces, trackSpeakingSegments, trackSpeakingFaces, args)
  
-	# Calculate an rttm file based on trackSpeakingSegments
+	# Calculate an rttm file based on trackSpeakingSegments (merge the speakers for the same tracks into one speaker)
 	# Go through each track
+	# TODO: Creating rttm file works, but only one entry!? + same speakers have to be merged
 	for tidx, track in enumerate(trackSpeakingSegments):
+		if len(track) == 0:
+			continue
 		# Go through each segment
-		for segment in track:
+		for sidx, segment in enumerate(track):
 			# Create the rttm file
-			# Check whether the track is empty
-			if len(segment) == 0:
-				continue
-			with open(os.path.join(args.pyrttmPath, 'track_%s.rttm' % (tidx)), 'a') as f:
-				f.write('SPEAKER %s 1 %s %s <NA> <NA> %s <NA>
+			rttmFile = open(os.path.join(args.pyaviPath, args.videoName + '.rttm'), 'w')
+			# Write the line to the rttm file
+			# file identifier, start time, duration, speaker ID
+			rttmFile.write('SPEAKER %s args.videoName %s %s <NA> <NA> %s <NA>' % (100, segment[0], segment[1] - segment[0], tidx))
 	
  
 
