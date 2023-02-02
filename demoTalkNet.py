@@ -377,45 +377,30 @@ def speakerSeparation(tracks, scores, args):
     # Divide all number in trackSpeakingSegments by 25 (apart from 0) to get the time in seconds
 	trackSpeakingSegments = [[[round(float(w/args.numFramesPerSec),2) if w != 0 else w for w in x] for x in y] for y in trackSpeakingSegments]
 
-	# Using the trackSpeakingSegments, create the ffmpeg command to cut the video from the original video (args.videoPath)
-	# If there are multiple segments, concatenate them
-	# Go through each track
-	# for tidx, track in enumerate(trackSpeakingSegments):
-	# 	# Go through each segment
-	# 	# Create the ffmpeg command
-	# 	# Check whether the track is empty
-	# 	if len(track) == 0:
-	# 		continue
-	# 	command = 'ffmpeg -i %s -threads %d -ss %s -to %s -c:v libx264 -crf 22 -c:a copy %s -loglevel panic' % (args.videoPath, args.nDataLoaderThread, track[0][0], track[-1][1], os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx)))
-	# 	# Only execute the command if the output file does not exist
-	# 	if not os.path.exists(os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx))):
-	# 		os.system(command)
+
  
-	# Using the trackSpeakingSegments, cut the videos in the pycrop folder using moviepy
-	# If there are multiple segments, cut out all the segments and concatenate them to one video per track
+	# Using the trackSpeakingSegments, extract for each track the video segments from the original video (with moviepy)
+	# Concatenate all the different subclip per track into one video
 	# Go through each track
 	for tidx, track in enumerate(trackSpeakingSegments):
-    	# Go through each segment
-		# Create the ffmpeg command
 		# Check whether the track is empty
 		if len(track) == 0:
 			continue
-		# Create a list of all the videos that need to be concatenated
-		concatenatedVideos = []
+
+		# Only create the video if the output file does not exist
+		cuttedFileName = os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx))
+		if os.path.exists(cuttedFileName):
+			continue
+   
+		# Create the list of subclips
+		clips = []
 		for segment in track:
-			# Cut out the video using moviepy
-			# Check whether the output file already exists
-			if not os.path.exists(os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx))):
-				# Load the video
-				video = VideoFileClip(os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx)))
-				# Cut out the segment
-				cutVideo = video.subclip(segment[0], segment[1])
-				# Append the video to the list
-				concatenatedVideos.append(cutVideo)
-		# Concatenate the videos
-		finalVideo = concatenate_videoclips(concatenatedVideos)
-		# Save the video
-		finalVideo.write_videofile(os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx)), threads=args.nDataLoaderThread)
+			clips.append(VideoFileClip(args.videoPath).subclip(segment[0], segment[1]))
+		# Concatenate the clips
+		final_clip = concatenate_videoclips(clips)
+		# Write the final video
+		final_clip.write_videofile(cuttedFileName, threads=args.nDataLoaderThread, logger=None)
+     
 
   
 	# Sidenote: 
