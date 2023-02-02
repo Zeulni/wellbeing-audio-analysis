@@ -36,10 +36,12 @@ parser.add_argument('--duration',              type=int, default=0,  help='The d
 parser.add_argument('--evalCol',               dest='evalCol', action='store_true', help='Evaluate on Columnbia dataset')
 parser.add_argument('--colSavePath',           type=str, default="/data08/col",  help='Path for inputs, tmps and outputs')
 
+parser.add_argument('--thresholdSamePerson',   type=str, default=0.15,  help='If a two face tracks (see folder pycrop) are close together (-> below that threshold) and are not speaking at the same time, then it is the same person')
+
 args = parser.parse_args()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Device: ", device)
+print("Detected device (GPU/CPU): ", device)
 
 if os.path.isfile(args.pretrainModel) == False: # Download the pretrained model
     Link = "1AbN9fCf9IexMxEKXLQY2KYBlb-IhSEea"
@@ -258,6 +260,73 @@ def evaluate_network(files, args):
 		allScores.append(allScore)	
 	return allScores
 
+def clusterTracks(tracks, faces, trackSpeakingSegments, trackSpeakingFaces, args):
+    
+   	# Store the bounding boxes (x and y values) for each track by going through the face list
+	trackListx = [[] for i in range(len(tracks))]
+	trackListy = [[] for i in range(len(tracks))]
+	for fidx, frame in enumerate(faces):
+		for face in frame:
+			trackListx[face['track']].append(face['x'])
+			trackListy[face['track']].append(face['y'])
+   
+   # Calculate the average x and y value for each track
+	trackAvgx = [[] for i in range(len(tracks))]
+	for tidx, track in enumerate(trackListx):
+		trackAvgx[tidx] = numpy.mean(track)
+	trackAvgy = [[] for i in range(len(tracks))]
+	for tidx, track in enumerate(trackListy):
+		trackAvgy[tidx] = numpy.mean(track)    
+    
+    # Calculate the distance between the tracks
+	trackDist = numpy.zeros((len(tracks), len(tracks)))
+	for i in range(len(tracks)):
+		for j in range(len(tracks)):
+			trackDist[i,j] = math.sqrt((trackAvgx[i] - trackAvgx[j])**2 + (trackAvgy[i] - trackAvgy[j])**2)
+   
+    # Do make it independent of the image size in pixel, we need to normalize the distances
+	trackDist = trackDist / numpy.max(trackDist)
+ 
+ 
+	# Create a list of the tracks that are close to each other (if the distance is below defined threshold)
+	trackClose = [[] for i in range(len(tracks))]
+	for i in range(len(tracks)):
+		for j in range(len(tracks)):
+			if trackDist[i,j] < args.thresholdSamePerson and i != j:
+				trackClose[i].append(j)
+ 
+	# Check for the tracks that are close to each other if they are speaking at the same time (by checking if they if the lists in trackSpeakingFaces have shared elements/frames)
+	# If no, store the track number in the list trackCloseSpeaking
+	trackCloseSpeaking = []
+	for i in range(len(tracks)):
+		for j in range(len(trackClose[i])):
+			if len(set(trackSpeakingFaces[i]) & set(trackSpeakingFaces[trackClose[i][j]])) == 0:
+				trackCloseSpeaking.append(i)
+				break
+ 
+	# A cluster is a list of tracks that are close to each other and are not speaking at the same time
+	# Create a list of clusters
+	cluster = []
+	for i in range(len(tracks)):
+		if i in trackCloseSpeaking:
+			cluster.append([i])
+			for j in range(len(trackClose[i])):
+				if trackClose[i][j] in trackCloseSpeaking:
+					cluster[-1].append(trackClose[i][j])
+   
+   # Remove duplicates from the clusters (e.g. [1,2,3] and [3,2,1] are the same)
+	unique_clusters = set()
+	for i in cluster:
+		i.sort()
+		if tuple(i) in unique_clusters:
+			cluster.remove(i)
+		else:
+			unique_clusters.add(tuple(i))
+   
+   # Print the unique clusters
+	for i in unique_clusters:
+		print("Tracks that belong together: ", i)
+
 def speakerSeparation(tracks, scores, args):
     # CPU: visulize the result for video format
 	flist = glob.glob(os.path.join(args.pyframesPath, '*.jpg'))
@@ -301,101 +370,44 @@ def speakerSeparation(tracks, scores, args):
     
     
     # Divide all number in trackSpeakingSegments by 25 (apart from 0) to get the time in seconds
-	numberOfFrames = 25
-	trackSpeakingSegments = [[[float(w/numberOfFrames) if w != 0 else w for w in x] for x in y] for y in trackSpeakingSegments]
- 
-	# Using the trackSpeakingSegments, create the ffmpeg command to cut the video
+	trackSpeakingSegments = [[[float(w/args.numFramesPerSec) if w != 0 else w for w in x] for x in y] for y in trackSpeakingSegments]
+
+	# Using the trackSpeakingSegments, create the ffmpeg command to cut the video from the original video (args.videoPath)
+	# If there are multiple segments, concatenate them
 	# Go through each track
 	for tidx, track in enumerate(trackSpeakingSegments):
 		# Go through each segment
-		for sidx, segment in enumerate(track):
-			# Create the ffmpeg command
-			# command = 'ffmpeg -i %s -threads %d -ss %s -to %s -c copy %s -loglevel panic' % (args.videoPath, args.nDataLoaderThread, segment[0], segment[1], os.path.join(args.pyaviPath, 'track_%s_segment_%s.mp4' % (tidx, sidx)))
-			command = 'ffmpeg -i %s -threads %d -ss %s -to %s -c:v libx264 -crf 22 -c:a copy %s -loglevel panic' % (args.videoPath, args.nDataLoaderThread, segment[0], segment[1], os.path.join(args.pyaviPath, 'track_%s_segment_%s.mp4' % (tidx, sidx)))
+		# Create the ffmpeg command
+		# Check whether the track is empty
+		if len(track) == 0:
+			continue
+		command = 'ffmpeg -i %s -threads %d -ss %s -to %s -c:v libx264 -crf 22 -c:a copy %s -loglevel panic' % (args.videoPath, args.nDataLoaderThread, track[0][0], track[-1][1], os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx)))
+		# Only execute the command if the output file does not exist
+		if not os.path.exists(os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx))):
+			os.system(command)
 
-      		# Only execute the command if the output file does not exist
-			if not os.path.exists(os.path.join(args.pyaviPath, 'track_%s_segment_%s.mp4' % (tidx, sidx))):
-				os.system(command)
-   
-   	# Store the bounding boxes (x and y values) for each track by going through the face list
-	trackListx = [[] for i in range(len(tracks))]
-	trackListy = [[] for i in range(len(tracks))]
-	for fidx, frame in enumerate(faces):
-		for face in frame:
-			trackListx[face['track']].append(face['x'])
-			trackListy[face['track']].append(face['y'])
-   
-   # Calculate the average x and y value for each track
-	trackAvgx = [[] for i in range(len(tracks))]
-	for tidx, track in enumerate(trackListx):
-		trackAvgx[tidx] = numpy.mean(track)
-	trackAvgy = [[] for i in range(len(tracks))]
-	for tidx, track in enumerate(trackListy):
-		trackAvgy[tidx] = numpy.mean(track)
   
 	# Sidenote: 
  	# - x and y values are flipped (in contrast to normal convention)
-	# - I make the assumption people do not change the place during one video I get as input (-> close new bounding boxes are the same). 
- 	# 	Otherwise I would have to use face verification with the stored videos in pycrop 
+	# - I make the assumption people do not change the place during one video I get as input 
+    #   (-> if bounding boxes are close by and do not speak at the same time, then they are from the same person)
+ 	# 	To correct for that, I would have to leverage face verification using the stored videos in pycrop 
+  
+	# Calculate tracks that belong together 
+	sameTracks = clusterTracks(tracks, faces, trackSpeakingSegments, trackSpeakingFaces, args)
  
-	# Calculate the distance between the tracks
-	trackDist = numpy.zeros((len(tracks), len(tracks)))
-	for i in range(len(tracks)):
-		for j in range(len(tracks)):
-			trackDist[i,j] = math.sqrt((trackAvgx[i] - trackAvgx[j])**2 + (trackAvgy[i] - trackAvgy[j])**2)
-   
-    # Do make it independent of the image size in pixel, we need to normalize the distances
-	trackDist = trackDist / numpy.max(trackDist)
- 
- 
-	# Create a list of the tracks that are close to each other (if the distance is below 0.2)
-	threshold = 0.15
-	trackClose = [[] for i in range(len(tracks))]
-	for i in range(len(tracks)):
-		for j in range(len(tracks)):
-			if trackDist[i,j] < threshold and i != j:
-				trackClose[i].append(j)
-
-	# TODO: That only works for one clustering!? what if more clusters are there? - Insert values to test it
-	# Check for these tracks if they are speaking at the same time
-	# If no, store the track number in the list trackCloseSpeaking
-	trackCloseSpeaking = []
-	for i in range(len(tracks)):
-		for j in range(len(trackClose[i])):
-			if trackSpeakingSegments[i] != trackSpeakingSegments[trackClose[i][j]]:
-				trackCloseSpeaking.append(i)
-				break
- 
-	# A cluster is a list of tracks that are close to each other and are not speaking at the same time
-	# Create a list of clusters
-	cluster = []
-	for i in range(len(tracks)):
-		if i in trackCloseSpeaking:
-			cluster.append([i])
-			for j in range(len(trackClose[i])):
-				if trackClose[i][j] in trackCloseSpeaking:
-					cluster[-1].append(trackClose[i][j])
- 
-	unique_clusters = set()
-	for i in cluster:
-		if tuple(i) in unique_clusters or tuple(reversed(i)) in unique_clusters:
-			cluster.remove(i)
-		else:
-			unique_clusters.add(tuple(i))
-
-	# TODO: Merging not required, can just be done in the rttm file
-	# Merge the tracks (in the list trackSpeakingSegments) that are close to each other and are not speaking at the same time
+	# Calculate an rttm file based on trackSpeakingSegments
 	# Go through each track
-	# for i in range(len(tracks)):
-	# 	# If the track is in the list trackCloseSpeaking, go through each track that is close to it
-	# 	if i in trackCloseSpeaking:
-	# 		for j in range(len(trackClose[i])):
-	# 			# If the track is in the list trackCloseSpeaking, merge the tracks
-	# 			if trackClose[i][j] in trackCloseSpeaking:
-	# 				trackSpeakingSegments[i] = trackSpeakingSegments[i] + trackSpeakingSegments[trackClose[i][j]]
-	# 				trackSpeakingSegments[trackClose[i][j]] = []
-
-	print("hallo")
+	for tidx, track in enumerate(trackSpeakingSegments):
+		# Go through each segment
+		for segment in track:
+			# Create the rttm file
+			# Check whether the track is empty
+			if len(segment) == 0:
+				continue
+			with open(os.path.join(args.pyrttmPath, 'track_%s.rttm' % (tidx)), 'a') as f:
+				f.write('SPEAKER %s 1 %s %s <NA> <NA> %s <NA>
+	
  
 
 def visualization(tracks, scores, args):
@@ -502,6 +514,12 @@ def evaluate_col_ASD(tracks, scores, args):
 			F1s += F1
 			print("%s, ACC:%.2f, F1:%.2f"%(i, 100 * ACC, 100 * F1))
 	print("Average F1:%.2f"%(100 * (F1s / 5)))	  
+ 
+def get_fps(video_path):
+	video = cv2.VideoCapture(video_path)
+	fps = video.get(cv2.CAP_PROP_FPS)
+	video.release()
+	return fps
 
 # Main function
 def main():
@@ -535,6 +553,9 @@ def main():
 	args.pyframesPath = os.path.join(args.savePath, 'pyframes')
 	args.pyworkPath = os.path.join(args.savePath, 'pywork')
 	args.pycropPath = os.path.join(args.savePath, 'pycrop')
+ 
+	args.numFramesPerSec = int(get_fps(args.videoPath))
+	print("Frames per second for the detected video: ", args.numFramesPerSec)
  
  
 	# Assumption: If pickle files in pywork folder exist, preprocessing is done and all the other files exist (to rerun delete pickle files)
