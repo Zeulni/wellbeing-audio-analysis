@@ -1,4 +1,7 @@
-import sys, time, os, tqdm, torch, argparse, glob, subprocess, warnings, cv2, pickle, numpy, pdb, math, python_speech_features
+import sys, time, os, tqdm, torch, argparse, glob, subprocess, warnings, cv2, pickle, numpy, pdb, math, python_speech_features, moviepy
+
+from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.video.compositing.concatenate import concatenate_videoclips
 
 from scipy import signal
 from shutil import rmtree
@@ -19,7 +22,7 @@ warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser(description = "TalkNet Demo or Columnbia ASD Evaluation")
 
-parser.add_argument('--videoName',             type=str, default="001",   help='Demo video name')
+parser.add_argument('--videoName',             type=str, default="team13_snippet",   help='Demo video name')
 parser.add_argument('--videoFolder',           type=str, default="demo",  help='Path for inputs, tmps and outputs')
 parser.add_argument('--pretrainModel',         type=str, default="pretrain_TalkSet.model",   help='Path for the pretrained TalkNet model')
 
@@ -326,6 +329,8 @@ def clusterTracks(tracks, faces, trackSpeakingSegments, trackSpeakingFaces, args
    # Print the unique clusters
 	for i in unique_clusters:
 		print("Tracks that belong together: ", i)
+  
+	return list(unique_clusters)
 
 def speakerSeparation(tracks, scores, args):
     # CPU: visulize the result for video format
@@ -370,21 +375,47 @@ def speakerSeparation(tracks, scores, args):
     
     
     # Divide all number in trackSpeakingSegments by 25 (apart from 0) to get the time in seconds
-	trackSpeakingSegments = [[[float(w/args.numFramesPerSec) if w != 0 else w for w in x] for x in y] for y in trackSpeakingSegments]
+	trackSpeakingSegments = [[[round(float(w/args.numFramesPerSec),2) if w != 0 else w for w in x] for x in y] for y in trackSpeakingSegments]
 
 	# Using the trackSpeakingSegments, create the ffmpeg command to cut the video from the original video (args.videoPath)
 	# If there are multiple segments, concatenate them
 	# Go through each track
+	# for tidx, track in enumerate(trackSpeakingSegments):
+	# 	# Go through each segment
+	# 	# Create the ffmpeg command
+	# 	# Check whether the track is empty
+	# 	if len(track) == 0:
+	# 		continue
+	# 	command = 'ffmpeg -i %s -threads %d -ss %s -to %s -c:v libx264 -crf 22 -c:a copy %s -loglevel panic' % (args.videoPath, args.nDataLoaderThread, track[0][0], track[-1][1], os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx)))
+	# 	# Only execute the command if the output file does not exist
+	# 	if not os.path.exists(os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx))):
+	# 		os.system(command)
+ 
+	# Using the trackSpeakingSegments, cut the videos in the pycrop folder using moviepy
+	# If there are multiple segments, cut out all the segments and concatenate them to one video per track
+	# Go through each track
 	for tidx, track in enumerate(trackSpeakingSegments):
-		# Go through each segment
+    	# Go through each segment
 		# Create the ffmpeg command
 		# Check whether the track is empty
 		if len(track) == 0:
 			continue
-		command = 'ffmpeg -i %s -threads %d -ss %s -to %s -c:v libx264 -crf 22 -c:a copy %s -loglevel panic' % (args.videoPath, args.nDataLoaderThread, track[0][0], track[-1][1], os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx)))
-		# Only execute the command if the output file does not exist
-		if not os.path.exists(os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx))):
-			os.system(command)
+		# Create a list of all the videos that need to be concatenated
+		concatenatedVideos = []
+		for segment in track:
+			# Cut out the video using moviepy
+			# Check whether the output file already exists
+			if not os.path.exists(os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx))):
+				# Load the video
+				video = VideoFileClip(os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx)))
+				# Cut out the segment
+				cutVideo = video.subclip(segment[0], segment[1])
+				# Append the video to the list
+				concatenatedVideos.append(cutVideo)
+		# Concatenate the videos
+		finalVideo = concatenate_videoclips(concatenatedVideos)
+		# Save the video
+		finalVideo.write_videofile(os.path.join(args.pyaviPath, 'track_%s.mp4' % (tidx)), threads=args.nDataLoaderThread)
 
   
 	# Sidenote: 
@@ -397,20 +428,30 @@ def speakerSeparation(tracks, scores, args):
 	sameTracks = clusterTracks(tracks, faces, trackSpeakingSegments, trackSpeakingFaces, args)
  
 	# Calculate an rttm file based on trackSpeakingSegments (merge the speakers for the same tracks into one speaker)
-	# Go through each track
-	# TODO: Creating rttm file works, but only one entry!? + same speakers have to be merged
-	for tidx, track in enumerate(trackSpeakingSegments):
-		if len(track) == 0:
-			continue
-		# Go through each segment
-		for sidx, segment in enumerate(track):
-			# Create the rttm file
-			rttmFile = open(os.path.join(args.pyaviPath, args.videoName + '.rttm'), 'w')
-			# Write the line to the rttm file
-			# file identifier, start time, duration, speaker ID
-			rttmFile.write('SPEAKER %s args.videoName %s %s <NA> <NA> %s <NA>' % (100, segment[0], segment[1] - segment[0], tidx))
+	writerttm(args, trackSpeakingSegments, sameTracks)
+				
+
+def writerttm(args, trackSpeakingSegments, sameTracks):
+	# Create the rttm file
+	with open(os.path.join(args.pyaviPath, args.videoName + '.rttm'), 'w') as rttmFile:
+		for tidx, track in enumerate(trackSpeakingSegments):
+			if len(track) == 0:
+				continue
+			# Go through each segment
+			for sidx, segment in enumerate(track):
+				# If the track belongs to cluster (in the sameTracks list), then write the lowest number (track) of that cluster to the rttm file
+				check, minTrack = checkIfInClusterList(tidx, sameTracks)
+				if check:
+					rttmFile.write('SPEAKER %s 1 %s %s <NA> <NA> %s <NA> <NA>\n' % (args.videoName, segment[0],round(segment[1] - segment[0],2), minTrack))
+				else:
+					# Write the line to the rttm file, placeholder: file identifier, start time, duration, speaker ID
+					rttmFile.write('SPEAKER %s 1 %s %s <NA> <NA> %s <NA> <NA>\n' % (args.videoName, segment[0], round(segment[1] - segment[0],2), tidx))
 	
- 
+def checkIfInClusterList(track, clusterList):
+	for cluster in clusterList:
+		if track in cluster:
+			return True, min(cluster)
+	return False, -1
 
 def visualization(tracks, scores, args):
 	# CPU: visulize the result for video format
