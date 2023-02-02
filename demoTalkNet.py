@@ -313,8 +313,9 @@ def speakerSeparation(tracks, scores, args):
 			# command = 'ffmpeg -i %s -threads %d -ss %s -to %s -c copy %s -loglevel panic' % (args.videoPath, args.nDataLoaderThread, segment[0], segment[1], os.path.join(args.pyaviPath, 'track_%s_segment_%s.mp4' % (tidx, sidx)))
 			command = 'ffmpeg -i %s -threads %d -ss %s -to %s -c:v libx264 -crf 22 -c:a copy %s -loglevel panic' % (args.videoPath, args.nDataLoaderThread, segment[0], segment[1], os.path.join(args.pyaviPath, 'track_%s_segment_%s.mp4' % (tidx, sidx)))
 
-      		# Execute the command
-			os.system(command)
+      		# Only execute the command if the output file does not exist
+			if not os.path.exists(os.path.join(args.pyaviPath, 'track_%s_segment_%s.mp4' % (tidx, sidx))):
+				os.system(command)
    
    	# Store the bounding boxes (x and y values) for each track by going through the face list
 	trackListx = [[] for i in range(len(tracks))]
@@ -364,20 +365,37 @@ def speakerSeparation(tracks, scores, args):
 			if trackSpeakingSegments[i] != trackSpeakingSegments[trackClose[i][j]]:
 				trackCloseSpeaking.append(i)
 				break
+ 
+	# A cluster is a list of tracks that are close to each other and are not speaking at the same time
+	# Create a list of clusters
+	cluster = []
+	for i in range(len(tracks)):
+		if i in trackCloseSpeaking:
+			cluster.append([i])
+			for j in range(len(trackClose[i])):
+				if trackClose[i][j] in trackCloseSpeaking:
+					cluster[-1].append(trackClose[i][j])
+ 
+	unique_clusters = set()
+	for i in cluster:
+		if tuple(i) in unique_clusters or tuple(reversed(i)) in unique_clusters:
+			cluster.remove(i)
+		else:
+			unique_clusters.add(tuple(i))
 
-	# TODO: Only three speaker lines - Insert values to test it
+	# TODO: Merging not required, can just be done in the rttm file
 	# Merge the tracks (in the list trackSpeakingSegments) that are close to each other and are not speaking at the same time
 	# Go through each track
-	for i in range(len(tracks)):
-		# If the track is in the list trackCloseSpeaking, go through each track that is close to it
-		if i in trackCloseSpeaking:
-			for j in range(len(trackClose[i])):
-				# If the track is not in the list trackCloseSpeaking, merge the tracks
-				if trackClose[i][j] not in trackCloseSpeaking:
-					trackSpeakingSegments[i] = trackSpeakingSegments[i] + trackSpeakingSegments[trackClose[i][j]]
-					trackSpeakingSegments[trackClose[i][j]] = []
+	# for i in range(len(tracks)):
+	# 	# If the track is in the list trackCloseSpeaking, go through each track that is close to it
+	# 	if i in trackCloseSpeaking:
+	# 		for j in range(len(trackClose[i])):
+	# 			# If the track is in the list trackCloseSpeaking, merge the tracks
+	# 			if trackClose[i][j] in trackCloseSpeaking:
+	# 				trackSpeakingSegments[i] = trackSpeakingSegments[i] + trackSpeakingSegments[trackClose[i][j]]
+	# 				trackSpeakingSegments[trackClose[i][j]] = []
 
-	print("Test ---")
+	print("hallo")
  
 
 def visualization(tracks, scores, args):
