@@ -184,9 +184,8 @@ def track_shot(args, sceneFaces):
 				tracks.append({'frame':frameI,'bbox':bboxesI})
 	return tracks
 
-def crop_video(args, track, cropFile):
+def formatTracks(args, track, cropFile):
 	# CPU: crop the face clips
-	vOut = cv2.VideoWriter(cropFile + 't.avi', cv2.VideoWriter_fourcc(*'XVID'), args.numFramesPerSec, (224,224))# Write video
  
 	# TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
 	# dets = {'x':[], 'y':[], 's':[]}
@@ -210,11 +209,39 @@ def crop_video(args, track, cropFile):
 	dets['s'] = signal.medfilt(dets['s'], kernel_size=13)  # Smooth detections 
 	dets['x'] = signal.medfilt(dets['x'], kernel_size=13)
 	dets['y'] = signal.medfilt(dets['y'], kernel_size=13)
+	
+	return {'track':track, 'proc_track':dets}
+
+
+def crop_track(args, track, cropFile):
+	# CPU: crop the face clips cropFile + 't.avi'
+
+	# TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
+	# dets = {'x':[], 'y':[], 's':[]}
+	# for det in track['bbox']: # Read the tracks
+	# 	dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
+	# 	dets['y'].append((det[1]+det[3])/2) # crop center x 
+	# 	dets['x'].append((det[0]+det[2])/2) # crop center y
  
-	# TODO: Can this be merged with face detection to only go once through the video?
-	# Instead of using the stored images in Pyframes, load the images from the video (which is stored at args.videoFilePath) and crop the faces from there
-	# This will save a lot of disk space
+	dets = {'x':[], 'y':[], 's':[]}
+ 	# Instead of going through every track['bbox'] for the calculation of the dets variable, we go through every 10th value and then use the dets values from the previous one to for the next 9 values 
+	for fidx, det in enumerate(track['bbox']):
+		if fidx%args.framesFaceTracking == 0:
+			dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
+			dets['y'].append((det[1]+det[3])/2) # crop center x
+			dets['x'].append((det[0]+det[2])/2) # crop center y
+		else:
+			dets['s'].append(dets['s'][-1])
+			dets['y'].append(dets['y'][-1])
+			dets['x'].append(dets['x'][-1])
+ 
+	dets['s'] = signal.medfilt(dets['s'], kernel_size=13)  # Smooth detections 
+	dets['x'] = signal.medfilt(dets['x'], kernel_size=13)
+	dets['y'] = signal.medfilt(dets['y'], kernel_size=13)
+ 
+	# Instead of saving/writing faces for each track, save them in a list and return them
 	vIn = cv2.VideoCapture(args.videoFilePath)
+	faces = []
 	for fidx, frame in enumerate(track['frame']):
 		cs  = args.cropScale
 		bs  = dets['s'][fidx]   # Detection box size
@@ -225,23 +252,14 @@ def crop_video(args, track, cropFile):
 		my  = dets['y'][fidx] + bsi  # BBox center Y
 		mx  = dets['x'][fidx] + bsi  # BBox center X
 		face = frame[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
-		vOut.write(cv2.resize(face, (224, 224)))
+		face = cv2.resize(face, (224,224))
+		face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
+		face = cv2.resize(face, (224,224))
+		face = face[int(112-(112/2)):int(112+(112/2)), int(112-(112/2)):int(112+(112/2))]
+		faces.append(face)
 	vIn.release()
-  
- 
-	audioTmp    = cropFile + '.wav'
-	audioStart  = (track['frame'][0]) / args.numFramesPerSec
-	audioEnd    = (track['frame'][-1]+1) / args.numFramesPerSec
-	vOut.release()
-	# command = ("ffmpeg -y -i %s -async 1 -ac 1 -vn -acodec pcm_s16le -ar 16000 -threads %d -ss %.3f -to %.3f %s -loglevel panic" % \
-	# 	      (args.audioFilePath, args.nDataLoaderThread, audioStart, audioEnd, audioTmp)) 
-	# output = subprocess.call(command, shell=True, stdout=None) # Crop audio file
-	#_, audio = wavfile.read(audioTmp)
-	command = ("ffmpeg -y -i %st.avi -threads %d -c:v copy %s.avi -loglevel panic" % \
-			  (cropFile, args.nDataLoaderThread, cropFile)) # Combine audio and video file
-	output = subprocess.run(command, shell=True, stdout=None)
-	os.remove(cropFile + 't.avi')
-	return {'track':track, 'proc_track':dets}
+	
+	return numpy.array(faces)
 
 def extract_MFCC(file, outPath):
 	# CPU: extract mfcc
@@ -277,20 +295,8 @@ def evaluate_network(files, allTracks, args):
 		segment, samplerate = extract_audio(args.audioFilePath, allTracks[tidx], args)
 		audioFeature = python_speech_features.mfcc(segment, samplerate, numcep = 13, winlen = 0.025, winstep = 0.010)
   
-		video = cv2.VideoCapture(os.path.join(args.pycropPath, fileName + '.avi'))
-		videoFeature = []
-		# Transform/augment current video
-		while video.isOpened():
-			ret, frames = video.read()
-			if ret == True:
-				face = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
-				face = cv2.resize(face, (224,224))
-				face = face[int(112-(112/2)):int(112+(112/2)), int(112-(112/2)):int(112+(112/2))]
-				videoFeature.append(face)
-			else:
-				break
-		video.release()
-		videoFeature = numpy.array(videoFeature)
+		# Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
+		videoFeature = crop_track(args, allTracks[tidx], file)
   
 		length = min((audioFeature.shape[0] - audioFeature.shape[0] % 4) / 100, videoFeature.shape[0])
 		audioFeature = audioFeature[:int(round(length * 100)),:]
@@ -604,9 +610,9 @@ def evaluate_col_ASD(tracks, scores, args):
 	print("Average F1:%.2f"%(100 * (F1s / 5)))	  
  
  
-def crop_videos_in_parallel(args, allTracks):
+def crop_tracks_in_parallel(args, allTracks):
     with multiprocessing.Pool() as pool:
-        vidTracks = [pool.apply_async(crop_video, args=(args, track, os.path.join(args.pycropPath, '%05d'%ii)))
+        vidTracks = [pool.apply_async(crop_track, args=(args, track, os.path.join(args.pycropPath, '%05d'%ii)))
                      for ii, track in enumerate(allTracks)]
         vidTracks = [result.get() for result in tqdm.tqdm(vidTracks, total=len(allTracks))]
     return vidTracks
@@ -709,8 +715,8 @@ def main():
 	# vidTracks: just with more information than allTracks (added different bounding box format per frame)
 	vidTracks = []
 	for ii, track in tqdm.tqdm(enumerate(allTracks), total = len(allTracks)):
-		vidTracks.append(crop_video(args, track, os.path.join(args.pycropPath, '%05d'%ii)))
-	# vidTracks = crop_videos_in_parallel(args, allTracks)
+		vidTracks.append(formatTracks(args, track, os.path.join(args.pycropPath, '%05d'%ii)))
+	# vidTracks = crop_tracks_in_parallel(args, allTracks)
  
 	savePath = os.path.join(args.pyworkPath, 'tracks.pckl')
 	with open(savePath, 'wb') as fil:
