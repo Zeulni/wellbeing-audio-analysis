@@ -40,12 +40,8 @@ parser.add_argument('--framesFaceTracking',    type=float, default=10, help='To 
 parser.add_argument('--start',                 type=int, default=0,   help='The start time of the video')
 parser.add_argument('--duration',              type=int, default=0,  help='The duration of the video, when set as 0, will extract the whole video')
 
-parser.add_argument('--evalCol',               dest='evalCol', action='store_true', help='Evaluate on Columnbia dataset')
-parser.add_argument('--colSavePath',           type=str, default="/data08/col",  help='Path for inputs, tmps and outputs')
-
 parser.add_argument('--thresholdSamePerson',   type=str, default=0.15,  help='If two face tracks (see folder pycrop) are close together (-> below that threshold) and are not speaking at the same time, then it is the same person')
 parser.add_argument('--createTrackVideos',     type=bool, default=True,  help='If enabled, it will create a video for each track, where only the segments where the person is speaking are included')
-
 
 parser.add_argument('--includeVisualization', type=bool, default=True,  help='If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)')
 
@@ -59,45 +55,9 @@ if os.path.isfile(args.pretrainModel) == False: # Download the pretrained model
     cmd = "gdown --id %s -O %s"%(Link, args.pretrainModel)
     subprocess.call(cmd, shell=True, stdout=None)
 
-if args.evalCol == True:
-	# The process is: 1. download video and labels(I have modified the format of labels to make it easiler for using)
-	# 	              2. extract audio, extract video frames
-	#                 3. scend detection, face detection and face tracking
-	#                 4. active speaker detection for the detected face clips
-	#                 5. use iou to find the identity of each face clips, compute the F1 results
-	# The step 1 to 3 will take some time (That is one-time process). It depends on your cpu and gpu speed. For reference, I used 1.5 hour
-	# The step 4 and 5 need less than 10 minutes
-	# Need about 20G space finally
-	# ```
-	args.videoName = 'col'
-	args.videoFolder = args.colSavePath
-	args.savePath = os.path.join(args.videoFolder, args.videoName)
-	args.videoPath = os.path.join(args.videoFolder, args.videoName + '.mp4')
-	args.duration = 0
-	if os.path.isfile(args.videoPath) == False:  # Download video
-		link = 'https://www.youtube.com/watch?v=6GzxbrO0DHM&t=2s'
-		cmd = "youtube-dl -f best -o %s '%s'"%(args.videoPath, link)
-		output = subprocess.call(cmd, shell=True, stdout=None)
-	if os.path.isdir(args.videoFolder + '/col_labels') == False: # Download label
-		link = "1Tto5JBt6NsEOLFRWzyZEeV6kCCddc6wv"
-		cmd = "gdown --id %s -O %s"%(link, args.videoFolder + '/col_labels.tar.gz')
-		subprocess.call(cmd, shell=True, stdout=None)
-		cmd = "tar -xzvf %s -C %s"%(args.videoFolder + '/col_labels.tar.gz', args.videoFolder)
-		subprocess.call(cmd, shell=True, stdout=None)
-		os.remove(args.videoFolder + '/col_labels.tar.gz')	
-else:
+def get_video_path(args):
 	args.videoPath = glob.glob(os.path.join(args.videoFolder, args.videoName + '.*'))[0]
 	args.savePath = os.path.join(args.videoFolder, args.videoName)
- 
-def interpolate_bboxes(current_frame, prev_frame, next_frame, num_intermediate_frames):
-    x_diff = (next_frame['bbox'][0] - prev_frame['bbox'][0]) / (num_intermediate_frames + 1)
-    y_diff = (next_frame['bbox'][1] - prev_frame['bbox'][1]) / (num_intermediate_frames + 1)
-    intermediate_frames = []
-    for i in range(1, num_intermediate_frames + 1):
-        x = prev_frame['bbox'][0] + i * x_diff
-        y = prev_frame['bbox'][1] + i * y_diff
-        intermediate_frames.append({'frame': prev_frame['frame'] + i, 'bbox': (x, y), 'conf': prev_frame['conf']})
-    return intermediate_frames
 
 
 def inference_video(args):
@@ -184,36 +144,8 @@ def track_shot(args, sceneFaces):
 				tracks.append({'frame':frameI,'bbox':bboxesI})
 	return tracks
 
-def formatTracks(args, track, cropFile):
-	# CPU: crop the face clips
- 
-	# TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
-	# dets = {'x':[], 'y':[], 's':[]}
-	# for det in track['bbox']: # Read the tracks
-	# 	dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
-	# 	dets['y'].append((det[1]+det[3])/2) # crop center x 
-	# 	dets['x'].append((det[0]+det[2])/2) # crop center y
- 
-	dets = {'x':[], 'y':[], 's':[]}
- 	# Instead of going through every track['bbox'] for the calculation of the dets variable, we go through every 10th value and then use the dets values from the previous one to for the next 9 values 
-	for fidx, det in enumerate(track['bbox']):
-		if fidx%args.framesFaceTracking == 0:
-			dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
-			dets['y'].append((det[1]+det[3])/2) # crop center x
-			dets['x'].append((det[0]+det[2])/2) # crop center y
-		else:
-			dets['s'].append(dets['s'][-1])
-			dets['y'].append(dets['y'][-1])
-			dets['x'].append(dets['x'][-1])
- 
-	dets['s'] = signal.medfilt(dets['s'], kernel_size=13)  # Smooth detections 
-	dets['x'] = signal.medfilt(dets['x'], kernel_size=13)
-	dets['y'] = signal.medfilt(dets['y'], kernel_size=13)
-	
-	return {'track':track, 'proc_track':dets}
 
-
-def crop_track(args, track, cropFile):
+def crop_track(args, track):
 	# CPU: crop the face clips cropFile + 't.avi'
 
 	# TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
@@ -259,7 +191,7 @@ def crop_track(args, track, cropFile):
 		faces.append(face)
 	vIn.release()
 	
-	return numpy.array(faces)
+	return {'track':track, 'proc_track':dets}, numpy.array(faces)
 
 def extract_MFCC(file, outPath):
 	# CPU: extract mfcc
@@ -278,25 +210,24 @@ def extract_audio(audio_file, track, args):
 	trans_segment = numpy.array(segment.get_array_of_samples(), dtype=numpy.int16)
 	return trans_segment, samplerate
 
-def evaluate_network(files, allTracks, args):
+def evaluate_network(allTracks, args):
 	# GPU: active speaker detection by pretrained TalkNet
 	s = talkNet().to(device)
 	s.loadParameters(args.pretrainModel)
 	sys.stderr.write("Model %s loaded from previous state! \r\n"%args.pretrainModel)
-	s.eval()
- 
-	allScores = []
+	s.eval()	
+
+	allScores, vidTracks = [], []
 	# durationSet = {1,2,4,6} # To make the result more reliable
 	durationSet = {1,1,1,2,2,2,3,3,4,5,6} # Use this line can get more reliable result
-	for tidx, file in tqdm.tqdm(enumerate(files), total = len(files)):
-		filename_full = os.path.basename(file)
-		fileName, _ = os.path.splitext(filename_full)
+	for tidx, track in tqdm.tqdm(enumerate(allTracks), total = len(allTracks)):
   
-		segment, samplerate = extract_audio(args.audioFilePath, allTracks[tidx], args)
+		segment, samplerate = extract_audio(args.audioFilePath, track, args)
 		audioFeature = python_speech_features.mfcc(segment, samplerate, numcep = 13, winlen = 0.025, winstep = 0.010)
   
 		# Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
-		videoFeature = crop_track(args, allTracks[tidx], file)
+		trackDict, videoFeature = crop_track(args, track)
+		vidTracks.append(trackDict)
   
 		length = min((audioFeature.shape[0] - audioFeature.shape[0] % 4) / 100, videoFeature.shape[0])
 		audioFeature = audioFeature[:int(round(length * 100)),:]
@@ -318,7 +249,7 @@ def evaluate_network(files, allTracks, args):
 			allScore.append(scores)
 		allScore = numpy.round((numpy.mean(numpy.array(allScore), axis = 0)), 1).astype(float)
 		allScores.append(allScore)	
-	return allScores
+	return allScores, vidTracks
 
 def cutTrackVideos(trackSpeakingSegments, args):
     # Using the trackSpeakingSegments, extract for each track the video segments from the original video (with moviepy)
@@ -540,82 +471,14 @@ def visualization(tracks, scores, args):
 		(os.path.join(args.pyaviPath, 'video_only.avi'), os.path.join(args.pyaviPath, 'audio.wav'), \
 		args.nDataLoaderThread, os.path.join(args.pyaviPath,'video_out.avi'))) 
 	output = subprocess.call(command, shell=True, stdout=None)
-
-def evaluate_col_ASD(tracks, scores, args):
-	txtPath = args.videoFolder + '/col_labels/fusion/*.txt' # Load labels
-	predictionSet = {}
-	for name in {'long', 'bell', 'boll', 'lieb', 'sick', 'abbas'}:
-		predictionSet[name] = [[],[]]
-	dictGT = {}
-	txtFiles = glob.glob("%s"%txtPath)
-	for file in txtFiles:
-		lines = open(file).read().splitlines()
-		idName = file.split('/')[-1][:-4]
-		for line in lines:
-			data = line.split('\t')
-			# Could change it to args.numFramesPerSec instead of 25, but don't know what exactly function is doing yet
-			frame = int(int(data[0]) / 29.97 * 25)
-			x1 = int(data[1])
-			y1 = int(data[2])
-			x2 = int(data[1]) + int(data[3])
-			y2 = int(data[2]) + int(data[3])
-			gt = int(data[4])
-			if frame in dictGT:
-				dictGT[frame].append([x1,y1,x2,y2,gt,idName])
-			else:
-				dictGT[frame] = [[x1,y1,x2,y2,gt,idName]]	
-	flist = glob.glob(os.path.join(args.pyframesPath, '*.jpg')) # Load files
-	flist.sort()
-	faces = [[] for i in range(len(flist))]
-	for tidx, track in enumerate(tracks):
-		score = scores[tidx]				
-		for fidx, frame in enumerate(track['track']['frame'].tolist()):
-			s = numpy.mean(score[max(fidx - 2, 0): min(fidx + 3, len(score) - 1)]) # average smoothing
-			faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
-	for fidx, fname in tqdm.tqdm(enumerate(flist), total = len(flist)):
-		if fidx in dictGT: # This frame has label
-			for gtThisFrame in dictGT[fidx]: # What this label is ?
-				faceGT = gtThisFrame[0:4]
-				labelGT = gtThisFrame[4]
-				idGT = gtThisFrame[5]
-				ious = []
-				for face in faces[fidx]: # Find the right face in my result
-					faceLocation = [int(face['x']-face['s']), int(face['y']-face['s']), int(face['x']+face['s']), int(face['y']+face['s'])]
-					faceLocation_new = [int(face['x']-face['s']) // 2, int(face['y']-face['s']) // 2, int(face['x']+face['s']) // 2, int(face['y']+face['s']) // 2]
-					iou = bb_intersection_over_union(faceLocation_new, faceGT, evalCol = True)
-					if iou > 0.5:
-						ious.append([iou, round(face['score'],2)])
-				if len(ious) > 0: # Find my result
-					ious.sort()
-					labelPredict = ious[-1][1]
-				else:					
-					labelPredict = 0
-				x1 = faceGT[0]
-				y1 = faceGT[1]
-				width = faceGT[2] - faceGT[0]
-				predictionSet[idGT][0].append(labelPredict)
-				predictionSet[idGT][1].append(labelGT)
-	names = ['long', 'bell', 'boll', 'lieb', 'sick', 'abbas'] # Evaluate
-	names.sort()
-	F1s = 0
-	for i in names:
-		scores = numpy.array(predictionSet[i][0])
-		labels = numpy.array(predictionSet[i][1])
-		scores = numpy.int64(scores > 0)
-		F1 = f1_score(labels, scores)
-		ACC = accuracy_score(labels, scores)
-		if i != 'abbas':
-			F1s += F1
-			print("%s, ACC:%.2f, F1:%.2f"%(i, 100 * ACC, 100 * F1))
-	print("Average F1:%.2f"%(100 * (F1s / 5)))	  
  
- 
-def crop_tracks_in_parallel(args, allTracks):
-    with multiprocessing.Pool() as pool:
-        vidTracks = [pool.apply_async(crop_track, args=(args, track, os.path.join(args.pycropPath, '%05d'%ii)))
-                     for ii, track in enumerate(allTracks)]
-        vidTracks = [result.get() for result in tqdm.tqdm(vidTracks, total=len(allTracks))]
-    return vidTracks
+# TODO: To be updated, if use again 
+# def crop_tracks_in_parallel(args, allTracks):
+#     with multiprocessing.Pool() as pool:
+#         vidTracks = [pool.apply_async(crop_track, args=(args, track))
+#                      for ii, track in enumerate(allTracks)]
+#         vidTracks = [result.get() for result in tqdm.tqdm(vidTracks, total=len(allTracks))]
+#     return vidTracks
 
  
 def get_fps(video_path):
@@ -634,27 +497,17 @@ def main():
 	# │   ├── video.avi (Copy of the input video)
 	# │   ├── video_only.avi (Output video without audio)
 	# │   └── video_out.avi  (Output video with audio)
-	# ├── pycrop (The detected face videos and audios)
-	# │   ├── 000000.avi
-	# │   ├── 000000.wav
-	# │   ├── 000001.avi
-	# │   ├── 000001.wav
-	# │   └── ...
-	# ├── pyframes (All the video frames in this video)
-	# │   ├── 000001.jpg
-	# │   ├── 000002.jpg
-	# │   └── ...	
 	# └── pywork
 	#     ├── faces.pckl (face detection result)
 	#     ├── scores.pckl (ASD result) - score values over time whether one speaks, for each detected face (video)
 	#     └── tracks.pckl (face tracking result) - face bounding boxes over time for each detected face (video), per track x frames (e.g. in sample 7 tracks each ~500 frames)
 	# ```
+ 
+	get_video_path(args)
 
 	# Initialization 
 	args.pyaviPath = os.path.join(args.savePath, 'pyavi')
-	args.pyframesPath = os.path.join(args.savePath, 'pyframes')
 	args.pyworkPath = os.path.join(args.savePath, 'pywork')
-	args.pycropPath = os.path.join(args.savePath, 'pycrop')
  
 	args.numFramesPerSec = int(get_fps(args.videoPath))
 	print("Frames per second for the detected video: ", args.numFramesPerSec)
@@ -691,9 +544,7 @@ def main():
 	if os.path.exists(args.savePath):
 		rmtree(args.savePath)
 	os.makedirs(args.pyaviPath, exist_ok = True) # The path for the input video, input audio, output video
-	os.makedirs(args.pyframesPath, exist_ok = True) # Save all the video frames
 	os.makedirs(args.pyworkPath, exist_ok = True) # Save the results in this process by the pckl method
-	os.makedirs(args.pycropPath, exist_ok = True) # Save the detected face clips (audio+video) in this process
  
 	# Extract audio
 	# TODO: Can't I just get the audio from the original video and storing it in a variable instead of saving it in a file?
@@ -711,35 +562,22 @@ def main():
 	allTracks.extend(track_shot(args, faces)) # 'frames' to present this tracks' timestep, 'bbox' presents the location of the faces
 	sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face track and detected %d tracks \r\n" %len(allTracks))
 
-	# Face clips cropping (Pycrop folder)
-	# vidTracks: just with more information than allTracks (added different bounding box format per frame)
-	vidTracks = []
-	for ii, track in tqdm.tqdm(enumerate(allTracks), total = len(allTracks)):
-		vidTracks.append(formatTracks(args, track, os.path.join(args.pycropPath, '%05d'%ii)))
-	# vidTracks = crop_tracks_in_parallel(args, allTracks)
- 
-	savePath = os.path.join(args.pyworkPath, 'tracks.pckl')
-	with open(savePath, 'wb') as fil:
-		pickle.dump(vidTracks, fil)
-	sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face Crop and saved in %s tracks \r\n" %args.pycropPath)
-
 	# Active Speaker Detection by TalkNet
-	files = glob.glob("%s/*.avi"%args.pycropPath)
-	files.sort()
-	scores = evaluate_network(files, allTracks, args)
+	scores, vidTracks = evaluate_network(allTracks, args)
 	savePath = os.path.join(args.pyworkPath, 'scores.pckl')
 	with open(savePath, 'wb') as fil:
 		pickle.dump(scores, fil)
 	sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Scores extracted and saved in %s \r\n" %args.pyworkPath)
+ 
+	savePath = os.path.join(args.pyworkPath, 'tracks.pckl')
+	with open(savePath, 'wb') as fil:
+		pickle.dump(vidTracks, fil)
 
-	if args.evalCol == True:
-		evaluate_col_ASD(vidTracks, scores, args) # The columnbia video is too big for visualization. You can still add the `visualization` funcition here if you want
-		quit()
-	else:
-		# Visualization, save the result as the new video	
-		if args.includeVisualization == True:
-			visualization(vidTracks, scores, args)
-		speakerSeparation(vidTracks, scores, args)	
+
+	# Visualization, save the result as the new video	
+	if args.includeVisualization == True:
+		visualization(vidTracks, scores, args)
+	speakerSeparation(vidTracks, scores, args)	
 
 if __name__ == '__main__':
     main()
