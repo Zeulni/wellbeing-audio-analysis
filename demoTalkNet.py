@@ -1,5 +1,8 @@
 import sys, time, os, tqdm, torch, argparse, glob, subprocess, warnings, cv2, pickle, numpy, pdb, math, python_speech_features, moviepy
 import multiprocessing
+from pydub import AudioSegment
+
+# TODO: Add pydub to requirements.txt
 
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.compositing.concatenate import concatenate_videoclips
@@ -28,7 +31,7 @@ parser.add_argument('--nDataLoaderThread',     type=int,   default=32,   help='N
 parser.add_argument('--facedetScale',          type=float, default=0.25, help='Scale factor for face detection, the frames will be scale to 0.25 orig')
 
 parser.add_argument('--minTrack',              type=int,   default=10,   help='Number of min frames for each scene and track')
-parser.add_argument('--numFailedDet',          type=int,   default=25,   help='Number of missed detections allowed before tracking is stopped (25 frames means 1 second)')
+parser.add_argument('--numFailedDet',          type=int,   default=25,   help='Number of missed detections allowed before tracking is stopped (e.g. 25 fps -> 1 sec)')
 parser.add_argument('--minFaceSize',           type=int,   default=1,    help='Minimum face size in pixels')
 
 parser.add_argument('--cropScale',             type=float, default=0.40, help='Scale bounding box')
@@ -230,12 +233,12 @@ def crop_video(args, track, cropFile):
 	audioStart  = (track['frame'][0]) / args.numFramesPerSec
 	audioEnd    = (track['frame'][-1]+1) / args.numFramesPerSec
 	vOut.release()
-	command = ("ffmpeg -y -i %s -async 1 -ac 1 -vn -acodec pcm_s16le -ar 16000 -threads %d -ss %.3f -to %.3f %s -loglevel panic" % \
-		      (args.audioFilePath, args.nDataLoaderThread, audioStart, audioEnd, audioTmp)) 
-	output = subprocess.call(command, shell=True, stdout=None) # Crop audio file
+	# command = ("ffmpeg -y -i %s -async 1 -ac 1 -vn -acodec pcm_s16le -ar 16000 -threads %d -ss %.3f -to %.3f %s -loglevel panic" % \
+	# 	      (args.audioFilePath, args.nDataLoaderThread, audioStart, audioEnd, audioTmp)) 
+	# output = subprocess.call(command, shell=True, stdout=None) # Crop audio file
 	#_, audio = wavfile.read(audioTmp)
-	command = ("ffmpeg -y -i %st.avi -i %s -threads %d -c:v copy -c:a copy %s.avi -loglevel panic" % \
-			  (cropFile, audioTmp, args.nDataLoaderThread, cropFile)) # Combine audio and video file
+	command = ("ffmpeg -y -i %st.avi -threads %d -c:v copy %s.avi -loglevel panic" % \
+			  (cropFile, args.nDataLoaderThread, cropFile)) # Combine audio and video file
 	output = subprocess.run(command, shell=True, stdout=None)
 	os.remove(cropFile + 't.avi')
 	return {'track':track, 'proc_track':dets}
@@ -246,8 +249,18 @@ def extract_MFCC(file, outPath):
 	mfcc = python_speech_features.mfcc(audio,sr) # (N_frames, 13)   [1s = 100 frames]
 	featuresPath = os.path.join(outPath, file.split('/')[-1].replace('.wav', '.npy'))
 	numpy.save(featuresPath, mfcc)
+ 
+def extract_audio(audio_file, track, args):
+	audioStart  = (track['frame'][0]) / args.numFramesPerSec
+	audioEnd    = (track['frame'][-1]+1) / args.numFramesPerSec
+	sound = AudioSegment.from_wav(audio_file)
+    
+	segment = sound[audioStart*1000:audioEnd*1000]
+	samplerate = segment.frame_rate
+	trans_segment = numpy.array(segment.get_array_of_samples(), dtype=numpy.int16)
+	return trans_segment, samplerate
 
-def evaluate_network(files, args):
+def evaluate_network(files, allTracks, args):
 	# GPU: active speaker detection by pretrained TalkNet
 	s = talkNet().to(device)
 	s.loadParameters(args.pretrainModel)
@@ -257,12 +270,12 @@ def evaluate_network(files, args):
 	allScores = []
 	# durationSet = {1,2,4,6} # To make the result more reliable
 	durationSet = {1,1,1,2,2,2,3,3,4,5,6} # Use this line can get more reliable result
-	for file in tqdm.tqdm(files, total = len(files)):
+	for tidx, file in tqdm.tqdm(enumerate(files), total = len(files)):
 		filename_full = os.path.basename(file)
 		fileName, _ = os.path.splitext(filename_full)
   
-		_, audio = wavfile.read(os.path.join(args.pycropPath, fileName + '.wav'))
-		audioFeature = python_speech_features.mfcc(audio, 16000, numcep = 13, winlen = 0.025, winstep = 0.010)
+		segment, samplerate = extract_audio(args.audioFilePath, allTracks[tidx], args)
+		audioFeature = python_speech_features.mfcc(segment, samplerate, numcep = 13, winlen = 0.025, winstep = 0.010)
   
 		video = cv2.VideoCapture(os.path.join(args.pycropPath, fileName + '.avi'))
 		videoFeature = []
@@ -685,7 +698,6 @@ def main():
 	sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Extract the audio and save in %s \r\n" %(args.audioFilePath))
 
 	# Face detection for the video frames
-	# TODO: Here it goes through every single frame stored in pyframes (-> either just just every 10th or go through variable instead of stored pictures)
 	faces = inference_video(args)
 	sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face detection and save in %s \r\n" %(args.pyworkPath))
  
@@ -695,10 +707,10 @@ def main():
 
 	# Face clips cropping (Pycrop folder)
 	# vidTracks: just with more information than allTracks (added different bounding box format per frame)
-	# vidTracks = []
-	# for ii, track in tqdm.tqdm(enumerate(allTracks), total = len(allTracks)):
-	# 	vidTracks.append(crop_video(args, track, os.path.join(args.pycropPath, '%05d'%ii)))
-	vidTracks = crop_videos_in_parallel(args, allTracks)
+	vidTracks = []
+	for ii, track in tqdm.tqdm(enumerate(allTracks), total = len(allTracks)):
+		vidTracks.append(crop_video(args, track, os.path.join(args.pycropPath, '%05d'%ii)))
+	# vidTracks = crop_videos_in_parallel(args, allTracks)
  
 	savePath = os.path.join(args.pyworkPath, 'tracks.pckl')
 	with open(savePath, 'wb') as fil:
@@ -708,7 +720,7 @@ def main():
 	# Active Speaker Detection by TalkNet
 	files = glob.glob("%s/*.avi"%args.pycropPath)
 	files.sort()
-	scores = evaluate_network(files, args)
+	scores = evaluate_network(files, allTracks, args)
 	savePath = os.path.join(args.pyworkPath, 'scores.pckl')
 	with open(savePath, 'wb') as fil:
 		pickle.dump(scores, fil)
