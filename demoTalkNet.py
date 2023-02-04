@@ -1,6 +1,7 @@
 import sys, time, os, tqdm, torch, argparse, glob, subprocess, warnings, cv2, pickle, numpy, pdb, math, python_speech_features, moviepy
 import multiprocessing
 from pydub import AudioSegment
+import torchvision.transforms as transforms
 
 # TODO: Add pydub to requirements.txt
 
@@ -190,7 +191,105 @@ def crop_track(args, track):
 		face = face[int(112-(112/2)):int(112+(112/2)), int(112-(112/2)):int(112+(112/2))]
 		faces.append(face)
 	vIn.release()
+ 
+ 	# # Create a video writer object
+	# fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # specify the codec for the video
+	# out = cv2.VideoWriter('video.mp4', fourcc, 20.0, (112, 112))
+
 	
+	# # Write each frame of the tensor to the video
+	# for i in range(numpy.array(faces).shape[0]):
+	# 	frame = faces[i]
+	# 	frame = frame.astype('uint8')
+	# 	frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+	# 	out.write(frame)
+
+	# # Release the video writer object
+	# out.release()
+	
+	return {'track':track, 'proc_track':dets}, numpy.array(faces)
+
+def crop_track_fast(args, track):
+
+	dets = {'x':[], 'y':[], 's':[]}
+	# Instead of going through every track['bbox'] for the calculation of the dets variable, we go through every 10th value and then use the dets values from the previous one to for the next 9 values 
+	for fidx, det in enumerate(track['bbox']):
+		if fidx%args.framesFaceTracking == 0:
+			dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
+			dets['y'].append((det[1]+det[3])/2) # crop center x
+			dets['x'].append((det[0]+det[2])/2) # crop center y
+		else:
+			dets['s'].append(dets['s'][-1])
+			dets['y'].append(dets['y'][-1])
+			dets['x'].append(dets['x'][-1])
+
+	dets['s'] = signal.medfilt(dets['s'], kernel_size=13)  # Smooth detections 
+	dets['x'] = signal.medfilt(dets['x'], kernel_size=13)
+	dets['y'] = signal.medfilt(dets['y'], kernel_size=13)
+
+	vIn = cv2.VideoCapture(args.videoFilePath)
+	num_frames = len(track['frame'])
+
+	# Create an empty array for the faces
+	faces = numpy.zeros((num_frames, 112, 112), dtype=numpy.float16)
+ 
+	# Define transformation
+	transform = transforms.Compose([
+		transforms.ToPILImage(),
+		transforms.Resize(224),
+		transforms.Resize(224),
+		transforms.Grayscale(num_output_channels=1),
+		transforms.CenterCrop(112),
+		transforms.ToTensor(),
+		transforms.Lambda(lambda x: x * 255),
+		transforms.Lambda(lambda x: x.type(torch.uint8))
+	])
+ 
+	for fidx, frame in enumerate(track['frame']):
+		cs  = args.cropScale
+		bs  = dets['s'][fidx]   # Detection box size
+		bsi = int(bs * (1 + 2 * cs))  # Pad videos by this amount     
+		
+		vIn.set(cv2.CAP_PROP_POS_FRAMES, frame)
+		ret, image = vIn.read()
+		
+		# Pad the image with constant values
+		image = numpy.pad(image, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
+		
+		my  = dets['y'][fidx] + bsi  # BBox center Y
+		mx  = dets['x'][fidx] + bsi  # BBox center X
+		
+		# Crop the face from the image
+		face = image[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
+		
+		# Apply the transformations
+		face = transform(face)
+		# face = face * 255
+		# face = face.type(torch.uint8)
+		# Have to get permuted as numpy uses (H, W, C) and pytorch uses (C, H, W)
+		face = face.permute(1, 2, 0)
+		face = face.numpy()
+		
+		faces[fidx, :, :] = face.squeeze()
+		# TODO: FOr now disable it, but once data is the same then just return a tensor
+		# face = face.to(device)
+
+	vIn.release()
+ 
+	# # Create a video writer object
+	# fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # specify the codec for the video
+	# out = cv2.VideoWriter('video.mp4', fourcc, 20.0, (112, 112))
+
+	# # Write each frame of the tensor to the video
+	# for i in range(faces.shape[0]):
+	# 	frame = faces[i]
+	# 	frame = frame.astype('uint8')
+	# 	frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+	# 	out.write(frame)
+
+	# # Release the video writer object
+	# out.release()
+
 	return {'track':track, 'proc_track':dets}, numpy.array(faces)
 
 def extract_MFCC(file, outPath):
@@ -226,7 +325,10 @@ def evaluate_network(allTracks, args):
 		audioFeature = python_speech_features.mfcc(segment, samplerate, numcep = 13, winlen = 0.025, winstep = 0.010)
   
 		# Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
-		trackDict, videoFeature = crop_track(args, track)
+		# * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
+		# trackDict, videoFeature = crop_track(args, track)
+		# Rounding is different (so sometimes numbers are slightly different) + changes in Color as OpenCV conversion works differently (but videos look the same)
+		trackDict, videoFeature = crop_track_fast(args, track)
 		vidTracks.append(trackDict)
   
 		length = min((audioFeature.shape[0] - audioFeature.shape[0] % 4) / 100, videoFeature.shape[0])
