@@ -1,5 +1,5 @@
 import sys, time, os, tqdm, torch, argparse, glob, subprocess, warnings, cv2, pickle, numpy, pdb, math, python_speech_features, moviepy
-import multiprocessing
+# import multiprocessing
 from pydub import AudioSegment
 import torchvision.transforms as transforms
 
@@ -288,21 +288,6 @@ def crop_track_fastest(args, track):
 		faces[start:end, :, :] = batch_images.to(device)
 
 	vIn.release()
- 
-  	# # Create a video writer object
-	# fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # specify the codec for the video
-	# out = cv2.VideoWriter('video.mp4', fourcc, 20.0, (112, 112))
-
-	
-	# # Write each frame of the tensor to the video
-	# for i in range(faces.shape[0]):
-	# 	frame = faces[i, :, :].cpu().numpy().astype('uint8')
-	# 	frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
-	# 	out.write(frame)
-
-
-	# # Release the video writer object
-	# out.release()
 
 	return {'track':track, 'proc_track':dets}, faces
 
