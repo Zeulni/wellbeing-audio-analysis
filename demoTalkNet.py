@@ -211,6 +211,13 @@ def crop_track_faster(args, track):
 
 
 def crop_track_fastest(args, track):
+    
+    # TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
+	# dets = {'x':[], 'y':[], 's':[]}
+	# for det in track['bbox']: # Read the tracks
+	# 	dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
+	# 	dets['y'].append((det[1]+det[3])/2) # crop center x 
+	# 	dets['x'].append((det[0]+det[2])/2) # crop center y
 
 	dets = {'x':[], 'y':[], 's':[]}
 	# Instead of going through every track['bbox'] for the calculation of the dets variable, we go through every 10th value and then use the dets values from the previous one to for the next 9 values 
@@ -262,6 +269,7 @@ def crop_track_fastest(args, track):
 		for frame, my, mx, bs in zip(batch_frames, batch_dets_y, batch_dets_x, batch_dets_s):
 			vIn.set(cv2.CAP_PROP_POS_FRAMES, frame)
 			ret, image = vIn.read()
+			image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 			# Pad the image with constant values
 			bsi = int(bs * (1 + 2 * args.cropScale))
@@ -280,6 +288,21 @@ def crop_track_fastest(args, track):
 		faces[start:end, :, :] = batch_images.to(device)
 
 	vIn.release()
+ 
+  	# # Create a video writer object
+	# fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # specify the codec for the video
+	# out = cv2.VideoWriter('video.mp4', fourcc, 20.0, (112, 112))
+
+	
+	# # Write each frame of the tensor to the video
+	# for i in range(faces.shape[0]):
+	# 	frame = faces[i, :, :].cpu().numpy().astype('uint8')
+	# 	frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+	# 	out.write(frame)
+
+
+	# # Release the video writer object
+	# out.release()
 
 	return {'track':track, 'proc_track':dets}, faces
 
