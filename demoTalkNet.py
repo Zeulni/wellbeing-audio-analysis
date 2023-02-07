@@ -34,7 +34,7 @@ parser.add_argument('--numFailedDet',          type=int,   default=25,   help='N
 parser.add_argument('--minFaceSize',           type=int,   default=1,    help='Minimum face size in pixels')
 
 parser.add_argument('--cropScale',             type=float, default=0.40, help='Scale bounding box')
-parser.add_argument('--framesFaceTracking',    type=float, default=3, help='To speed up the face tracking, we only track the face in every x frames')
+parser.add_argument('--framesFaceTracking',    type=float, default=5, help='To speed up the face tracking, we only track the face in every x frames (choose 1,2,3,5,6,10, or 15)')
 
 parser.add_argument('--start',                 type=int, default=0,   help='The start time of the video')
 parser.add_argument('--duration',              type=int, default=0,  help='The duration of the video, when set as 0, will extract the whole video')
@@ -45,6 +45,8 @@ parser.add_argument('--createTrackVideos',     type=bool, default=True,  help='I
 parser.add_argument('--includeVisualization', type=bool, default=True,  help='If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)')
 
 args = parser.parse_args()
+
+print("Only every xth frame will be analyzed for faster processing: ", args.framesFaceTracking)
 
 # Check whether GPU is available on cuda (NVIDIA), then mps (Macbook), otherwise use cpu
 if torch.cuda.is_available():
@@ -263,7 +265,7 @@ def crop_track_fastest(args, track):
 	])
 
 	# Number of frames to process at once
-	batch_size = 32
+	batch_size = 30
 
 	# Loop over the frames in batches
 	for start in range(0, num_frames, batch_size):
@@ -479,6 +481,16 @@ def evaluate_network(allTracks, args):
 					scores.extend(score)
 			allScore.append(scores)
 		allScore = numpy.round((numpy.mean(numpy.array(allScore), axis = 0)), 1).astype(float)
+  
+		# To compensate for the skipping of frames, repeat the score for each frame (so it has the same length again)
+		allScore = numpy.repeat(allScore, args.framesFaceTracking)
+  
+		# To make sure the length is not longer than the video, crop it (if its the same length, just cut 3 frames off to be on the safe side)
+		if allScore.shape[0] > track['bbox'].shape[0]:
+			allScore = allScore[:track['bbox'].shape[0]]
+		elif (allScore.shape[0] - track['bbox'].shape[0]) >= -3:
+			allScore = allScore[:-3]
+  
 		allScores.append(allScore)	
 	return allScores, vidTracks
 
