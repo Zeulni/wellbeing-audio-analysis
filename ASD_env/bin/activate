@@ -37,11 +37,11 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\mitgt\OneDrive\Desktop\Thesis_Tobias\ASD_Test\TalkNet-ASD\ASD_env"
+VIRTUAL_ENV="/Users/tobiaszeulner/Desktop/Master_Thesis_MIT/ASD_Test/ASD_env"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
-PATH="$VIRTUAL_ENV/Scripts:$PATH"
+PATH="$VIRTUAL_ENV/bin:$PATH"
 export PATH
 
 # unset PYTHONHOME if set

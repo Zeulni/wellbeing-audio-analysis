@@ -3,8 +3,6 @@ import sys, time, os, tqdm, torch, argparse, glob, subprocess, warnings, cv2, pi
 from pydub import AudioSegment
 import torchvision.transforms as transforms
 
-# TODO: Add pydub to requirements.txt
-
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 
@@ -36,7 +34,7 @@ parser.add_argument('--numFailedDet',          type=int,   default=25,   help='N
 parser.add_argument('--minFaceSize',           type=int,   default=1,    help='Minimum face size in pixels')
 
 parser.add_argument('--cropScale',             type=float, default=0.40, help='Scale bounding box')
-parser.add_argument('--framesFaceTracking',    type=float, default=10, help='To speed up the face tracking, we only track the face in every x frames')
+parser.add_argument('--framesFaceTracking',    type=float, default=3, help='To speed up the face tracking, we only track the face in every x frames')
 
 parser.add_argument('--start',                 type=int, default=0,   help='The start time of the video')
 parser.add_argument('--duration',              type=int, default=0,  help='The duration of the video, when set as 0, will extract the whole video')
@@ -48,8 +46,20 @@ parser.add_argument('--includeVisualization', type=bool, default=True,  help='If
 
 args = parser.parse_args()
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Detected device (GPU/CPU): ", device)
+# Check whether GPU is available on cuda (NVIDIA), then mps (Macbook), otherwise use cpu
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+	device = torch.device("cpu")
+ 
+#  elif torch.backends.mps.is_available():
+# 	device = torch.device("mps")
+# 	# As not all operations are supported by MPS, we need to enable the fallback to CPU
+# 	print("Before you run it for the first time, you have to set an environment variable called PYTORCH_ENABLE_MPS_FALLBACK to '1'. As some features are not implemented vor MPS, this will then be a fallback to CPU. Otherwise you may encounter error messages claiming the same.")
+
+
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Detected device (Cuda/MPS/CPU): ", device) 
 
 if os.path.isfile(args.pretrainModel) == False: # Download the pretrained model
     Link = "1AbN9fCf9IexMxEKXLQY2KYBlb-IhSEea"
@@ -291,6 +301,109 @@ def crop_track_fastest(args, track):
 
 	return {'track':track, 'proc_track':dets}, faces
 
+def crop_track_skipped(args, track):
+    
+    # TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
+	# dets = {'x':[], 'y':[], 's':[]}
+	# for det in track['bbox']: # Read the tracks
+	# 	dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
+	# 	dets['y'].append((det[1]+det[3])/2) # crop center x 
+	# 	dets['x'].append((det[0]+det[2])/2) # crop center y
+
+	dets = {'x':[], 'y':[], 's':[]}
+	# Instead of going through every track['bbox'] for the calculation of the dets variable, we go through every 10th value and then use the dets values from the previous one to for the next 9 values 
+	for fidx, det in enumerate(track['bbox']):
+		if fidx%args.framesFaceTracking == 0:
+			dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
+			dets['y'].append((det[1]+det[3])/2) # crop center x
+			dets['x'].append((det[0]+det[2])/2) # crop center y
+		else:
+			dets['s'].append(dets['s'][-1])
+			dets['y'].append(dets['y'][-1])
+			dets['x'].append(dets['x'][-1])
+
+	dets['s'] = signal.medfilt(dets['s'], kernel_size=13)  # Smooth detections 
+	dets['x'] = signal.medfilt(dets['x'], kernel_size=13)
+	dets['y'] = signal.medfilt(dets['y'], kernel_size=13)
+ 
+	vIn = cv2.VideoCapture(args.videoFilePath)
+	num_frames = len(track['frame'])
+
+	# Create an empty array for the faces
+	faces = torch.zeros((num_frames, 112, 112), dtype=torch.float32)
+
+	# Define transformation
+	transform = transforms.Compose([
+		transforms.ToPILImage(),
+		transforms.Resize(224),
+		transforms.Grayscale(num_output_channels=1),
+		transforms.CenterCrop(112),
+		transforms.ToTensor(),
+		transforms.Lambda(lambda x: x * 255),
+		transforms.Lambda(lambda x: x.type(torch.uint8))
+	])
+
+	# Number of frames to process at once
+	batch_size = 30
+
+	# Instead of going reading every frame, we only read every e.g. 5th value (args.framesFaceTracking), so the list of frames is shorter
+
+	# Loop over the frames in batches
+	for start in range(0, num_frames, batch_size):
+		end = min(start + batch_size, num_frames)
+		batch_indices = range(start, end, args.framesFaceTracking)
+
+		batch_frames = track['frame'][batch_indices]
+		batch_dets_y = dets['y'][batch_indices]
+		batch_dets_x = dets['x'][batch_indices]
+		batch_dets_s = dets['s'][batch_indices]
+
+		batch_images = []
+		for i, (frame, my, mx, bs) in enumerate(zip(batch_frames, batch_dets_y, batch_dets_x, batch_dets_s)):
+			vIn.set(cv2.CAP_PROP_POS_FRAMES, frame)
+			ret, image = vIn.read()
+			image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+			# Pad the image with constant values
+			bsi = int(bs * (1 + 2 * args.cropScale))
+			image = numpy.pad(image, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
+
+			# Crop the face from the image
+			my += bsi  # BBox center Y
+			mx += bsi  # BBox center X
+			face = image[int(my-bs):int(my+bs*(1+2*args.cropScale)),int(mx-bs*(1+args.cropScale)):int(mx+bs*(1+args.cropScale))]
+
+			batch_images.append(face)
+
+		batch_images = torch.stack([transform(image) for image in batch_images], dim=0)
+		batch_images = batch_images[:,0,:,:].to(device)
+
+		# faces[start:end, :, :] = batch_images.to(device)
+		
+		# Just fill in the values to the faces list (based on the batch_indices)
+		for i, idx in enumerate(batch_indices):
+			faces[idx, :, :] = batch_images[i, :, :]
+  
+	# Remove all the frames in the faces list that have the value 0
+	faces = faces[faces.sum(dim=(1,2)) != 0]
+
+	vIn.release()
+ 
+ 
+	# # # Safe the faces to an mp4 file
+	# fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+	# video_writer = cv2.VideoWriter('video.avi', fourcc, 20.0, (112, 112))
+
+	# # Write the frames to the VideoWriter object
+	# for i in range(faces.shape[0]):
+	# 	video_writer.write(numpy.uint8(faces[i]))
+
+	# # Release the VideoWriter object
+	# video_writer.release()
+ 
+
+	return {'track':track, 'proc_track':dets}, faces
+
 def extract_MFCC(file, outPath):
 	# CPU: extract mfcc
 	sr, audio = wavfile.read(file)
@@ -306,11 +419,19 @@ def extract_audio(audio_file, track, args):
 	segment = sound[audioStart*1000:audioEnd*1000]
 	samplerate = segment.frame_rate
 	trans_segment = numpy.array(segment.get_array_of_samples(), dtype=numpy.int16)
-	return trans_segment, samplerate
+ 
+	# For every 10th value ins trans_segment leave the value, for the rest set it to 0 (to compensate for video skipping frames)
+	trans_segment_filtered = numpy.zeros(0)
+	for i, value in enumerate(trans_segment):
+		if i % args.framesFaceTracking == 0:
+			trans_segment_filtered = numpy.append(trans_segment_filtered, value)
+
+ 
+	return trans_segment_filtered, samplerate
 
 def evaluate_network(allTracks, args):
 	# GPU: active speaker detection by pretrained TalkNet
-	s = talkNet().to(device)
+	s = talkNet(device=device).to(device)
 	s.loadParameters(args.pretrainModel)
 	sys.stderr.write("Model %s loaded from previous state! \r\n"%args.pretrainModel)
 	s.eval()	
@@ -321,13 +442,21 @@ def evaluate_network(allTracks, args):
 	for tidx, track in tqdm.tqdm(enumerate(allTracks), total = len(allTracks)):
   
 		segment, samplerate = extract_audio(args.audioFilePath, track, args)
+		# Crop every 10th frame from sample rate and save it in a new variable
+  
 		audioFeature = python_speech_features.mfcc(segment, samplerate, numcep = 13, winlen = 0.025, winstep = 0.010)
   
 		# Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
 		# * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
 		# * Rounding is different (so sometimes numbers are slightly different) + changes in Color as OpenCV conversion works differently (but videos look the same)
 		# old_trackDict, old_videoFeature = crop_track_faster(args, track)
-		trackDict, videoFeature = crop_track_fastest(args, track)
+		# print("Start crop_track_fastest")
+		# old_trackDict, old_videoFeature = crop_track_fastest(args, track)
+		# print("End crop_track_fastest")
+		print("Start crop_track_skipped")
+		trackDict, videoFeature = crop_track_skipped(args, track)
+		print("End crop_track_skipped")
+
 		vidTracks.append(trackDict)
   
 		length = min((audioFeature.shape[0] - audioFeature.shape[0] % 4) / 100, videoFeature.shape[0])
@@ -343,6 +472,7 @@ def evaluate_network(allTracks, args):
 					inputV = videoFeature[i * duration * args.numFramesPerSec: (i+1) * duration * args.numFramesPerSec,:,:].unsqueeze(0).to(device)
 					embedA = s.model.forward_audio_frontend(inputA).to(device)
 					embedV = s.model.forward_visual_frontend(inputV).to(device)
+     
 					embedA, embedV = s.model.forward_cross_attention(embedA, embedV)
 					out = s.model.forward_audio_visual_backend(embedA, embedV)
 					score = s.lossAV.forward(out, labels = None)

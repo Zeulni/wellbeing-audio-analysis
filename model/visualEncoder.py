@@ -112,6 +112,7 @@ class visualFrontend(nn.Module):
                             nn.ReLU(),
                             nn.MaxPool3d(kernel_size=(1,3,3), stride=(1,2,2), padding=(0,1,1))
                         )
+        
         self.resnet = ResNet()
         return
 
@@ -128,6 +129,7 @@ class visualFrontend(nn.Module):
         outputBatch = outputBatch.transpose(1 ,2)
         outputBatch = outputBatch.transpose(1, 2).transpose(0, 1)
         return outputBatch
+    
 
 class DSConv1d(nn.Module):
     def __init__(self):

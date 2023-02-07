@@ -8,9 +8,11 @@ from loss import lossAV, lossA, lossV
 from model.talkNetModel import talkNetModel
 
 class talkNet(nn.Module):
-    def __init__(self, lr = 0.0001, lrDecay = 0.95, **kwargs):
+    def __init__(self, lr = 0.0001, lrDecay = 0.95, device='cpu', **kwargs):
         super(talkNet, self).__init__()  
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")      
+        # Check whether GPU is available on cuda (NVIDIA), then mps (Macbook), otherwise use cpu
+
+        self.device = device
         self.model = talkNetModel().to(self.device)
         self.lossAV = lossAV().to(self.device)
         self.lossA = lossA().to(self.device)
