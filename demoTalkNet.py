@@ -509,13 +509,13 @@ def extract_audio(audio_file, track, args):
 	trans_segment = numpy.array(segment.get_array_of_samples(), dtype=numpy.int16)
  
 	# TODO: Option 1
-	# For every 10th value ins trans_segment leave the value, for the rest set it to 0 (to compensate for video skipping frames)
+	# # For every 10th value ins trans_segment leave the value, for the rest set it to 0 (to compensate for video skipping frames)
 	# trans_segment_filtered = numpy.zeros(0)
 	# for i, value in enumerate(trans_segment):
 	# 	if i % args.framesFaceTracking == 0:
 	# 		trans_segment_filtered = numpy.append(trans_segment_filtered, value)
 
- 
+	# TODO: Option 1
 	return trans_segment, samplerate
 
 def evaluate_network(allTracks, args):
@@ -542,7 +542,7 @@ def evaluate_network(allTracks, args):
 		# old_trackDict, old_videoFeature = crop_track_fastest(args, track)
 		# print("End crop_track_fastest")
 		print("Start crop_track_skipped")
-		trackDict, videoFeature = crop_track_skipped2(args, track)
+		trackDict, videoFeature = crop_track_fastest(args, track)
 		print("End crop_track_skipped")
 
 		vidTracks.append(trackDict)
@@ -716,6 +716,12 @@ def speakerSeparation(tracks, scores, args):
     
     # Divide all number in trackSpeakingSegments by 25 (apart from 0) to get the time in seconds
 	trackSpeakingSegments = [[[round(float(w/args.numFramesPerSec),2) if w != 0 else w for w in x] for x in y] for y in trackSpeakingSegments]
+
+	# Check whether the start and end of a segment is the same (if yes, remove it) - throug rouding errors (conversion to seconds), this can happen
+	for tidx, track in enumerate(trackSpeakingSegments):
+		for i in range(len(track)):
+			if track[i][0] == track[i][1]:
+				trackSpeakingSegments[tidx].remove(track[i])
 
 	if args.createTrackVideos:
 		cutTrackVideos(trackSpeakingSegments, args)   
