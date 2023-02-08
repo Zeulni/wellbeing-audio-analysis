@@ -644,7 +644,7 @@ def evaluate_network(allTracks, facesAllTracks, args):
 		videoFeature = videoFeature[videoFeature.sum(axis=(1,2)) != 0]
   
 		# print(torch.eq(super_old_videoFeature, old_videoFeature).all().item())
-		print(torch.eq(videoFeature, old_videoFeature).all().item())
+		# print(torch.eq(videoFeature, old_videoFeature).all().item())
   
 		# print("End crop_track_skipped")
   
@@ -966,7 +966,7 @@ def main():
 	print("Total frames for the detected video: ", args.totalFrames)
  
 	# Assumption: If pickle files in pywork folder exist, preprocessing is done and all the other files exist (to rerun delete pickle files)
-	# If 4 pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
+	# If pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
 	if os.path.exists(os.path.join(args.pyworkPath, 'scores.pckl')) and os.path.exists(os.path.join(args.pyworkPath, 'tracks.pckl')):
 		with open(os.path.join(args.pyworkPath, 'scores.pckl'), 'rb') as f:
 			scores = pickle.load(f)
@@ -978,10 +978,15 @@ def main():
 		return
 
  
-	if os.path.exists(args.savePath):
-		rmtree(args.savePath)
-	os.makedirs(args.pyaviPath, exist_ok = True) # The path for the input video, input audio, output video
-	os.makedirs(args.pyworkPath, exist_ok = True) # Save the results in this process by the pckl method
+	# TODO: Check if that's nevertheless necessary
+	# if os.path.exists(args.savePath):
+	# 	rmtree(args.savePath)
+
+	if not os.path.exists(args.pyworkPath): # Save the results in this process by the pckl method
+		os.makedirs(args.pyworkPath)
+ 
+	if not os.path.exists(args.pyaviPath): # The path for the input video, input audio, output video
+		os.makedirs(args.pyaviPath) 
  
 	# Extract audio
 	# TODO: Can't I just get the audio from the original video and storing it in a variable instead of saving it in a file?
