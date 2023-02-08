@@ -23,7 +23,7 @@ def get_video_path(args):
 	args.savePath = os.path.join(args.videoFolder, args.videoName)
 
 
-def inference_video(args):
+def inference_video(args, device):
 	# GPU: Face detection, output is the list contains the face location and score in this frame
 	DET = S3FD(device=device)
   
@@ -173,7 +173,7 @@ def crop_track_faster(args, track):
 	return {'track':track, 'proc_track':dets}, faces
 
 # Instead of going only through one track in crop_track_faster, we only read the video ones and go through all the tracks
-def crop_track_faster_all(args, tracks):
+def crop_track_faster_all(args, tracks, device):
 
 	# Go through all the tracks and get the dets values (not through the frames yet, only dets)
 	# Save for each track the dats in a list
@@ -571,7 +571,7 @@ def extract_audio(audio_file, track, args):
 	# TODO: Option 1
 	return trans_segment, samplerate
 
-def evaluate_network(allTracks, facesAllTracks, args):
+def evaluate_network(allTracks, facesAllTracks, args, device):
 	# GPU: active speaker detection by pretrained TalkNet
 	s = talkNet(device=device).to(device)
 	s.loadParameters(args.pretrainModel)
@@ -875,7 +875,7 @@ def get_fps(video_path):
 	return fps
 
 # Main function
-def asd_pipeline():
+def asd_pipeline(args):
 	# This preprocesstion is modified based on this [repository](https://github.com/joonson/syncnet_python).
 	# ```
 	# .
@@ -892,33 +892,49 @@ def asd_pipeline():
  
 	warnings.filterwarnings("ignore")
  
-	parser = argparse.ArgumentParser(description = "TalkNet Demo or Columnbia ASD Evaluation")
+	# parser = argparse.ArgumentParser(description = "TalkNet Demo or Columnbia ASD Evaluation")
 
-	parser.add_argument('--videoName',             type=str, default="001",   help='Demo video name')
-	parser.add_argument('--videoFolder',           type=str, default="scr/audio/ASD/demo",  help='Path for inputs, tmps and outputs')
-	parser.add_argument('--pretrainModel',         type=str, default="pretrain_TalkSet.model",   help='Path for the pretrained TalkNet model')
+	# parser.add_argument('--videoName',             type=str, default="001",   help='Demo video name')
+	# parser.add_argument('--videoFolder',           type=str, default="src/audio/ASD/demo",  help='Path for inputs, tmps and outputs')
+	# parser.add_argument('--pretrainModel',         type=str, default="pretrain_TalkSet.model",   help='Path for the pretrained TalkNet model')
 
-	parser.add_argument('--nDataLoaderThread',     type=int,   default=32,   help='Number of workers')
-	parser.add_argument('--facedetScale',          type=float, default=0.25, help='Scale factor for face detection, the frames will be scale to 0.25 orig')
+	# parser.add_argument('--nDataLoaderThread',     type=int,   default=32,   help='Number of workers')
+	# parser.add_argument('--facedetScale',          type=float, default=0.25, help='Scale factor for face detection, the frames will be scale to 0.25 orig')
 
-	parser.add_argument('--minTrack',              type=int,   default=10,   help='Number of min frames for each scene and track')
-	parser.add_argument('--numFailedDet',          type=int,   default=25,   help='Number of missed detections allowed before tracking is stopped (e.g. 25 fps -> 1 sec)')
-	parser.add_argument('--minFaceSize',           type=int,   default=1,    help='Minimum face size in pixels')
+	# parser.add_argument('--minTrack',              type=int,   default=10,   help='Number of min frames for each scene and track')
+	# parser.add_argument('--numFailedDet',          type=int,   default=25,   help='Number of missed detections allowed before tracking is stopped (e.g. 25 fps -> 1 sec)')
+	# parser.add_argument('--minFaceSize',           type=int,   default=1,    help='Minimum face size in pixels')
 
-	parser.add_argument('--cropScale',             type=float, default=0.40, help='Scale bounding box')
-	parser.add_argument('--framesFaceTracking',    type=float, default=1, help='To speed up the face tracking, we only track the face in every x frames (choose 1,2,3,5,6,10, or 15)')
+	# parser.add_argument('--cropScale',             type=float, default=0.40, help='Scale bounding box')
+	# parser.add_argument('--framesFaceTracking',    type=float, default=1, help='To speed up the face tracking, we only track the face in every x frames (choose 1,2,3,5,6,10, or 15)')
 
-	parser.add_argument('--start',                 type=int, default=0,   help='The start time of the video')
-	parser.add_argument('--duration',              type=int, default=0,  help='The duration of the video, when set as 0, will extract the whole video')
+	# parser.add_argument('--start',                 type=int, default=0,   help='The start time of the video')
+	# parser.add_argument('--duration',              type=int, default=0,  help='The duration of the video, when set as 0, will extract the whole video')
 
-	parser.add_argument('--thresholdSamePerson',   type=str, default=0.15,  help='If two face tracks (see folder pycrop) are close together (-> below that threshold) and are not speaking at the same time, then it is the same person')
-	parser.add_argument('--createTrackVideos',     type=bool, default=True,  help='If enabled, it will create a video for each track, where only the segments where the person is speaking are included')
+	# parser.add_argument('--thresholdSamePerson',   type=str, default=0.15,  help='If two face tracks (see folder pycrop) are close together (-> below that threshold) and are not speaking at the same time, then it is the same person')
+	# parser.add_argument('--createTrackVideos',     type=bool, default=True,  help='If enabled, it will create a video for each track, where only the segments where the person is speaking are included')
 
-	parser.add_argument('--includeVisualization', type=bool, default=True,  help='If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)')
+	# parser.add_argument('--includeVisualization', type=bool, default=True,  help='If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)')
 
-	args = parser.parse_args()
+	# args = parser.parse_args()
+ 
+	videoName = args.get("VIDEO_NAME","001")
+	videoFolder = args.get("VIDEO_FOLDER","src/audio/ASD/demo")
+	pretrainModel = args.get("PRETRAIN_ASD_MODEL","pretrain_TalkSet.model")
+	nDataLoaderThread = args.get("N_DATA_LOADER_THREAD",32)
+	facedetScale = args.get("FACE_DET_SCALE",0.25)
+	minTrack = args.get("MIN_TRACK",10)
+	numFailedDet = args.get("NUM_FAILED_DET",25)
+	minFaceSize = args.get("MIN_FACE_SIZE",1)
+	cropScale = args.get("CROP_SCALE",0.40)
+	framesFaceTracking = args.get("FRAMES_FACE_TRACKING",1)
+	start = args.get("START",0)
+	duration = args.get("DURATION",0)
+	thresholdSamePerson = args.get("THRESHOLD_SAME_PERSON",0.15)
+	createTrackVideos = args.get("CREATE_TRACK_VIDEOS",True)
+	includeVisualization = args.get("INCLUDE_VISUALIZATION",True)
 
-	print("Only every xth frame will be analyzed for faster processing: ", args.framesFaceTracking)
+	print("Only every xth frame will be analyzed for faster processing: ", framesFaceTracking)
 
 	# Check whether GPU is available on cuda (NVIDIA), then mps (Macbook), otherwise use cpu
 	if torch.cuda.is_available():
@@ -935,9 +951,9 @@ def asd_pipeline():
 	# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	print("Detected device (Cuda/MPS/CPU): ", device) 
 
-	if os.path.isfile(args.pretrainModel) == False: # Download the pretrained model
+	if os.path.isfile(pretrainModel) == False: # Download the pretrained model
 		Link = "1AbN9fCf9IexMxEKXLQY2KYBlb-IhSEea"
-		cmd = "gdown --id %s -O %s"%(Link, args.pretrainModel)
+		cmd = "gdown --id %s -O %s"%(Link, pretrainModel)
 		subprocess.call(cmd, shell=True, stdout=None)
  
 	get_video_path(args)
@@ -1001,7 +1017,7 @@ def asd_pipeline():
 		with open(os.path.join(args.pyworkPath, 'faces.pckl'), 'rb') as f:
 			faces = pickle.load(f)
 	else:
-		faces = inference_video(args)
+		faces = inference_video(args, device)
 		sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face detection and save in %s \r\n" %(args.pyworkPath))
  
 	allTracks = []
@@ -1009,8 +1025,8 @@ def asd_pipeline():
 	sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face track and detected %d tracks \r\n" %len(allTracks))
 
 	# Active Speaker Detection by TalkNet
-	vidTracks, facesAllTracks = crop_track_faster_all(args, allTracks)
-	scores = evaluate_network(allTracks, facesAllTracks, args)
+	vidTracks, facesAllTracks = crop_track_faster_all(args, allTracks, device)
+	scores = evaluate_network(allTracks, facesAllTracks, args, device)
 	savePath = os.path.join(args.pyworkPath, 'scores.pckl')
 	with open(savePath, 'wb') as fil:
 		pickle.dump(scores, fil)
@@ -1025,6 +1041,3 @@ def asd_pipeline():
 	if args.includeVisualization == True:
 		visualization(vidTracks, scores, args)
 	speakerSeparation(vidTracks, scores, args)	
-
-if __name__ == '__main__':
-    main()

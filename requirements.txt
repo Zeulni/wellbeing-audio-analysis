@@ -14,3 +14,4 @@ gdown
 youtube-dl
 moviepy
 pydub
+PyYAML

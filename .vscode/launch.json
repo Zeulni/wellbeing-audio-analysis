@@ -9,7 +9,6 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "python": "${workspaceFolder}/ASD_env_new/bin/python",
             "console": "integratedTerminal",
             "justMyCode": true
         }

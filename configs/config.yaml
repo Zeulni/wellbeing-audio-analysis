@@ -1,0 +1,48 @@
+# -- THE FOLLOWING COMMANDS ARE ALL USED FOR ACTIVE SPEAKER DETECTION
+
+# Name of the input file to be processed (.mp4 or .avi)
+VIDEO_NAME: 001
+
+# Path for inputs, temporary files, and outputs
+VIDEO_FOLDER: "src/audio/ASD/demo"
+
+# Path for the pretrained TalkNet model
+PRETRAINED_ASD_MODEL: "pretrain_TalkSet.model"
+
+# Number of workers for ffmpeg (needed for Active Speaker Detection)
+N_DATA_LOADER_THREAD: 32
+
+# Scale factor for face detection, the frames will be scale to 0.25 orig
+FACE_DET_SCALE: 0.25
+
+# Number of min frames for each scene and track
+MIN_TRACK: 10
+
+# Number of missed detections allowed before tracking is stopped (e.g. 25 fps -> 1 sec)
+NUM_FAILED_DET: 25
+
+# Minimum face size in pixels
+MIN_FACE_SIZE: 1
+
+# Scale bounding box
+CROP_SCALE: 0.40
+
+# To speed up the face tracking, we only track the face in every x frames (choose 1,2,3,5,6,10, or 15)
+FRAMES_FACE_TRACKING: 1
+
+# The start time of the video
+START: 0
+
+# The duration of the video, when set as 0, will extract the whole video
+DURATION: 0
+
+# If two face tracks (see folder pycrop) are close together (-> below that threshold) and are not speaking at the same time, then it is the same person
+THRESHOLD_SAME_PERSON: = 0.15
+
+# If enabled, it will create a video for each track, where only the segments where the person is speaking are included
+CREATE_TRACK_VIDEOS: True
+
+# If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)
+INCLUDE_VISUALIZATION: True
+
+# -- THE FOLLOWING COMMANDS ARE ALL USED FOR XYZ
