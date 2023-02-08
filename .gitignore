@@ -6,6 +6,7 @@
 *.pcm
 *.avi
 *.pckl
+*.rttm
 data/
 tests/
 exps/

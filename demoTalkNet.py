@@ -990,10 +990,14 @@ def main():
 		(args.videoFilePath, args.nDataLoaderThread, args.audioFilePath))
 	subprocess.call(command, shell=True, stdout=None)
 	sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Extract the audio and save in %s \r\n" %(args.audioFilePath))
-
-	# Face detection for the video frames
-	faces = inference_video(args)
-	sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face detection and save in %s \r\n" %(args.pyworkPath))
+ 
+	# Check if the face detection result exists, otherwise run the face detection
+	if os.path.exists(os.path.join(args.pyworkPath, 'faces.pckl')):
+		with open(os.path.join(args.pyworkPath, 'faces.pckl'), 'rb') as f:
+			faces = pickle.load(f)
+	else:
+		faces = inference_video(args)
+		sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face detection and save in %s \r\n" %(args.pyworkPath))
  
 	allTracks = []
 	allTracks.extend(track_shot(args, faces)) # 'frames' to present this tracks' timestep, 'bbox' presents the location of the faces
