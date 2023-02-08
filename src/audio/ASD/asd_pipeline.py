@@ -15,58 +15,8 @@ from sklearn.metrics import accuracy_score, f1_score
 # Disabled scene detection for now, because cutted teamwork videos have no change in scene 
 # if you want to add it later, have a look at the original repo: https://github.com/TaoRuijie/TalkNet-ASD
 
-from model.faceDetector.s3fd import S3FD
-from talkNet import talkNet
-
-warnings.filterwarnings("ignore")
-
-parser = argparse.ArgumentParser(description = "TalkNet Demo or Columnbia ASD Evaluation")
-
-parser.add_argument('--videoName',             type=str, default="001",   help='Demo video name')
-parser.add_argument('--videoFolder',           type=str, default="demo",  help='Path for inputs, tmps and outputs')
-parser.add_argument('--pretrainModel',         type=str, default="pretrain_TalkSet.model",   help='Path for the pretrained TalkNet model')
-
-parser.add_argument('--nDataLoaderThread',     type=int,   default=32,   help='Number of workers')
-parser.add_argument('--facedetScale',          type=float, default=0.25, help='Scale factor for face detection, the frames will be scale to 0.25 orig')
-
-parser.add_argument('--minTrack',              type=int,   default=10,   help='Number of min frames for each scene and track')
-parser.add_argument('--numFailedDet',          type=int,   default=25,   help='Number of missed detections allowed before tracking is stopped (e.g. 25 fps -> 1 sec)')
-parser.add_argument('--minFaceSize',           type=int,   default=1,    help='Minimum face size in pixels')
-
-parser.add_argument('--cropScale',             type=float, default=0.40, help='Scale bounding box')
-parser.add_argument('--framesFaceTracking',    type=float, default=1, help='To speed up the face tracking, we only track the face in every x frames (choose 1,2,3,5,6,10, or 15)')
-
-parser.add_argument('--start',                 type=int, default=0,   help='The start time of the video')
-parser.add_argument('--duration',              type=int, default=0,  help='The duration of the video, when set as 0, will extract the whole video')
-
-parser.add_argument('--thresholdSamePerson',   type=str, default=0.15,  help='If two face tracks (see folder pycrop) are close together (-> below that threshold) and are not speaking at the same time, then it is the same person')
-parser.add_argument('--createTrackVideos',     type=bool, default=True,  help='If enabled, it will create a video for each track, where only the segments where the person is speaking are included')
-
-parser.add_argument('--includeVisualization', type=bool, default=True,  help='If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)')
-
-args = parser.parse_args()
-
-print("Only every xth frame will be analyzed for faster processing: ", args.framesFaceTracking)
-
-# Check whether GPU is available on cuda (NVIDIA), then mps (Macbook), otherwise use cpu
-if torch.cuda.is_available():
-    device = torch.device("cuda")
-else:
-	device = torch.device("cpu")
- 
-#  elif torch.backends.mps.is_available():
-# 	device = torch.device("mps")
-# 	# As not all operations are supported by MPS, we need to enable the fallback to CPU
-# 	print("Before you run it for the first time, you have to set an environment variable called PYTORCH_ENABLE_MPS_FALLBACK to '1'. As some features are not implemented vor MPS, this will then be a fallback to CPU. Otherwise you may encounter error messages claiming the same.")
-
-
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Detected device (Cuda/MPS/CPU): ", device) 
-
-if os.path.isfile(args.pretrainModel) == False: # Download the pretrained model
-    Link = "1AbN9fCf9IexMxEKXLQY2KYBlb-IhSEea"
-    cmd = "gdown --id %s -O %s"%(Link, args.pretrainModel)
-    subprocess.call(cmd, shell=True, stdout=None)
+from src.audio.ASD.model.faceDetector.s3fd import S3FD
+from src.audio.ASD.talkNet import talkNet
 
 def get_video_path(args):
 	args.videoPath = glob.glob(os.path.join(args.videoFolder, args.videoName + '.*'))[0]
@@ -925,7 +875,7 @@ def get_fps(video_path):
 	return fps
 
 # Main function
-def main():
+def asd_pipeline():
 	# This preprocesstion is modified based on this [repository](https://github.com/joonson/syncnet_python).
 	# ```
 	# .
@@ -939,6 +889,56 @@ def main():
 	#     ├── scores.pckl (ASD result) - score values over time whether one speaks, for each detected face (video)
 	#     └── tracks.pckl (face tracking result) - face bounding boxes over time for each detected face (video), per track x frames (e.g. in sample 7 tracks each ~500 frames)
 	# ```
+ 
+	warnings.filterwarnings("ignore")
+ 
+	parser = argparse.ArgumentParser(description = "TalkNet Demo or Columnbia ASD Evaluation")
+
+	parser.add_argument('--videoName',             type=str, default="001",   help='Demo video name')
+	parser.add_argument('--videoFolder',           type=str, default="scr/audio/ASD/demo",  help='Path for inputs, tmps and outputs')
+	parser.add_argument('--pretrainModel',         type=str, default="pretrain_TalkSet.model",   help='Path for the pretrained TalkNet model')
+
+	parser.add_argument('--nDataLoaderThread',     type=int,   default=32,   help='Number of workers')
+	parser.add_argument('--facedetScale',          type=float, default=0.25, help='Scale factor for face detection, the frames will be scale to 0.25 orig')
+
+	parser.add_argument('--minTrack',              type=int,   default=10,   help='Number of min frames for each scene and track')
+	parser.add_argument('--numFailedDet',          type=int,   default=25,   help='Number of missed detections allowed before tracking is stopped (e.g. 25 fps -> 1 sec)')
+	parser.add_argument('--minFaceSize',           type=int,   default=1,    help='Minimum face size in pixels')
+
+	parser.add_argument('--cropScale',             type=float, default=0.40, help='Scale bounding box')
+	parser.add_argument('--framesFaceTracking',    type=float, default=1, help='To speed up the face tracking, we only track the face in every x frames (choose 1,2,3,5,6,10, or 15)')
+
+	parser.add_argument('--start',                 type=int, default=0,   help='The start time of the video')
+	parser.add_argument('--duration',              type=int, default=0,  help='The duration of the video, when set as 0, will extract the whole video')
+
+	parser.add_argument('--thresholdSamePerson',   type=str, default=0.15,  help='If two face tracks (see folder pycrop) are close together (-> below that threshold) and are not speaking at the same time, then it is the same person')
+	parser.add_argument('--createTrackVideos',     type=bool, default=True,  help='If enabled, it will create a video for each track, where only the segments where the person is speaking are included')
+
+	parser.add_argument('--includeVisualization', type=bool, default=True,  help='If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)')
+
+	args = parser.parse_args()
+
+	print("Only every xth frame will be analyzed for faster processing: ", args.framesFaceTracking)
+
+	# Check whether GPU is available on cuda (NVIDIA), then mps (Macbook), otherwise use cpu
+	if torch.cuda.is_available():
+		device = torch.device("cuda")
+	else:
+		device = torch.device("cpu")
+	
+	#  elif torch.backends.mps.is_available():
+	# 	device = torch.device("mps")
+	# 	# As not all operations are supported by MPS, we need to enable the fallback to CPU
+	# 	print("Before you run it for the first time, you have to set an environment variable called PYTORCH_ENABLE_MPS_FALLBACK to '1'. As some features are not implemented vor MPS, this will then be a fallback to CPU. Otherwise you may encounter error messages claiming the same.")
+
+
+	# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	print("Detected device (Cuda/MPS/CPU): ", device) 
+
+	if os.path.isfile(args.pretrainModel) == False: # Download the pretrained model
+		Link = "1AbN9fCf9IexMxEKXLQY2KYBlb-IhSEea"
+		cmd = "gdown --id %s -O %s"%(Link, args.pretrainModel)
+		subprocess.call(cmd, shell=True, stdout=None)
  
 	get_video_path(args)
 
