@@ -4,10 +4,11 @@
 *.wav
 *.mp4
 *.pcm
+*.avi
+*.pckl
 data/
 tests/
 exps/
-demo/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
