@@ -34,7 +34,7 @@ parser.add_argument('--numFailedDet',          type=int,   default=25,   help='N
 parser.add_argument('--minFaceSize',           type=int,   default=1,    help='Minimum face size in pixels')
 
 parser.add_argument('--cropScale',             type=float, default=0.40, help='Scale bounding box')
-parser.add_argument('--framesFaceTracking',    type=float, default=3, help='To speed up the face tracking, we only track the face in every x frames (choose 1,2,3,5,6,10, or 15)')
+parser.add_argument('--framesFaceTracking',    type=float, default=1, help='To speed up the face tracking, we only track the face in every x frames (choose 1,2,3,5,6,10, or 15)')
 
 parser.add_argument('--start',                 type=int, default=0,   help='The start time of the video')
 parser.add_argument('--duration',              type=int, default=0,  help='The duration of the video, when set as 0, will extract the whole video')
@@ -639,13 +639,6 @@ def evaluate_network(allTracks, facesAllTracks, args):
   
 		# Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
 		# * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
-		# * Rounding is different (so sometimes numbers are slightly different) + changes in Color as OpenCV conversion works differently (but videos look the same)
-		# super_old_trackDict, super_old_videoFeature = crop_track_faster(args, track)
-		# print("Start crop_track_fastest")
-		old_trackDict, old_videoFeature = crop_track_fastest(args, track)
-		# print("End crop_track_fastest")
-		# print("Start crop_track_skipped")
-		# trackDict, videoFeature = crop_track_fastest(args, track)
 		videoFeature = facesAllTracks[tidx]
 		# Remove all frames that have the value 0 (as they are not used)
 		videoFeature = videoFeature[videoFeature.sum(axis=(1,2)) != 0]
