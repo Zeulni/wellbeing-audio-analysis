@@ -158,68 +158,171 @@ def track_shot(args, sceneFaces):
 	return tracks
 
 
-# def crop_track_faster(args, track):
+def crop_track_faster(args, track):
 
-# 	dets = {'x':[], 'y':[], 's':[]}
-# 	# Instead of going through every track['bbox'] for the calculation of the dets variable, we go through every 10th value and then use the dets values from the previous one to for the next 9 values 
-# 	for fidx, det in enumerate(track['bbox']):
-# 		if fidx%args.framesFaceTracking == 0:
-# 			dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
-# 			dets['y'].append((det[1]+det[3])/2) # crop center x
-# 			dets['x'].append((det[0]+det[2])/2) # crop center y
-# 		else:
-# 			dets['s'].append(dets['s'][-1])
-# 			dets['y'].append(dets['y'][-1])
-# 			dets['x'].append(dets['x'][-1])
+	dets = {'x':[], 'y':[], 's':[]}
+	# Instead of going through every track['bbox'] for the calculation of the dets variable, we go through every 10th value and then use the dets values from the previous one to for the next 9 values 
+	for fidx, det in enumerate(track['bbox']):
+		if fidx%args.framesFaceTracking == 0:
+			dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
+			dets['y'].append((det[1]+det[3])/2) # crop center x
+			dets['x'].append((det[0]+det[2])/2) # crop center y
+		else:
+			dets['s'].append(dets['s'][-1])
+			dets['y'].append(dets['y'][-1])
+			dets['x'].append(dets['x'][-1])
 
-# 	dets['s'] = signal.medfilt(dets['s'], kernel_size=13)  # Smooth detections 
-# 	dets['x'] = signal.medfilt(dets['x'], kernel_size=13)
-# 	dets['y'] = signal.medfilt(dets['y'], kernel_size=13)
+	dets['s'] = signal.medfilt(dets['s'], kernel_size=13)  # Smooth detections 
+	dets['x'] = signal.medfilt(dets['x'], kernel_size=13)
+	dets['y'] = signal.medfilt(dets['y'], kernel_size=13)
 
-# 	vIn = cv2.VideoCapture(args.videoFilePath)
-# 	num_frames = len(track['frame'])
+	vIn = cv2.VideoCapture(args.videoFilePath)
+	num_frames = len(track['frame'])
 
-# 	# Create an empty array for the faces
-# 	faces = torch.zeros((num_frames, 112, 112), dtype=torch.float32)
+	# Create an empty array for the faces
+	faces = torch.zeros((num_frames, 112, 112), dtype=torch.float32)
  
-# 	# Define transformation
-# 	transform = transforms.Compose([
-# 		transforms.ToPILImage(),
-# 		transforms.Resize(224),
-# 		transforms.Grayscale(num_output_channels=1),
-# 		transforms.CenterCrop(112),
-# 		transforms.ToTensor(),
-# 		transforms.Lambda(lambda x: x * 255),
-# 		transforms.Lambda(lambda x: x.type(torch.uint8))
-# 	])
+	# Define transformation
+	transform = transforms.Compose([
+		transforms.ToPILImage(),
+		transforms.Resize(224),
+		transforms.Grayscale(num_output_channels=1),
+		transforms.CenterCrop(112),
+		transforms.ToTensor(),
+		transforms.Lambda(lambda x: x * 255),
+		transforms.Lambda(lambda x: x.type(torch.uint8))
+	])
  
-# 	for fidx, frame in enumerate(track['frame']):
-# 		cs  = args.cropScale
-# 		bs  = dets['s'][fidx]   # Detection box size
-# 		bsi = int(bs * (1 + 2 * cs))  # Pad videos by this amount     
+	for fidx, frame in enumerate(track['frame']):
+		cs  = args.cropScale
+		bs  = dets['s'][fidx]   # Detection box size
+		bsi = int(bs * (1 + 2 * cs))  # Pad videos by this amount     
 		
-# 		vIn.set(cv2.CAP_PROP_POS_FRAMES, frame)
-# 		ret, image = vIn.read()
+		vIn.set(cv2.CAP_PROP_POS_FRAMES, frame)
+		ret, image = vIn.read()
+		image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 		
-# 		# Pad the image with constant values
-# 		image = numpy.pad(image, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
+		# Pad the image with constant values
+		image = numpy.pad(image, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
 		
-# 		my  = dets['y'][fidx] + bsi  # BBox center Y
-# 		mx  = dets['x'][fidx] + bsi  # BBox center X
+		my  = dets['y'][fidx] + bsi  # BBox center Y
+		mx  = dets['x'][fidx] + bsi  # BBox center X
 		
-# 		# Crop the face from the image
-# 		face = image[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
+		# Crop the face from the image
+		face = image[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
 		
-# 		# Apply the transformations
-# 		face = transform(face)
-# 		# Have to get permuted as numpy uses (H, W, C) and pytorch uses (C, H, W)
+		# Apply the transformations
+		face = transform(face)
+		# Have to get permuted as numpy uses (H, W, C) and pytorch uses (C, H, W)
 		
-# 		faces[fidx, :, :] = face[0, :, :]
-# 		face = face.to(device)
+		faces[fidx, :, :] = face[0, :, :]
+		face = face.to(device)
 
-# 	vIn.release()
+	vIn.release()
 
-# 	return {'track':track, 'proc_track':dets}, faces
+	return {'track':track, 'proc_track':dets}, faces
+
+# Instead of going only through one track in crop_track_faster, we only read the video ones and go through all the tracks
+def crop_track_faster_all(args, tracks):
+
+	# Go through all the tracks and get the dets values (not through the frames yet, only dets)
+	# Save for each track the dats in a list
+	dets = []
+	for track in tracks:
+		dets.append({'x':[], 'y':[], 's':[]})
+		for fidx, det in enumerate(track['bbox']):
+			if fidx%args.framesFaceTracking == 0:
+				dets[-1]['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
+				dets[-1]['y'].append((det[1]+det[3])/2)
+				dets[-1]['x'].append((det[0]+det[2])/2)
+			else:
+				dets[-1]['s'].append(dets[-1]['s'][-1])
+				dets[-1]['y'].append(dets[-1]['y'][-1])
+				dets[-1]['x'].append(dets[-1]['x'][-1])
+    
+    # Go through all the tracks and smooth the dets values
+	for track in dets:	
+		track['s'] = signal.medfilt(track['s'], kernel_size=13)
+		track['x'] = signal.medfilt(track['x'], kernel_size=13)
+		track['y'] = signal.medfilt(track['y'], kernel_size=13)
+	
+	# Open the video
+	vIn = cv2.VideoCapture(args.videoFilePath)
+	num_frames = args.totalFrames
+ 
+	# Create an empty array for the faces (num_tracks, num_frames, 112, 112)
+	faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.float32)
+ 
+	# Define transformation
+	transform = transforms.Compose([
+		transforms.ToPILImage(),
+		transforms.Resize(224),
+		transforms.Grayscale(num_output_channels=1),
+		transforms.CenterCrop(112),
+		transforms.ToTensor(),
+		transforms.Lambda(lambda x: x * 255),
+		transforms.Lambda(lambda x: x.type(torch.uint8))
+	])
+	
+	# Loop over every frame, read the frame, then loop over all the tracks per frame and if available, crop the face
+	cs  = args.cropScale
+	for fidx in range(num_frames):
+		vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
+		ret, image = vIn.read()
+		image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+		# Calculate bsi for each track and store in a list
+		# bsi = []
+		# images = []
+		# for track in dets:
+		# 	# Only calculate bsi if the 
+      
+		# bsi.append(int(track['s'][fidx] * (1 + 2 * cs)))
+		# images.append(numpy.pad(image, ((bsi[-1],bsi[-1]), (bsi[-1],bsi[-1]), (0, 0)), 'constant', constant_values=(110, 110)))
+
+		# # The biggest bsi determines the size of the padding
+		# track_bsi = bsi[0]
+		# image = numpy.pad(image, ((track_bsi,track_bsi), (track_bsi,track_bsi), (0, 0)), 'constant', constant_values=(110, 110))
+
+
+		for tidx, track in enumerate(tracks):
+			# In the current frame, first check whether the track has a bbox for this frame (if yes, perform opererations)
+			if fidx in track['frame']:
+				# Get the index of the frame in the track
+				index = numpy.where(track['frame'] == fidx)
+				index = int(index[0][0])
+    
+				# Calculate the bsi and pad the image
+				bsi = int(dets[tidx]['s'][index] * (1 + 2 * cs))
+				frame_image = numpy.pad(image, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
+
+				bs  = dets[tidx]['s'][index]
+				my  = dets[tidx]['y'][index] + bsi
+				mx  = dets[tidx]['x'][index] + bsi
+
+				# Crop the face from the image (depending on the track choose the image)
+				face = frame_image[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
+
+				# Apply the transformations
+				face = transform(face)
+
+				# Store in the faces array
+				faces[tidx, fidx, :, :] = face[0, :, :]
+
+    
+	# Close the video
+	vIn.release()
+ 
+	faces = faces.to(device)
+	
+	# Return the dets and the faces
+ 
+	# Create a list where each element has the format {'track':track, 'proc_track':dets}
+	proc_tracks = []
+	for i in range(len(tracks)):
+		proc_tracks.append({'track':tracks[i], 'proc_track':dets[i]})
+ 
+	return proc_tracks, faces
 
 
 def crop_track_fastest(args, track):
@@ -518,14 +621,14 @@ def extract_audio(audio_file, track, args):
 	# TODO: Option 1
 	return trans_segment, samplerate
 
-def evaluate_network(allTracks, args):
+def evaluate_network(allTracks, facesAllTracks, args):
 	# GPU: active speaker detection by pretrained TalkNet
 	s = talkNet(device=device).to(device)
 	s.loadParameters(args.pretrainModel)
 	sys.stderr.write("Model %s loaded from previous state! \r\n"%args.pretrainModel)
 	s.eval()	
 
-	allScores, vidTracks = [], []
+	allScores= []
 	# durationSet = {1,2,4,6} # To make the result more reliable
 	durationSet = {1,1,1,2,2,2,3,3,4,5,6} # Use this line can get more reliable result
 	for tidx, track in tqdm.tqdm(enumerate(allTracks), total = len(allTracks)):
@@ -537,15 +640,20 @@ def evaluate_network(allTracks, args):
 		# Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
 		# * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
 		# * Rounding is different (so sometimes numbers are slightly different) + changes in Color as OpenCV conversion works differently (but videos look the same)
-		# old_trackDict, old_videoFeature = crop_track_faster(args, track)
+		# super_old_trackDict, super_old_videoFeature = crop_track_faster(args, track)
 		# print("Start crop_track_fastest")
-		# old_trackDict, old_videoFeature = crop_track_fastest(args, track)
+		old_trackDict, old_videoFeature = crop_track_fastest(args, track)
 		# print("End crop_track_fastest")
-		print("Start crop_track_skipped")
-		trackDict, videoFeature = crop_track_fastest(args, track)
-		print("End crop_track_skipped")
-
-		vidTracks.append(trackDict)
+		# print("Start crop_track_skipped")
+		# trackDict, videoFeature = crop_track_fastest(args, track)
+		videoFeature = facesAllTracks[tidx]
+		# Remove all frames that have the value 0 (as they are not used)
+		videoFeature = videoFeature[videoFeature.sum(axis=(1,2)) != 0]
+  
+		# print(torch.eq(super_old_videoFeature, old_videoFeature).all().item())
+		print(torch.eq(videoFeature, old_videoFeature).all().item())
+  
+		# print("End crop_track_skipped")
   
 		length = min((audioFeature.shape[0] - audioFeature.shape[0] % 4) / 100, videoFeature.shape[0])
 		audioFeature = audioFeature[:int(round(length * 100)),:]
@@ -579,7 +687,7 @@ def evaluate_network(allTracks, args):
 		# 	allScore = allScore[:-3]
   
 		allScores.append(allScore)	
-	return allScores, vidTracks
+	return allScores
 
 def cutTrackVideos(trackSpeakingSegments, args):
     # Using the trackSpeakingSegments, extract for each track the video segments from the original video (with moviepy)
@@ -899,7 +1007,8 @@ def main():
 	sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face track and detected %d tracks \r\n" %len(allTracks))
 
 	# Active Speaker Detection by TalkNet
-	scores, vidTracks = evaluate_network(allTracks, args)
+	vidTracks, facesAllTracks = crop_track_faster_all(args, allTracks)
+	scores = evaluate_network(allTracks, facesAllTracks, args)
 	savePath = os.path.join(args.pyworkPath, 'scores.pckl')
 	with open(savePath, 'wb') as fil:
 		pickle.dump(scores, fil)
