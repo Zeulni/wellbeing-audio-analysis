@@ -5,12 +5,11 @@
 import sys, time, os, tqdm, torch, argparse, glob, subprocess, warnings, cv2, pickle, numpy, pdb, math, python_speech_features, moviepy
 # import multiprocessing
 from pydub import AudioSegment
-import torchvision.transforms as transforms
 
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 
-from scipy import signal
+
 from shutil import rmtree
 from scipy.io import wavfile
 from sklearn.metrics import accuracy_score, f1_score
@@ -27,6 +26,7 @@ from src.audio.ASD.utils.asd_pipeline_tools import get_frames_per_second
 from src.audio.ASD.utils.asd_pipeline_tools import extract_video
 from src.audio.ASD.utils.asd_pipeline_tools import get_num_total_frames
 from src.audio.ASD.utils.asd_pipeline_tools import extract_audio_from_video
+from src.audio.ASD.utils.asd_pipeline_tools import crop_tracks_from_videos_parallel
 
 from src.audio.ASD.face_detection import FaceDetector
 from src.audio.ASD.face_tracking import FaceTracker
@@ -98,102 +98,6 @@ class ASDPipeline:
 		self.face_detector = FaceDetector(self.device, self.videoPath, self.framesFaceTracking, self.facedetScale, self.pyworkPath)
   
 		self.face_tracker = FaceTracker(self.numFailedDet, self.minTrack, self.minFaceSize)
-
-
-	# Instead of going only through one track in crop_track_faster, we only read the video ones and go through all the tracks
-	def crop_track_faster_all(self, tracks):
-	  	# TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
-		# dets = {'x':[], 'y':[], 's':[]}
-		# for det in track['bbox']: # Read the tracks
-		# 	dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
-		# 	dets['y'].append((det[1]+det[3])/2) # crop center x 
-		# 	dets['x'].append((det[0]+det[2])/2) # crop center y
-  
-  
-		# Go through all the tracks and get the dets values (not through the frames yet, only dets)
-		# Save for each track the dats in a list
-		dets = []
-		for track in tracks:
-			dets.append({'x':[], 'y':[], 's':[]})
-			for fidx, det in enumerate(track['bbox']):
-				if fidx%self.framesFaceTracking == 0:
-					dets[-1]['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
-					dets[-1]['y'].append((det[1]+det[3])/2)
-					dets[-1]['x'].append((det[0]+det[2])/2)
-				else:
-					dets[-1]['s'].append(dets[-1]['s'][-1])
-					dets[-1]['y'].append(dets[-1]['y'][-1])
-					dets[-1]['x'].append(dets[-1]['x'][-1])
-		
-		# Go through all the tracks and smooth the dets values
-		for track in dets:	
-			track['s'] = signal.medfilt(track['s'], kernel_size=13)
-			track['x'] = signal.medfilt(track['x'], kernel_size=13)
-			track['y'] = signal.medfilt(track['y'], kernel_size=13)
-		
-		# Open the video
-		vIn = cv2.VideoCapture(self.videoPath)
-		num_frames = self.totalFrames
-	
-		# Create an empty array for the faces (num_tracks, num_frames, 112, 112)
-		all_faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.float32)
-	
-		# Define transformation
-		transform = transforms.Compose([
-			transforms.ToPILImage(),
-			transforms.Resize(224),
-			transforms.Grayscale(num_output_channels=1),
-			transforms.CenterCrop(112),
-			transforms.ToTensor(),
-			transforms.Lambda(lambda x: x * 255),
-			transforms.Lambda(lambda x: x.type(torch.uint8))
-		])
-		
-		# Loop over every frame, read the frame, then loop over all the tracks per frame and if available, crop the face
-		cs  = self.cropScale
-		for fidx in range(num_frames):
-			vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
-			ret, image = vIn.read()
-			image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-			for tidx, track in enumerate(tracks):
-				# In the current frame, first check whether the track has a bbox for this frame (if yes, perform opererations)
-				if fidx in track['frame']:
-					# Get the index of the frame in the track
-					index = numpy.where(track['frame'] == fidx)
-					index = int(index[0][0])
-		
-					# Calculate the bsi and pad the image
-					bsi = int(dets[tidx]['s'][index] * (1 + 2 * cs))
-					frame_image = numpy.pad(image, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
-
-					bs  = dets[tidx]['s'][index]
-					my  = dets[tidx]['y'][index] + bsi
-					mx  = dets[tidx]['x'][index] + bsi
-
-					# Crop the face from the image (depending on the track choose the image)
-					face = frame_image[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
-
-					# Apply the transformations
-					face = transform(face)
-
-					# Store in the faces array
-					all_faces[tidx, fidx, :, :] = face[0, :, :]
-
-		
-		# Close the video
-		vIn.release()
-	
-		all_faces = all_faces.to(self.device)
-		
-		# Return the dets and the faces
-	
-		# Create a list where each element has the format {'track':track, 'proc_track':dets}
-		proc_tracks = []
-		for i in range(len(tracks)):
-			proc_tracks.append({'track':tracks[i], 'proc_track':dets[i]})
-	
-		return proc_tracks, all_faces
 
 	def extract_MFCC(self, file, outPath):
 		# CPU: extract mfcc
@@ -537,18 +441,19 @@ class ASDPipeline:
 		# Extract audio from video
 		audioFilePath = extract_audio_from_video(self.pyaviPath, self.videoPath, self.nDataLoaderThread)
 	
-		# Check if the face detection result exists, if not run the face detection
+		# Face detection (check for checkpoint first)
 		if self.faces == None:
 			self.faces = self.face_detector.s3fd_face_detection()
 			sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face detection and save in %s \r\n" %(self.pyworkPath))
 	
-		# TODO: Face Tracking class (build wrapper to get easily also integrate other face tracking methods if necessary)
+		# Face tracking
+		# 'frames' to present this tracks' timestep, 'bbox' presents the location of the faces
 		allTracks = []
-		allTracks.extend(self.face_tracker.track_shot_face_tracker(self.faces)) # 'frames' to present this tracks' timestep, 'bbox' presents the location of the faces
+		allTracks.extend(self.face_tracker.track_shot_face_tracker(self.faces))
 		sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face track and detected %d tracks \r\n" %len(allTracks))
 
-		# TODO: Util?
-		vidTracks, facesAllTracks = self.crop_track_faster_all(allTracks)
+		# Crop all the tracks from the video (are stored in CPU memory)
+		vidTracks, facesAllTracks = crop_tracks_from_videos_parallel(allTracks, self.videoPath, self.totalFrames, self.framesFaceTracking, self.cropScale, self.device)
 
 		# TODO: Active Speaker Detection class (build wrapper to get easily also integrate other active speaker detection methods if necessary)
 		# Active Speaker Detection by TalkNet
