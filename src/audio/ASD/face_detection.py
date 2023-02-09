@@ -7,7 +7,7 @@ from src.audio.ASD.model.faceDetector.s3fd import S3FD
 
 
 class FaceDetector:
-    def __init__(self, device, video_path, frames_face_tracking, face_det_scale, pywork_path):
+    def __init__(self, device, video_path, frames_face_tracking, face_det_scale, pywork_path) -> None:
         self.device = device
         self.video_path = video_path
         self.frames_face_tracking = frames_face_tracking

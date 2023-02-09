@@ -13,7 +13,6 @@ from moviepy.video.compositing.concatenate import concatenate_videoclips
 from scipy import signal
 from shutil import rmtree
 from scipy.io import wavfile
-from scipy.interpolate import interp1d
 from sklearn.metrics import accuracy_score, f1_score
 
 # Disabled scene detection for now, because cutted teamwork videos have no change in scene 
@@ -30,6 +29,7 @@ from src.audio.ASD.utils.asd_pipeline_tools import get_num_total_frames
 from src.audio.ASD.utils.asd_pipeline_tools import extract_audio_from_video
 
 from src.audio.ASD.face_detection import FaceDetector
+from src.audio.ASD.face_tracking import FaceTracker
 
 from src.audio.utils.constants import ASD_DIR
 
@@ -96,56 +96,9 @@ class ASDPipeline:
    
 		# Initialize the face detector
 		self.face_detector = FaceDetector(self.device, self.videoPath, self.framesFaceTracking, self.facedetScale, self.pyworkPath)
+  
+		self.face_tracker = FaceTracker(self.numFailedDet, self.minTrack, self.minFaceSize)
 
-
-	def bb_intersection_over_union(self, boxA, boxB, evalCol = False):
-		# CPU: IOU Function to calculate overlap between two image
-		xA = max(boxA[0], boxB[0])
-		yA = max(boxA[1], boxB[1])
-		xB = min(boxA[2], boxB[2])
-		yB = min(boxA[3], boxB[3])
-		interArea = max(0, xB - xA) * max(0, yB - yA)
-		boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
-		boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
-		if evalCol == True:
-			iou = interArea / float(boxAArea)
-		else:
-			iou = interArea / float(boxAArea + boxBArea - interArea)
-		return iou
-
-	def track_shot(self):
-		# CPU: Face tracking
-		iouThres  = 0.5     # Minimum IOU between consecutive face detections
-		tracks    = []
-		while True:
-			track     = []
-			for frameFaces in self.faces:
-				for face in frameFaces:
-					if track == []:
-						track.append(face)
-						frameFaces.remove(face)
-					elif face['frame'] - track[-1]['frame'] <= self.numFailedDet:
-						iou = self.bb_intersection_over_union(face['bbox'], track[-1]['bbox'])
-						if iou > iouThres:
-							track.append(face)
-							frameFaces.remove(face)
-							continue
-					else:
-						break
-			if track == []:
-				break
-			elif len(track) > self.minTrack:
-				frameNum    = numpy.array([ f['frame'] for f in track ])
-				bboxes      = numpy.array([numpy.array(f['bbox']) for f in track])
-				frameI      = numpy.arange(frameNum[0],frameNum[-1]+1)
-				bboxesI    = []
-				for ij in range(0,4):
-					interpfn  = interp1d(frameNum, bboxes[:,ij])
-					bboxesI.append(interpfn(frameI))
-				bboxesI  = numpy.stack(bboxesI, axis=1)
-				if max(numpy.mean(bboxesI[:,2]-bboxesI[:,0]), numpy.mean(bboxesI[:,3]-bboxesI[:,1])) > self.minFaceSize:
-					tracks.append({'frame':frameI,'bbox':bboxesI})
-		return tracks
 
 	# Instead of going only through one track in crop_track_faster, we only read the video ones and go through all the tracks
 	def crop_track_faster_all(self, tracks):
@@ -574,7 +527,7 @@ class ASDPipeline:
 		# ```
 	
 		# Assumption: If pickle files in pywork folder exist, ASD is done and all the other files exist (to re-run ASD delete pickle files)
-		asd_done, scores, tracks = self.check_asd_done(self.pyworkPath)
+		asd_done, scores, tracks = self._ASDPipeline__check_asd_done(self.pyworkPath)
 		if asd_done:
 			if self.includeVisualization == True:
 				self.visualization(tracks, scores)
@@ -584,15 +537,14 @@ class ASDPipeline:
 		# Extract audio from video
 		audioFilePath = extract_audio_from_video(self.pyaviPath, self.videoPath, self.nDataLoaderThread)
 	
-		# TODO: Face Detection class (build wrapper to get easily also integrate other face detection methods if necessary)
-		# Check if the face detection result exists, otherwise run the face detection
+		# Check if the face detection result exists, if not run the face detection
 		if self.faces == None:
 			self.faces = self.face_detector.s3fd_face_detection()
 			sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face detection and save in %s \r\n" %(self.pyworkPath))
 	
 		# TODO: Face Tracking class (build wrapper to get easily also integrate other face tracking methods if necessary)
 		allTracks = []
-		allTracks.extend(self.track_shot()) # 'frames' to present this tracks' timestep, 'bbox' presents the location of the faces
+		allTracks.extend(self.face_tracker.track_shot_face_tracker(self.faces)) # 'frames' to present this tracks' timestep, 'bbox' presents the location of the faces
 		sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face track and detected %d tracks \r\n" %len(allTracks))
 
 		# TODO: Util?
@@ -616,7 +568,7 @@ class ASDPipeline:
 			self.visualization(vidTracks, scores)
 		self.speakerSeparation(vidTracks, scores)	
 
-	def check_asd_done(self, pyworkPath) -> tuple:
+	def __check_asd_done(self, pyworkPath) -> tuple:
 		# If pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
 		if os.path.exists(os.path.join(pyworkPath, 'scores.pckl')) and os.path.exists(os.path.join(pyworkPath, 'tracks.pckl')):
 			with open(os.path.join(pyworkPath, 'scores.pckl'), 'rb') as f:
