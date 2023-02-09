@@ -19,7 +19,7 @@ from sklearn.metrics import accuracy_score, f1_score
 # Disabled scene detection for now, because cutted teamwork videos have no change in scene 
 # if you want to add it later, have a look at the original repo: https://github.com/TaoRuijie/TalkNet-ASD
 
-from src.audio.ASD.model.faceDetector.s3fd import S3FD
+
 from src.audio.ASD.talkNet import talkNet
 from src.audio.ASD.utils.asd_pipeline_tools import get_device
 from src.audio.ASD.utils.asd_pipeline_tools import download_model
@@ -27,6 +27,9 @@ from src.audio.ASD.utils.asd_pipeline_tools import get_video_path
 from src.audio.ASD.utils.asd_pipeline_tools import get_frames_per_second
 from src.audio.ASD.utils.asd_pipeline_tools import extract_video
 from src.audio.ASD.utils.asd_pipeline_tools import get_num_total_frames
+from src.audio.ASD.utils.asd_pipeline_tools import extract_audio_from_video
+
+from src.audio.ASD.face_detection import FaceDetector
 
 from src.audio.utils.constants import ASD_DIR
 
@@ -75,41 +78,25 @@ class ASDPipeline:
 		# Extract the video from the start time to the duration
 		self.videoPath = extract_video(self.pyaviPath, self.videoPath, self.duration, self.nDataLoaderThread, self.start, self.numFramesPerSec)	
      
+		# TODO: Check if that's nevertheless necessary based on UX
+		# if os.path.exists(savePath):
+		# 	rmtree(savePath)
 
-	def inference_video(self):
-		# GPU: Face detection, output is the list contains the face location and score in this frame
-		DET = S3FD(device=self.device)
+		if not os.path.exists(self.pyworkPath): # Save the results in this process by the pckl method
+			os.makedirs(self.pyworkPath)
 	
-		# Instead of using the stored images in Pyframes, load the images from the video (which is stored at videoPath) and go with the detection through each frame
-		cap = cv2.VideoCapture(self.videoPath)
-		
-		# TODO: Interpolate linearly between the bounding boxes of the previous and next frame
-		# Instead of going through every frame for the face detection, we go through every xth (e.g. 10th) frame and then use the bounding boxes from the previous frame to track the faces in the next frames
-		# This is done to reduce the number of frames that need to be processed for the face detection
-		dets = []
-		fidx = 0
-		while(cap.isOpened()):
-			ret, image = cap.read()
-			if ret == False:
-				break
-			if fidx%self.framesFaceTracking == 0:
-				imageNumpy = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-				bboxes = DET.detect_faces(imageNumpy, conf_th=0.9, scales=[self.facedetScale])
-				dets.append([])
-				for bbox in bboxes:
-					dets[-1].append({'frame':fidx, 'bbox':(bbox[:-1]).tolist(), 'conf':bbox[-1]})
-			else:
-				dets.append([])
-				for bbox in dets[-2]:
-					dets[-1].append({'frame':fidx, 'bbox':bbox['bbox'], 'conf':bbox['conf']})
-			sys.stderr.write('%s-%05d; %d dets\r' % (self.videoPath, fidx, len(dets[-1])))
-			fidx += 1
-		
-	
-		savePath = os.path.join(self.pyworkPath,'faces.pckl')
-		with open(savePath, 'wb') as fil:
-			pickle.dump(dets, fil)
-		return dets
+		if not os.path.exists(self.pyaviPath): # The path for the input video, input audio, output video
+			os.makedirs(self.pyaviPath) 
+   
+		if os.path.exists(os.path.join(self.pyworkPath, 'faces.pckl')):
+			with open(os.path.join(self.pyworkPath, 'faces.pckl'), 'rb') as f:
+				self.faces = pickle.load(f)
+		else:
+			self.faces = None
+   
+		# Initialize the face detector
+		self.face_detector = FaceDetector(self.device, self.videoPath, self.framesFaceTracking, self.facedetScale, self.pyworkPath)
+
 
 	def bb_intersection_over_union(self, boxA, boxB, evalCol = False):
 		# CPU: IOU Function to calculate overlap between two image
@@ -126,13 +113,13 @@ class ASDPipeline:
 			iou = interArea / float(boxAArea + boxBArea - interArea)
 		return iou
 
-	def track_shot(self, sceneFaces):
+	def track_shot(self):
 		# CPU: Face tracking
 		iouThres  = 0.5     # Minimum IOU between consecutive face detections
 		tracks    = []
 		while True:
 			track     = []
-			for frameFaces in sceneFaces:
+			for frameFaces in self.faces:
 				for face in frameFaces:
 					if track == []:
 						track.append(face)
@@ -196,7 +183,7 @@ class ASDPipeline:
 		num_frames = self.totalFrames
 	
 		# Create an empty array for the faces (num_tracks, num_frames, 112, 112)
-		faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.float32)
+		all_faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.float32)
 	
 		# Define transformation
 		transform = transforms.Compose([
@@ -215,20 +202,6 @@ class ASDPipeline:
 			vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
 			ret, image = vIn.read()
 			image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-			# Calculate bsi for each track and store in a list
-			# bsi = []
-			# images = []
-			# for track in dets:
-			# 	# Only calculate bsi if the 
-		
-			# bsi.append(int(track['s'][fidx] * (1 + 2 * cs)))
-			# images.append(numpy.pad(image, ((bsi[-1],bsi[-1]), (bsi[-1],bsi[-1]), (0, 0)), 'constant', constant_values=(110, 110)))
-
-			# # The biggest bsi determines the size of the padding
-			# track_bsi = bsi[0]
-			# image = numpy.pad(image, ((track_bsi,track_bsi), (track_bsi,track_bsi), (0, 0)), 'constant', constant_values=(110, 110))
-
 
 			for tidx, track in enumerate(tracks):
 				# In the current frame, first check whether the track has a bbox for this frame (if yes, perform opererations)
@@ -252,13 +225,13 @@ class ASDPipeline:
 					face = transform(face)
 
 					# Store in the faces array
-					faces[tidx, fidx, :, :] = face[0, :, :]
+					all_faces[tidx, fidx, :, :] = face[0, :, :]
 
 		
 		# Close the video
 		vIn.release()
 	
-		faces = faces.to(self.device)
+		all_faces = all_faces.to(self.device)
 		
 		# Return the dets and the faces
 	
@@ -267,7 +240,7 @@ class ASDPipeline:
 		for i in range(len(tracks)):
 			proc_tracks.append({'track':tracks[i], 'proc_track':dets[i]})
 	
-		return proc_tracks, faces
+		return proc_tracks, all_faces
 
 	def extract_MFCC(self, file, outPath):
 		# CPU: extract mfcc
@@ -450,9 +423,8 @@ class ASDPipeline:
 		return list(unique_clusters)
 
 	def speakerSeparation(self, tracks, scores):
-		# CPU: visulize the result for video format
 		
-		faces = [[] for i in range(self.totalFrames)]
+		all_faces = [[] for i in range(self.totalFrames)]
 		
 		# *Pick one track (e.g. one of the 7 as in in the sample)
 		for tidx, track in enumerate(tracks):
@@ -462,11 +434,11 @@ class ASDPipeline:
 				s = score[max(fidx - 2, 0): min(fidx + 3, len(score) - 1)] # average smoothing
 				s = numpy.mean(s)
 				# *Store for each frame the bounding box and score (for each of the detected faces/tracks over time)
-				faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
+				all_faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
 	
 		# From the faces list, remove the entries in each frame where the score is below 0
 		SpeakingFaces = [[] for i in range(self.totalFrames)]
-		for fidx, frame in enumerate(faces):
+		for fidx, frame in enumerate(all_faces):
 			SpeakingFaces[fidx] = [x for x in frame if x['score'] >= 0]
 	
 		# Create one list per track, where the entry is a list of the frames where the track is speaking
@@ -509,7 +481,7 @@ class ASDPipeline:
 		# 	To correct for that, I would have to leverage face verification using the stored videos in pycrop 
 	
 		# Calculate tracks that belong together 
-		sameTracks = self.clusterTracks(tracks, faces, trackSpeakingSegments, trackSpeakingFaces, self.thresholdSamePerson)
+		sameTracks = self.clusterTracks(tracks, all_faces, trackSpeakingSegments, trackSpeakingFaces, self.thresholdSamePerson)
 	
 		# Calculate an rttm file based on trackSpeakingSegments (merge the speakers for the same tracks into one speaker)
 		self.writerttm(self.pyaviPath, self.videoName, trackSpeakingSegments, sameTracks)
@@ -543,7 +515,7 @@ class ASDPipeline:
 		# storeFrames()
 		
 		# CPU: visulize the result for video format
-		faces = [[] for i in range(self.totalFrames)]
+		all_faces = [[] for i in range(self.totalFrames)]
 		
 		# *Pick one track (e.g. one of the 7 as in in the sample)
 		for tidx, track in enumerate(tracks):
@@ -553,7 +525,7 @@ class ASDPipeline:
 				s = score[max(fidx - 2, 0): min(fidx + 3, len(score) - 1)] # average smoothing
 				s = numpy.mean(s)
 				# *Store for each frame the bounding box and score (for each of the detected faces/tracks over time)
-				faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
+				all_faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
 	
 		colorDict = {0: 0, 1: 255}
 		# Get height and width in pixel of the video
@@ -571,7 +543,7 @@ class ASDPipeline:
 			cap.set(1, fidx)
 			ret, image = cap.read()
 			# *Within each frame go through each face and draw the bounding box
-			for face in faces[fidx]:
+			for face in all_faces[fidx]:
 				clr = colorDict[int((face['score'] >= 0))]
 				txt = round(face['score'], 1)
 				cv2.rectangle(image, (int(face['x']-face['s']), int(face['y']-face['s'])), (int(face['x']+face['s']), int(face['y']+face['s'])),(0,clr,255-clr),10)
@@ -583,15 +555,6 @@ class ASDPipeline:
 			(os.path.join(self.pyaviPath, 'video_only.avi'), os.path.join(self.pyaviPath, 'audio.wav'), \
 			self.nDataLoaderThread, os.path.join(self.pyaviPath,'video_out.avi'))) 
 		output = subprocess.call(command, shell=True, stdout=None)
-	
-	# TODO: To be updated, if use again 
-	# def crop_tracks_in_parallel(args, allTracks):
-	#     with multiprocessing.Pool() as pool:
-	#         vidTracks = [pool.apply_async(crop_track, args=(args, track))
-	#                      for ii, track in enumerate(allTracks)]
-	#         vidTracks = [result.get() for result in tqdm.tqdm(vidTracks, total=len(allTracks))]
-	#     return vidTracks
-
 
 
 	# Pipeline for the ASD algorithm
@@ -617,38 +580,19 @@ class ASDPipeline:
 				self.visualization(tracks, scores)
 			self.speakerSeparation(tracks, scores)
 			return
-
 	
-		# TODO: Check if that's nevertheless necessary
-		# if os.path.exists(savePath):
-		# 	rmtree(savePath)
-
-		if not os.path.exists(self.pyworkPath): # Save the results in this process by the pckl method
-			os.makedirs(self.pyworkPath)
-	
-		if not os.path.exists(self.pyaviPath): # The path for the input video, input audio, output video
-			os.makedirs(self.pyaviPath) 
-	
-		# TODO: Util?
-		# Extract audio
-		audioFilePath = os.path.join(self.pyaviPath, 'audio.wav')
-		command = ("ffmpeg -y -i %s -qscale:a 0 -ac 1 -vn -threads %d -ar 16000 %s -loglevel panic" % \
-			(self.videoPath, self.nDataLoaderThread, audioFilePath))
-		subprocess.call(command, shell=True, stdout=None)
-		sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Extract the audio and save in %s \r\n" %(audioFilePath))
+		# Extract audio from video
+		audioFilePath = extract_audio_from_video(self.pyaviPath, self.videoPath, self.nDataLoaderThread)
 	
 		# TODO: Face Detection class (build wrapper to get easily also integrate other face detection methods if necessary)
 		# Check if the face detection result exists, otherwise run the face detection
-		if os.path.exists(os.path.join(self.pyworkPath, 'faces.pckl')):
-			with open(os.path.join(self.pyworkPath, 'faces.pckl'), 'rb') as f:
-				faces = pickle.load(f)
-		else:
-			faces = self.inference_video()
+		if self.faces == None:
+			self.faces = self.face_detector.s3fd_face_detection()
 			sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face detection and save in %s \r\n" %(self.pyworkPath))
 	
 		# TODO: Face Tracking class (build wrapper to get easily also integrate other face tracking methods if necessary)
 		allTracks = []
-		allTracks.extend(self.track_shot(faces)) # 'frames' to present this tracks' timestep, 'bbox' presents the location of the faces
+		allTracks.extend(self.track_shot()) # 'frames' to present this tracks' timestep, 'bbox' presents the location of the faces
 		sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face track and detected %d tracks \r\n" %len(allTracks))
 
 		# TODO: Util?
