@@ -1,11 +1,13 @@
 # Here runs the overall pipeline of the audio processing
 
-from src.audio.ASD.speaker_diar_pipeline import ASDPipeline
+from src.audio.ASD.speaker_diar_pipeline import ASDSpeakerDirPipeline
 
 class Runner:
     def __init__(self, args):
         self.args = args
 
     def run(self):
-        asd_pipeline = ASDPipeline(self.args)
+        
+        # Perform combined Active Speaker Detection and Speaker Diarization
+        asd_pipeline = ASDSpeakerDirPipeline(self.args)
         asd_pipeline.run()

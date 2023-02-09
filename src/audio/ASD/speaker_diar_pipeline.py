@@ -29,7 +29,7 @@ from src.audio.ASD.speaker_diarization import SpeakerDiarization
 
 from src.audio.utils.constants import ASD_DIR
 
-class ASDPipeline:
+class ASDSpeakerDirPipeline:
 	def __init__(self, args):
 		self.video_name = args.get("VIDEO_NAME","001")
 		self.video_folder = args.get("VIDEO_FOLDER","src/audio/ASD/demo")
