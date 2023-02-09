@@ -1,1 +1,1 @@
-[TalkNet-ASD](https://github.com/TaoRuijie/TalkNet-ASD/tree/85b37af)
+[TalkNet-ASD](https://github.com/TaoRuijie/TalkNet-ASD/tree/85b37af){:target="_blank"}
