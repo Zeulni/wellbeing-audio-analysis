@@ -4,7 +4,7 @@
 VIDEO_NAME: "001"
 
 # Path for inputs, temporary files, and outputs
-VIDEO_FOLDER: "src/audio/ASD/demo"
+VIDEO_FOLDER: "videos"
 
 # Path for the pretrained TalkNet model
 PRETRAINED_ASD_MODEL: "pretrain_TalkSet.model"

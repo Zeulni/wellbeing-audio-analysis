@@ -4,3 +4,4 @@ from pathlib import Path
 root = Path.cwd()
 
 CONFIG_DIR = root / "configs"
+ASD_DIR = root / "src" / "audio" / "ASD"
