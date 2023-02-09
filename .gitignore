@@ -102,6 +102,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+ASD_env/
+ASD_env_new/
 
 # Spyder project settings
 .spyderproject
