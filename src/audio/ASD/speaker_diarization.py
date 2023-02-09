@@ -3,6 +3,7 @@ import os
 import math
 
 from src.audio.ASD.utils.asd_pipeline_tools import cut_track_videos
+from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
 
 class SpeakerDiarization:
     def __init__(self, pyavi_path, video_path, video_name, n_data_loader_thread, threshold_same_person, create_track_videos, total_frames, frames_per_second):
@@ -17,6 +18,7 @@ class SpeakerDiarization:
     
     def run(self, tracks, scores):
         
+        write_to_terminal("Speaker diarization started")
         all_faces = [[] for i in range(self.total_frames)]
         
         # *Pick one track (e.g. one of the 7 as in in the sample)
@@ -162,7 +164,7 @@ class SpeakerDiarization:
 
         # Print the unique clusters
         for i in unique_clusters:
-            print("Tracks that belong together: ", i)
+            write_to_terminal("Tracks that belong together: " + str(i))
 
         return list(unique_clusters)
     

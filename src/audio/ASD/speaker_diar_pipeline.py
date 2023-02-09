@@ -81,11 +81,10 @@ class ASDPipeline:
 		if not os.path.exists(self.pyavi_path): # The path for the input video, input audio, output video
 			os.makedirs(self.pyavi_path) 
    
-		if os.path.exists(os.path.join(self.pywork_path, 'faces.pckl')):
-			with open(os.path.join(self.pywork_path, 'faces.pckl'), 'rb') as f:
-				self.faces = pickle.load(f)
-		else:
-			self.faces = None
+		# The pickle files
+		self.faces = None
+		self.tracks = None
+		self.score = None
    
 		# Initialize the face detector
 		self.face_detector = FaceDetector(self.device, self.video_path, self.frames_face_tracking, self.face_det_scale, self.pywork_path)
@@ -104,15 +103,26 @@ class ASDPipeline:
                                                 	  self.threshold_same_person, self.create_track_videos, self.total_frames, self.num_frames_per_sec)
 	
   
-	def __check_asd_done(self, pywork_path) -> tuple:
+	def __check_asd_done(self) -> bool:
 		# If pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
-		if os.path.exists(os.path.join(pywork_path, 'scores.pkl')) and os.path.exists(os.path.join(pywork_path, 'tracks.pkl')):
-			with open(os.path.join(pywork_path, 'scores.pkl'), 'rb') as f:
-				scores = pickle.load(f)
-			with open(os.path.join(pywork_path, 'tracks.pkl'), 'rb') as f:
-				tracks = pickle.load(f)
-			return True, scores, tracks
-		return False, None, None
+		if os.path.exists(os.path.join(self.pywork_path, 'scores.pkl')) and os.path.exists(os.path.join(self.pywork_path, 'tracks.pkl')):
+			with open(os.path.join(self.pywork_path, 'scores.pkl'), 'rb') as f:
+				self.scores = pickle.load(f)
+			with open(os.path.join(self.pywork_path, 'tracks.pkl'), 'rb') as f:
+				self.tracks = pickle.load(f)
+			write_to_terminal("ASD is done, scores and tracks are loaded from the pickle files.")
+			return True
+		return False
+
+	def __check_face_detection_done(self) -> bool:
+		if os.path.exists(os.path.join(self.pywork_path, 'faces.pckl')):
+			with open(os.path.join(self.pywork_path, 'faces.pckl'), 'rb') as f:
+				self.faces = pickle.load(f)
+				write_to_terminal("Face detection is done, faces are loaded from the pickle files.")
+				return True
+		else:
+			self.faces = None
+			return False
 
 
 	# Pipeline for the ASD algorithm
@@ -131,38 +141,35 @@ class ASDPipeline:
 		#     └── tracks.pckl (face tracking result) - face bounding boxes over time for each detected face (video), per track x frames (e.g. in sample 7 tracks each ~500 frames)
 		# ```
 	
-		# Assumption: If pickle files in pywork folder exist, ASD is done and all the other files exist (to re-run ASD delete pickle files)
-		asd_done, scores, tracks = self._ASDPipeline__check_asd_done(self.pywork_path)
-		if asd_done:
-			if self.include_visualization == True:
-				visualization(tracks, scores, self.total_frames, self.video_path, self.pyavi_path, self.num_frames_per_sec, self.n_data_loader_thread)
-			self.speaker_diarization.run(tracks, scores)
-			return
+		# Checkpoint ASD (Assumption: If pickle files in pywork folder exist, ASD is done and all the other files exist (to re-run ASD delete pickle files))
+		asd_done = self._ASDPipeline__check_asd_done()
+		if asd_done == False:
 	
-		# Extract audio from video
-		audio_file_path = extract_audio_from_video(self.pyavi_path, self.video_path, self.n_data_loader_thread)
-	
-		# Face detection (check for checkpoint first)
-		if self.faces == None:
-			self.faces = self.face_detector.s3fd_face_detection()
-	
-		# Face tracking
-		all_tracks = []
-		all_tracks.extend(self.face_tracker.track_shot_face_tracker(self.faces))
-		write_to_terminal("Face tracks created - detected", str(len(all_tracks)))
+			# Extract audio from video
+			audio_file_path = extract_audio_from_video(self.pyavi_path, self.video_path, self.n_data_loader_thread)
+		
+			# Face detection (check for checkpoint first)
+			face_detection_done = self._ASDPipeline__check_face_detection_done()
+			if face_detection_done == False:
+				self.faces = self.face_detector.s3fd_face_detection()
+		
+			# Face tracking
+			all_tracks = []
+			all_tracks.extend(self.face_tracker.track_shot_face_tracker(self.faces))
+			write_to_terminal("Face tracks created - detected", str(len(all_tracks)))
 
-		# Crop all the tracks from the video (are stored in CPU memory)
-		vidTracks, faces_all_tracks = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
-		safe_pickle_file(self.pywork_path, "tracks.pkl", vidTracks, "Track saved in", self.pywork_path)
+			# Crop all the tracks from the video (are stored in CPU memory)
+			self.tracks, faces_all_tracks = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
+			safe_pickle_file(self.pywork_path, "tracks.pkl", self.tracks, "Track saved in", self.pywork_path)
 
-		# Active Speaker Detection by TalkNet
-		scores = self.asd_network.talknet_network(all_tracks, faces_all_tracks, audio_file_path)
-		safe_pickle_file(self.pywork_path, "scores.pkl", scores, "Scores extracted and saved in", self.pywork_path)
+			# Active Speaker Detection by TalkNet
+			self.scores = self.asd_network.talknet_network(all_tracks, faces_all_tracks, audio_file_path)
+			safe_pickle_file(self.pywork_path, "scores.pkl", self.scores, "Scores extracted and saved in", self.pywork_path)
 		
 
 		# Visualization, save the result as the new video	
 		if self.include_visualization == True:
-			visualization(vidTracks, scores, self.total_frames, self.video_path, self.pyavi_path, self.num_frames_per_sec, self.n_data_loader_thread)
+			visualization(self.tracks, self.scores, self.total_frames, self.video_path, self.pyavi_path, self.num_frames_per_sec, self.n_data_loader_thread)
 		
 		# Speaker diarization
-		self.speaker_diarization.run(vidTracks, scores)
+		self.speaker_diarization.run(self.tracks, self.scores)
