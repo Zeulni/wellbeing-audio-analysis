@@ -1,7 +1,7 @@
 from src.audio.app_controller import Runner
 from src.audio.app_gui import parse_arguments
 
-# TODO: Add parser (app gui file) + add config file, create new requirements.txt, create readme etc.
+# TODO: create new requirements.txt, create readme etc.
 
 
 def main() -> None:

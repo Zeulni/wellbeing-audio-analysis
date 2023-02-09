@@ -23,11 +23,14 @@ from src.audio.ASD.utils.asd_pipeline_tools import get_frames_per_second
 from src.audio.ASD.utils.asd_pipeline_tools import extract_video
 from src.audio.ASD.utils.asd_pipeline_tools import get_num_total_frames
 from src.audio.ASD.utils.asd_pipeline_tools import extract_audio_from_video
-from src.audio.ASD.utils.asd_pipeline_tools import crop_tracks_from_videos_parallel
+from src.audio.ASD.utils.asd_pipeline_tools import safe_pickle_file
+from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
+from src.audio.ASD.utils.asd_pipeline_tools import visualization
 
 from src.audio.ASD.face_detection import FaceDetector
 from src.audio.ASD.face_tracking import FaceTracker
 from src.audio.ASD.asd_network import ASDNetwork
+from src.audio.ASD.crop_tracks import CropTracks
 
 from src.audio.utils.constants import ASD_DIR
 
@@ -51,12 +54,9 @@ class ASDPipeline:
 		self.createTrackVideos = args.get("CREATE_TRACK_VIDEOS",True)
 		self.includeVisualization = args.get("INCLUDE_VISUALIZATION",True)
   
-  		# TODO: what exactly does this do?
-		warnings.filterwarnings("ignore")
-  
-		# TODO: Do all the utils of beginning in init and then have them as class variables -> don't have the pass them all the time
+		#warnings.filterwarnings("ignore")
 
-		print("Only every xth frame will be analyzed for faster processing: ", self.framesFaceTracking)
+		write_to_terminal("Only every xth frame will be analyzed for faster processing:", str(self.framesFaceTracking))
 
 		# Check whether GPU is available on cuda (NVIDIA), then mps (Macbook), otherwise use cpu
 		self.device = get_device()
@@ -98,16 +98,11 @@ class ASDPipeline:
 		# Initialize the face tracker
 		self.face_tracker = FaceTracker(self.numFailedDet, self.minTrack, self.minFaceSize)
   
+		# Initialize the track cropper
+		self.track_cropper = CropTracks(self.videoPath, self.totalFrames, self.framesFaceTracking, self.cropScale, self.device)
+  
 		# Initialize the ASD network
 		self.asd_network = ASDNetwork(self.device, self.pretrainModel, self.numFramesPerSec)
-
-	# def extract_MFCC(self, file, outPath):
-	# 	# CPU: extract mfcc
-	# 	sr, audio = wavfile.read(file)
-	# 	mfcc = python_speech_features.mfcc(audio,sr) # (N_frames, 13)   [1s = 100 frames]
-	# 	featuresPath = os.path.join(outPath, file.split('/')[-1].replace('.wav', '.npy'))
-	# 	numpy.save(featuresPath, mfcc)
-
 
 
 	def cutTrackVideos(self, trackSpeakingSegments, pyaviPath, videoPath, nDataLoaderThread) :
@@ -288,53 +283,16 @@ class ASDPipeline:
 			if track in cluster:
 				return True, min(cluster)
 		return False, -1
-
-	def visualization(self, tracks, scores):
-		
-		# TODO: Could be optimized here without using the storeFrames() function (directly use the video file)
-		# storeFrames()
-		
-		# CPU: visulize the result for video format
-		all_faces = [[] for i in range(self.totalFrames)]
-		
-		# *Pick one track (e.g. one of the 7 as in in the sample)
-		for tidx, track in enumerate(tracks):
-			score = scores[tidx]
-			# *Go through each frame in the selected track
-			for fidx, frame in enumerate(track['track']['frame'].tolist()):
-				s = score[max(fidx - 2, 0): min(fidx + 3, len(score) - 1)] # average smoothing
-				s = numpy.mean(s)
-				# *Store for each frame the bounding box and score (for each of the detected faces/tracks over time)
-				all_faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
-	
-		colorDict = {0: 0, 1: 255}
-		# Get height and width in pixel of the video
-		cap = cv2.VideoCapture(self.videoPath)
-		fw = int(cap.get(3))
-		fh = int(cap.get(4))
-		vOut = cv2.VideoWriter(os.path.join(self.pyaviPath, 'video_only.avi'), cv2.VideoWriter_fourcc(*'XVID'), self.numFramesPerSec, (fw,fh))
-	
-		# Instead of using the stored images in Pyframes, load the images from the video (which is stored at videoPath) and draw the bounding boxes there
-		# CPU: visulize the result for video format
-		# *Go through each frame
-		for fidx in range(self.totalFrames):
-			# *Load the frame from the video
-			cap = cv2.VideoCapture(self.videoPath)
-			cap.set(1, fidx)
-			ret, image = cap.read()
-			# *Within each frame go through each face and draw the bounding box
-			for face in all_faces[fidx]:
-				clr = colorDict[int((face['score'] >= 0))]
-				txt = round(face['score'], 1)
-				cv2.rectangle(image, (int(face['x']-face['s']), int(face['y']-face['s'])), (int(face['x']+face['s']), int(face['y']+face['s'])),(0,clr,255-clr),10)
-				cv2.putText(image,'%s'%(txt), (int(face['x']-face['s']), int(face['y']-face['s'])), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,clr,255-clr),5)
-			vOut.write(image)
-		vOut.release()
-	
-		command = ("ffmpeg -y -i %s -i %s -threads %d -c:v copy -c:a copy %s -loglevel panic" % \
-			(os.path.join(self.pyaviPath, 'video_only.avi'), os.path.join(self.pyaviPath, 'audio.wav'), \
-			self.nDataLoaderThread, os.path.join(self.pyaviPath,'video_out.avi'))) 
-		output = subprocess.call(command, shell=True, stdout=None)
+  
+	def __check_asd_done(self, pyworkPath) -> tuple:
+		# If pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
+		if os.path.exists(os.path.join(pyworkPath, 'scores.pkl')) and os.path.exists(os.path.join(pyworkPath, 'tracks.pkl')):
+			with open(os.path.join(pyworkPath, 'scores.pkl'), 'rb') as f:
+				scores = pickle.load(f)
+			with open(os.path.join(pyworkPath, 'tracks.pkl'), 'rb') as f:
+				tracks = pickle.load(f)
+			return True, scores, tracks
+		return False, None, None
 
 
 	# Pipeline for the ASD algorithm
@@ -357,7 +315,7 @@ class ASDPipeline:
 		asd_done, scores, tracks = self._ASDPipeline__check_asd_done(self.pyworkPath)
 		if asd_done:
 			if self.includeVisualization == True:
-				self.visualization(tracks, scores)
+				visualization(tracks, scores, self.totalFrames, self.videoPath, self.pyaviPath, self.numFramesPerSec, self.nDataLoaderThread)
 			self.speakerSeparation(tracks, scores)
 			return
 	
@@ -367,40 +325,25 @@ class ASDPipeline:
 		# Face detection (check for checkpoint first)
 		if self.faces == None:
 			self.faces = self.face_detector.s3fd_face_detection()
-			sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face detection and save in %s \r\n" %(self.pyworkPath))
 	
 		# Face tracking
 		# 'frames' to present this tracks' timestep, 'bbox' presents the location of the faces
 		allTracks = []
 		allTracks.extend(self.face_tracker.track_shot_face_tracker(self.faces))
-		sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Face track and detected %d tracks \r\n" %len(allTracks))
+		write_to_terminal("Face track and detected", str(len(allTracks)))
 
 		# Crop all the tracks from the video (are stored in CPU memory)
-		vidTracks, facesAllTracks = crop_tracks_from_videos_parallel(allTracks, self.videoPath, self.totalFrames, self.framesFaceTracking, self.cropScale, self.device)
+		vidTracks, facesAllTracks = self.track_cropper.crop_tracks_from_videos_parallel(allTracks)
 
 		# TODO: Active Speaker Detection class (build wrapper to get easily also integrate other active speaker detection methods if necessary)
 		# Active Speaker Detection by TalkNet
 		scores = self.asd_network.talknet_network(allTracks, facesAllTracks, audioFilePath)
-		savePath = os.path.join(self.pyworkPath, 'scores.pckl')
-		with open(savePath, 'wb') as fil:
-			pickle.dump(scores, fil)
-		sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Scores extracted and saved in %s \r\n" %self.pyworkPath)
+		safe_pickle_file(self.pyworkPath, "scores.pkl", scores, "Scores extracted and saved in", self.pyworkPath)
 	
-		savePath = os.path.join(self.pyworkPath, 'tracks.pckl')
-		with open(savePath, 'wb') as fil:
-			pickle.dump(vidTracks, fil)
+		# Save the tracks
+		safe_pickle_file(self.pyworkPath, "tracks.pkl", vidTracks, "Track saved in", self.pyworkPath)
 
 		# Visualization, save the result as the new video	
 		if self.includeVisualization == True:
-			self.visualization(vidTracks, scores)
-		self.speakerSeparation(vidTracks, scores)	
-
-	def __check_asd_done(self, pyworkPath) -> tuple:
-		# If pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
-		if os.path.exists(os.path.join(pyworkPath, 'scores.pckl')) and os.path.exists(os.path.join(pyworkPath, 'tracks.pckl')):
-			with open(os.path.join(pyworkPath, 'scores.pckl'), 'rb') as f:
-				scores = pickle.load(f)
-			with open(os.path.join(pyworkPath, 'tracks.pckl'), 'rb') as f:
-				tracks = pickle.load(f)
-			return True, scores, tracks
-		return False, None, None
+			visualization(vidTracks, scores, self.totalFrames, self.videoPath, self.pyaviPath, self.numFramesPerSec, self.nDataLoaderThread)
+		self.speakerSeparation(vidTracks, scores)

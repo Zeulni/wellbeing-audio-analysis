@@ -3,6 +3,7 @@ import sys
 import os
 import pickle
 
+from src.audio.ASD.utils.asd_pipeline_tools import safe_pickle_file
 from src.audio.ASD.model.faceDetector.s3fd import S3FD
 
 
@@ -43,9 +44,6 @@ class FaceDetector:
             sys.stderr.write('%s-%05d; %d dets\r' % (self.video_path, fidx, len(dets[-1])))
             fidx += 1
         
-
-        savePath = os.path.join(self.pywork_path,'faces.pckl')
-        with open(savePath, 'wb') as fil:
-            pickle.dump(dets, fil)
+        safe_pickle_file(self.pywork_path, 'faces.pckl', dets, "Faces detected and stored in", self.pywork_path)
             
         return dets        

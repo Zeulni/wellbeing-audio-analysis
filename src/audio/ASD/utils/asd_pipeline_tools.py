@@ -6,11 +6,19 @@ import cv2
 import sys
 import time
 import numpy
-import torchvision.transforms as transforms
-from scipy import signal
+import pickle
 
 
 from src.audio.utils.constants import ASD_DIR
+
+def write_to_terminal(text, argument = "") -> None:
+    sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S ") + text + " " + argument + "\r\n")
+
+def safe_pickle_file(folder_path: str, filename: str, data, text = "pickle file stored", text_argument = "") -> None:
+    save_path = os.path.join(folder_path, filename)
+    with open(save_path, 'wb') as fil:
+        pickle.dump(data, fil)
+    write_to_terminal(text, text_argument)
 
 def get_device() -> str:
     if torch.cuda.is_available():
@@ -18,15 +26,14 @@ def get_device() -> str:
     else:
         device = torch.device("cpu")
 
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Detected device (Cuda/CPU): ", device)
+    write_to_terminal("Detected device (Cuda/CPU): ", str(device))
     
     return device
 
 def get_frames_per_second(video_path: str) -> int:
     video = cv2.VideoCapture(video_path)
     fps = int(video.get(cv2.CAP_PROP_FPS))
-    print("Frames per second: ", fps)
+    write_to_terminal("Frames per second: ", str(fps))
     video.release()
 
     return fps
@@ -34,7 +41,7 @@ def get_frames_per_second(video_path: str) -> int:
 def get_num_total_frames(video_path: str) -> int:
     video = cv2.VideoCapture(video_path)
     num_total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-    print("Total number of frames: ", num_total_frames)
+    write_to_terminal("Total number of frames: ", str(num_total_frames))
     video.release()
 
     return num_total_frames
@@ -70,7 +77,7 @@ def extract_video(pyavi_path, video_path, duration, n_data_loader_thread, start,
         command = ("ffmpeg -y -i %s -qscale:v 2 -threads %d -ss %.3f -to %.3f -async 1 -r %d %s -loglevel panic" % \
             (video_path, n_data_loader_thread, start, start + duration, num_frames_per_sec, extracted_video_path))
         subprocess.call(command, shell=True, stdout=None)
-        sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Extract the video and save in %s \r\n" %(extracted_video_path))
+        write_to_terminal("Extract the video and save in ", extracted_video_path)
 
     return extracted_video_path
 
@@ -79,100 +86,51 @@ def extract_audio_from_video(pyavi_path, video_path, n_data_loader_thread) -> st
     command = ("ffmpeg -y -i %s -qscale:a 0 -ac 1 -vn -threads %d -ar 16000 %s -loglevel panic" % \
         (video_path, n_data_loader_thread, audioFilePath))
     subprocess.call(command, shell=True, stdout=None)
-    sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Extract the audio and save in %s \r\n" %(audioFilePath))
+    write_to_terminal("Extract the audio and save in ", audioFilePath)
     
     return audioFilePath
 
-def crop_tracks_from_videos_parallel(tracks, video_path, total_frames, frames_face_tracking, cs, device) -> tuple:
-	# Instead of going only through one track in crop_track_faster, we only read the video ones and go through all the tracks
-    # TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
-    # dets = {'x':[], 'y':[], 's':[]}
-    # for det in track['bbox']: # Read the tracks
-    # 	dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
-    # 	dets['y'].append((det[1]+det[3])/2) # crop center x 
-    # 	dets['x'].append((det[0]+det[2])/2) # crop center y
-
-
-    # Go through all the tracks and get the dets values (not through the frames yet, only dets)
-    # Save for each track the dats in a list
-    dets = []
-    for track in tracks:
-        dets.append({'x':[], 'y':[], 's':[]})
-        for fidx, det in enumerate(track['bbox']):
-            if fidx%frames_face_tracking == 0:
-                dets[-1]['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
-                dets[-1]['y'].append((det[1]+det[3])/2)
-                dets[-1]['x'].append((det[0]+det[2])/2)
-            else:
-                dets[-1]['s'].append(dets[-1]['s'][-1])
-                dets[-1]['y'].append(dets[-1]['y'][-1])
-                dets[-1]['x'].append(dets[-1]['x'][-1])
+def visualization(tracks, scores, total_frames, video_path, pyavi_path, num_frames_per_sec, n_data_loader_thread) -> None:
+    # CPU: visulize the result for video format
+    all_faces = [[] for i in range(total_frames)]
     
-    # Go through all the tracks and smooth the dets values
-    for track in dets:	
-        track['s'] = signal.medfilt(track['s'], kernel_size=13)
-        track['x'] = signal.medfilt(track['x'], kernel_size=13)
-        track['y'] = signal.medfilt(track['y'], kernel_size=13)
-    
-    # Open the video
-    vIn = cv2.VideoCapture(video_path)
-    num_frames = total_frames
+    # *Pick one track (e.g. one of the 7 as in in the sample)
+    for tidx, track in enumerate(tracks):
+        score = scores[tidx]
+        # *Go through each frame in the selected track
+        for fidx, frame in enumerate(track['track']['frame'].tolist()):
+            s = score[max(fidx - 2, 0): min(fidx + 3, len(score) - 1)] # average smoothing
+            s = numpy.mean(s)
+            # *Store for each frame the bounding box and score (for each of the detected faces/tracks over time)
+            all_faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
 
-    # Create an empty array for the faces (num_tracks, num_frames, 112, 112)
-    all_faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.float32)
+    colorDict = {0: 0, 1: 255}
+    # Get height and width in pixel of the video
+    cap = cv2.VideoCapture(video_path)
+    fw = int(cap.get(3))
+    fh = int(cap.get(4))
+    vOut = cv2.VideoWriter(os.path.join(pyavi_path, 'video_only.avi'), cv2.VideoWriter_fourcc(*'XVID'), num_frames_per_sec, (fw,fh))
 
-    # Define transformation
-    transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.Resize(224),
-        transforms.Grayscale(num_output_channels=1),
-        transforms.CenterCrop(112),
-        transforms.ToTensor(),
-        transforms.Lambda(lambda x: x * 255),
-        transforms.Lambda(lambda x: x.type(torch.uint8))
-    ])
-    
-    # Loop over every frame, read the frame, then loop over all the tracks per frame and if available, crop the face
-    for fidx in range(num_frames):
-        vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
-        ret, image = vIn.read()
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # Instead of using the stored images in Pyframes, load the images from the video (which is stored at videoPath) and draw the bounding boxes there
+    # CPU: visulize the result for video format
+    # *Go through each frame
+    for fidx in range(total_frames):
+        # *Load the frame from the video
+        cap = cv2.VideoCapture(video_path)
+        cap.set(1, fidx)
+        ret, image = cap.read()
+        # *Within each frame go through each face and draw the bounding box
+        for face in all_faces[fidx]:
+            clr = colorDict[int((face['score'] >= 0))]
+            txt = round(face['score'], 1)
+            cv2.rectangle(image, (int(face['x']-face['s']), int(face['y']-face['s'])), (int(face['x']+face['s']), int(face['y']+face['s'])),(0,clr,255-clr),10)
+            cv2.putText(image,'%s'%(txt), (int(face['x']-face['s']), int(face['y']-face['s'])), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,clr,255-clr),5)
+        vOut.write(image)
+    vOut.release()
 
-        for tidx, track in enumerate(tracks):
-            # In the current frame, first check whether the track has a bbox for this frame (if yes, perform opererations)
-            if fidx in track['frame']:
-                # Get the index of the frame in the track
-                index = numpy.where(track['frame'] == fidx)
-                index = int(index[0][0])
-    
-                # Calculate the bsi and pad the image
-                bsi = int(dets[tidx]['s'][index] * (1 + 2 * cs))
-                frame_image = numpy.pad(image, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
+    command = ("ffmpeg -y -i %s -i %s -threads %d -c:v copy -c:a copy %s -loglevel panic" % \
+        (os.path.join(pyavi_path, 'video_only.avi'), os.path.join(pyavi_path, 'audio.wav'), \
+        n_data_loader_thread, os.path.join(pyavi_path,'video_out.avi'))) 
+    output = subprocess.call(command, shell=True, stdout=None)
+    write_to_terminal("Visualization video saved to", os.path.join(pyavi_path,'video_out.avi'))
 
-                bs  = dets[tidx]['s'][index]
-                my  = dets[tidx]['y'][index] + bsi
-                mx  = dets[tidx]['x'][index] + bsi
-
-                # Crop the face from the image (depending on the track choose the image)
-                face = frame_image[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
-
-                # Apply the transformations
-                face = transform(face)
-
-                # Store in the faces array
-                all_faces[tidx, fidx, :, :] = face[0, :, :]
-
-    
-    # Close the video
-    vIn.release()
-
-    all_faces = all_faces.to(device)
-    
-    # Return the dets and the faces
-
-    # Create a list where each element has the format {'track':track, 'proc_track':dets}
-    proc_tracks = []
-    for i in range(len(tracks)):
-        proc_tracks.append({'track':tracks[i], 'proc_track':dets[i]})
-
-    return proc_tracks, all_faces
