@@ -1,6 +1,6 @@
 # Here runs the overall pipeline of the audio processing
 
-from src.audio.ASD.asd_pipeline import ASDPipeline
+from src.audio.ASD.speaker_diar_pipeline import ASDPipeline
 
 class Runner:
     def __init__(self, args):
