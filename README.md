@@ -62,5 +62,5 @@ MIT
 
 > Email:  <a href="mailto:tobias.zeulner@tum.de">tobias.zeulner@tum.de</a>
  &nbsp;&middot;&nbsp;
-> LinkedIn [Tobias Zeulner](https://www.linkedin.com/in/tobias-zeulner-893080169/){:target="_blank"}
+> LinkedIn: <a href="https://www.linkedin.com/in/tobias-zeulner-893080169/" target="_blank">Tobias Zeulner</a>
 
