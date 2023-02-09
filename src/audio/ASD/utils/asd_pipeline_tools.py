@@ -7,6 +7,8 @@ import sys
 import time
 import numpy
 import pickle
+from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.video.compositing.concatenate import concatenate_videoclips
 
 
 from src.audio.utils.constants import ASD_DIR
@@ -134,3 +136,25 @@ def visualization(tracks, scores, total_frames, video_path, pyavi_path, num_fram
     output = subprocess.call(command, shell=True, stdout=None)
     write_to_terminal("Visualization video saved to", os.path.join(pyavi_path,'video_out.avi'))
 
+def cut_track_videos(track_speaking_segments, pyavi_path, video_path, n_data_loader_thread) -> None:
+    # Using the trackSpeakingSegments, extract for each track the video segments from the original video (with moviepy)
+    # Concatenate all the different subclip per track into one video
+    # Go through each track
+    for tidx, track in enumerate(track_speaking_segments):
+        # Check whether the track is empty
+        if len(track) == 0:
+            continue
+
+        # Only create the video if the output file does not exist
+        cutted_file_name = os.path.join(pyavi_path, 'track_%s.mp4' % (tidx))
+        if os.path.exists(cutted_file_name):
+            continue
+
+        # Create the list of subclips
+        clips = []
+        for segment in track:
+            clips.append(VideoFileClip(video_path).subclip(segment[0], segment[1]))
+        # Concatenate the clips
+        final_clip = concatenate_videoclips(clips)
+        # Write the final video
+        final_clip.write_videofile(cutted_file_name, threads=n_data_loader_thread, logger=None)
