@@ -8,6 +8,7 @@ import time
 import numpy
 import pickle
 from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.video.io.VideoFileClip import AudioFileClip
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 
 
@@ -87,7 +88,8 @@ def extract_audio_from_video(pyavi_path, video_path, n_data_loader_thread) -> st
     audioFilePath = os.path.join(pyavi_path, 'audio.wav')
     command = ("ffmpeg -y -i %s -qscale:a 0 -ac 1 -vn -threads %d -ar 16000 %s -loglevel panic" % \
         (video_path, n_data_loader_thread, audioFilePath))
-    subprocess.call(command, shell=True, stdout=None)
+    subprocess.call(command, shell=True, stdout=None)   
+    
     write_to_terminal("Extract the audio and save in ", audioFilePath)
     
     return audioFilePath
@@ -134,6 +136,7 @@ def visualization(tracks, scores, total_frames, video_path, pyavi_path, num_fram
         (os.path.join(pyavi_path, 'video_only.avi'), os.path.join(pyavi_path, 'audio.wav'), \
         n_data_loader_thread, os.path.join(pyavi_path,'video_out.avi'))) 
     output = subprocess.call(command, shell=True, stdout=None)
+    
     write_to_terminal("Visualization video saved to", os.path.join(pyavi_path,'video_out.avi'))
 
 def cut_track_videos(track_speaking_segments, pyavi_path, video_path, n_data_loader_thread) -> None:

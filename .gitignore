@@ -118,5 +118,3 @@ ASD_env_new/
 # mypy
 .mypy_cache/
 
-# Python Venv environment
-ASD_venv/

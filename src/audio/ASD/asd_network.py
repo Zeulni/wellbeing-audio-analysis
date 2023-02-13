@@ -10,10 +10,11 @@ from src.audio.ASD.talkNet import talkNet
 
 
 class ASDNetwork():
-    def __init__(self, device, pretrain_model, num_frames_per_sec) -> None:
+    def __init__(self, device, pretrain_model, num_frames_per_sec, frames_face_tracking) -> None:
         self.device = device
         self.pretrain_model = pretrain_model
         self.num_frames_per_sec = num_frames_per_sec
+        self.frames_face_tracking = frames_face_tracking
         
     def talknet_network(self, allTracks, facesAllTracks, audioFilePath) -> list:
         # GPU: active speaker detection by pretrained TalkNet
@@ -37,11 +38,6 @@ class ASDNetwork():
             # Remove all frames that have the value 0 (as they are not used)
             videoFeature = videoFeature[videoFeature.sum(axis=(1,2)) != 0]
 
-            # print(torch.eq(super_old_videoFeature, old_videoFeature).all().item())
-            # print(torch.eq(videoFeature, old_videoFeature).all().item())
-
-            # print("End crop_track_skipped")
-
             length = min((audioFeature.shape[0] - audioFeature.shape[0] % 4) / 100, videoFeature.shape[0])
             audioFeature = audioFeature[:int(round(length * 100)),:]
             videoFeature = videoFeature[:int(round(length * self.num_frames_per_sec)),:,:]
@@ -64,14 +60,14 @@ class ASDNetwork():
             allScore = numpy.round((numpy.mean(numpy.array(allScore), axis = 0)), 1).astype(float)
 
             # TODO: Option 1
-            # # To compensate for the skipping of frames, repeat the score for each frame (so it has the same length again)
-            # allScore = numpy.repeat(allScore, args.framesFaceTracking)
+            # To compensate for the skipping of frames, repeat the score for each frame (so it has the same length again)
+            allScore = numpy.repeat(allScore, self.frames_face_tracking)
 
-            # # To make sure the length is not longer than the video, crop it (if its the same length, just cut 3 frames off to be on the safe side)
-            # if allScore.shape[0] > track['bbox'].shape[0]:
-            # 	allScore = allScore[:track['bbox'].shape[0]]
-            # elif (allScore.shape[0] - track['bbox'].shape[0]) >= -3:
-            # 	allScore = allScore[:-3]
+            # To make sure the length is not longer than the video, crop it (if its the same length, just cut 3 frames off to be on the safe side)
+            if allScore.shape[0] > track['bbox'].shape[0]:
+                allScore = allScore[:track['bbox'].shape[0]]
+            elif (allScore.shape[0] - track['bbox'].shape[0]) >= -3:
+                allScore = allScore[:-3]
 
             allScores.append(allScore)	
             
@@ -87,12 +83,12 @@ class ASDNetwork():
         trans_segment = numpy.array(segment.get_array_of_samples(), dtype=numpy.int16)
 
         # TODO: Option 1
-        # # For every 10th value ins trans_segment leave the value, for the rest set it to 0 (to compensate for video skipping frames)
-        # trans_segment_filtered = numpy.zeros(0)
-        # for i, value in enumerate(trans_segment):
-        # 	if i % args.framesFaceTracking == 0:
-        # 		trans_segment_filtered = numpy.append(trans_segment_filtered, value)
+        # For every 10th value ins trans_segment leave the value, for the rest set it to 0 (to compensate for video skipping frames)
+        trans_segment_filtered = numpy.zeros(0)
+        for i, value in enumerate(trans_segment):
+        	if i % self.frames_face_tracking == 0:
+        		trans_segment_filtered = numpy.append(trans_segment_filtered, value)
 
         # TODO: Option 1
-        return trans_segment, samplerate
+        return trans_segment_filtered, samplerate
     

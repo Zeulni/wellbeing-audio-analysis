@@ -64,7 +64,13 @@ class SpeakerDiarization:
         for tidx, track in enumerate(track_speaking_segments):
             for i in range(len(track)):
                 if track[i][0] == track[i][1]:
-                    track_speaking_segments[tidx].remove(track[i])
+                    # track_speaking_segments[tidx].remove(track[i])
+                    # Not removing them, rather setting them to 0
+                    track_speaking_segments[tidx][i] = [0,0]
+                    
+        # Remove all segments where both start end end time are 0
+        track_speaking_segments = [[x for x in y if x != [0,0]] for y in track_speaking_segments]
+
 
         if self.create_track_videos:
             cut_track_videos(track_speaking_segments, self.pyavi_path, self.video_path, self.n_data_loader_thread)   

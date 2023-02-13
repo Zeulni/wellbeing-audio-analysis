@@ -65,11 +65,11 @@ class CropTracks:
         ])
         
         # Loop over every frame, read the frame, then loop over all the tracks per frame and if available, crop the face
-        for fidx in range(num_frames):
+        for fidx in range(0, num_frames, self.frames_face_tracking):
             vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
             ret, image = vIn.read()
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             for tidx, track in enumerate(tracks):
                 # In the current frame, first check whether the track has a bbox for this frame (if yes, perform opererations)
                 if fidx in track['frame']:

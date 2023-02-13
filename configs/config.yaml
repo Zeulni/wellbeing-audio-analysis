@@ -28,7 +28,7 @@ MIN_FACE_SIZE: 1
 CROP_SCALE: 0.40
 
 # To speed up the face tracking, we only track the face in every x frames (choose 1,2,3,5,6,10, or 15)
-FRAMES_FACE_TRACKING: 1
+FRAMES_FACE_TRACKING: 3
 
 # The start time of the video
 START: 0

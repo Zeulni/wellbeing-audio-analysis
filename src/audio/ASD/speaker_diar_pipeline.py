@@ -4,6 +4,7 @@
 
 import os
 import pickle
+import time
 
 # from shutil import rmtree
 
@@ -96,33 +97,43 @@ class ASDSpeakerDirPipeline:
 		self.track_cropper = CropTracks(self.video_path, self.total_frames, self.frames_face_tracking, self.crop_scale, self.device)
   
 		# Initialize the ASD network
-		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec)
+		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec, self.frames_face_tracking)
   
 		# Initialize the speaker diarization
 		self.speaker_diarization = SpeakerDiarization(self.pyavi_path, self.video_path, self.video_name, self.n_data_loader_thread, 
                                                 	  self.threshold_same_person, self.create_track_videos, self.total_frames, self.num_frames_per_sec)
 	
-  
-	def __check_asd_done(self) -> bool:
-		# If pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
-		if os.path.exists(os.path.join(self.pywork_path, 'scores.pkl')) and os.path.exists(os.path.join(self.pywork_path, 'tracks.pkl')):
-			with open(os.path.join(self.pywork_path, 'scores.pkl'), 'rb') as f:
-				self.scores = pickle.load(f)
-			with open(os.path.join(self.pywork_path, 'tracks.pkl'), 'rb') as f:
-				self.tracks = pickle.load(f)
-			write_to_terminal("ASD is done, scores and tracks are loaded from the pickle files.")
-			return True
-		return False
 
 	def __check_face_detection_done(self) -> bool:
-		if os.path.exists(os.path.join(self.pywork_path, 'faces.pckl')):
-			with open(os.path.join(self.pywork_path, 'faces.pckl'), 'rb') as f:
+		if os.path.exists(os.path.join(self.pywork_path, 'faces.pickle')):
+			with open(os.path.join(self.pywork_path, 'faces.pickle'), 'rb') as f:
 				self.faces = pickle.load(f)
 				write_to_terminal("Face detection is done, faces are loaded from the pickle files.")
 				return True
 		else:
 			self.faces = None
 			return False
+
+	def __check_face_cropping_done(self) -> bool:
+		if os.path.exists(os.path.join(self.pywork_path, 'tracks.pickle')):
+			with open(os.path.join(self.pywork_path, 'tracks.pickle'), 'rb') as f:
+				self.tracks = pickle.load(f)
+				write_to_terminal("Face cropping is done, tracks are loaded from the pickle files.")
+				return True
+		else:
+			self.tracks = None
+			return False
+
+	def __check_asd_done(self) -> bool:
+		# If pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
+		if os.path.exists(os.path.join(self.pywork_path, 'scores.pickle')) and os.path.exists(os.path.join(self.pywork_path, 'tracks.pkl')):
+			with open(os.path.join(self.pywork_path, 'scores.pickle'), 'rb') as f:
+				self.scores = pickle.load(f)
+			with open(os.path.join(self.pywork_path, 'tracks.pickle'), 'rb') as f:
+				self.tracks = pickle.load(f)
+			write_to_terminal("ASD is done, scores and tracks are loaded from the pickle files.")
+			return True
+		return False
 
 
 	# Pipeline for the ASD algorithm
@@ -142,34 +153,55 @@ class ASDSpeakerDirPipeline:
 		# ```
 	
 		# Checkpoint ASD (Assumption: If pickle files in pywork folder exist, ASD is done and all the other files exist (to re-run ASD delete pickle files))
-		asd_done = self._ASDPipeline__check_asd_done()
+		asd_done = self._ASDSpeakerDirPipeline__check_asd_done()
 		if asd_done == False:
 	
 			# Extract audio from video
+
+			start_time = time.perf_counter()
 			audio_file_path = extract_audio_from_video(self.pyavi_path, self.video_path, self.n_data_loader_thread)
-		
+			end_time = time.perf_counter()
+			print(f"--- Audio extraction done in {end_time - start_time:0.4f} seconds")
+  
 			# Face detection (check for checkpoint first)
-			face_detection_done = self._ASDPipeline__check_face_detection_done()
+			start_time = time.perf_counter()
+			face_detection_done = self._ASDSpeakerDirPipeline__check_face_detection_done()
 			if face_detection_done == False:
 				self.faces = self.face_detector.s3fd_face_detection()
+			end_time = time.perf_counter()
+			print(f"--- Face detection done in {end_time - start_time:0.4f} seconds")
 		
 			# Face tracking
+			start_time = time.perf_counter()
 			all_tracks = []
 			all_tracks.extend(self.face_tracker.track_shot_face_tracker(self.faces))
 			write_to_terminal("Face tracks created - detected", str(len(all_tracks)))
+			end_time = time.perf_counter()
+			print(f"--- Face tracking done in {end_time - start_time:0.4f} seconds")
 
 			# Crop all the tracks from the video (are stored in CPU memory)
-			self.tracks, faces_all_tracks = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
-			safe_pickle_file(self.pywork_path, "tracks.pkl", self.tracks, "Track saved in", self.pywork_path)
+			start_time = time.perf_counter()
+			face_cropping_done = self._ASDSpeakerDirPipeline__check_face_cropping_done()
+			if face_cropping_done == False:
+				self.tracks, faces_all_tracks = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
+				safe_pickle_file(self.pywork_path, "tracks.pickle", self.tracks, "Track saved in", self.pywork_path)
+			end_time = time.perf_counter()
+			print(f"--- Track cropping done in {end_time - start_time:0.4f} seconds")
 
 			# Active Speaker Detection by TalkNet
+			start_time = time.perf_counter()
 			self.scores = self.asd_network.talknet_network(all_tracks, faces_all_tracks, audio_file_path)
-			safe_pickle_file(self.pywork_path, "scores.pkl", self.scores, "Scores extracted and saved in", self.pywork_path)
+			safe_pickle_file(self.pywork_path, "scores.pickle", self.scores, "Scores extracted and saved in", self.pywork_path)
+			end_time = time.perf_counter()
+			print(f"--- ASD done in {end_time - start_time:0.4f} seconds")
 		
 
 		# Visualization, save the result as the new video	
 		if self.include_visualization == True:
+			start_time = time.perf_counter()
 			visualization(self.tracks, self.scores, self.total_frames, self.video_path, self.pyavi_path, self.num_frames_per_sec, self.n_data_loader_thread)
-		
+			end_time = time.perf_counter()
+			print(f"--- Visualization done in {end_time - start_time:0.4f} seconds")
+  
 		# Speaker diarization
 		self.speaker_diarization.run(self.tracks, self.scores)
