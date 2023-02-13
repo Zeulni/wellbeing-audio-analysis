@@ -85,6 +85,7 @@ class ASDSpeakerDirPipeline:
 		# The pickle files
 		self.faces = None
 		self.tracks = None
+		self.all_tracks = None
 		self.score = None
    
 		# Initialize the face detector
@@ -115,18 +116,25 @@ class ASDSpeakerDirPipeline:
 			return False
 
 	def __check_face_cropping_done(self) -> bool:
-		if os.path.exists(os.path.join(self.pywork_path, 'tracks.pickle')):
+		# if os.path.exists(os.path.join(self.pywork_path, 'tracks.pickle')):
+		# 	with open(os.path.join(self.pywork_path, 'tracks.pickle'), 'rb') as f:
+		# 		self.tracks = pickle.load(f)
+		# 		write_to_terminal("Face cropping is done, tracks are loaded from the pickle files.")
+		# 		return True
+		if os.path.exists(os.path.join(self.pywork_path, 'tracks.pickle')) and os.path.exists(os.path.join(self.pywork_path, 'all_tracks.pkl')):
 			with open(os.path.join(self.pywork_path, 'tracks.pickle'), 'rb') as f:
 				self.tracks = pickle.load(f)
-				write_to_terminal("Face cropping is done, tracks are loaded from the pickle files.")
-				return True
+			with open(os.path.join(self.pywork_path, 'all_tracks.pickle'), 'rb') as f:
+				self.all_tracks = pickle.load(f)
+			write_to_terminal("Face Cropping is done, all_tracks and tracks are loaded from the pickle files.")
+			return True
 		else:
 			self.tracks = None
 			return False
 
 	def __check_asd_done(self) -> bool:
 		# If pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
-		if os.path.exists(os.path.join(self.pywork_path, 'scores.pickle')) and os.path.exists(os.path.join(self.pywork_path, 'tracks.pkl')):
+		if os.path.exists(os.path.join(self.pywork_path, 'scores.pickle')) and os.path.exists(os.path.join(self.pywork_path, 'tracks.pickle')):
 			with open(os.path.join(self.pywork_path, 'scores.pickle'), 'rb') as f:
 				self.scores = pickle.load(f)
 			with open(os.path.join(self.pywork_path, 'tracks.pickle'), 'rb') as f:
@@ -185,6 +193,7 @@ class ASDSpeakerDirPipeline:
 			if face_cropping_done == False:
 				self.tracks, faces_all_tracks = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
 				safe_pickle_file(self.pywork_path, "tracks.pickle", self.tracks, "Track saved in", self.pywork_path)
+				safe_pickle_file(self.pywork_path, "all_tracks.pickle", self.tracks, "All_Tracks saved in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- Track cropping done in {end_time - start_time:0.4f} seconds")
 
