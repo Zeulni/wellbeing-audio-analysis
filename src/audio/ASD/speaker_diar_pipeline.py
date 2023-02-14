@@ -203,6 +203,7 @@ class ASDSpeakerDirPipeline:
 			face_cropping_done = self._ASDSpeakerDirPipeline__check_face_cropping_done()
 			if face_cropping_done == False:
 				self.tracks, self.faces_frames = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
+				self.tracks_new = self.track_cropper.crop_tracks_from_videos_parallel_chunks(all_tracks, self.pywork_path, "faces_frames.npz")
 				safe_pickle_file(self.pywork_path, "tracks.pickle", self.tracks, "Track saved in", self.pywork_path)
 				safe_pickle_file(self.pywork_path, "faces_frames.pickle", self.faces_frames, "Face Tracks saved in", self.pywork_path)
 			end_time = time.perf_counter()
