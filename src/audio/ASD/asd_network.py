@@ -38,17 +38,17 @@ class ASDNetwork():
         
         self.number_tracks = len(all_tracks)
 
-        all_scores= []
-        for tidx, track in enumerate(all_tracks):
+        # all_scores= []
+        # for tidx, track in enumerate(all_tracks):
 
-            track_scores = self.calculate_scores(tidx, track)
-            all_scores.append(track_scores)	
+        #     track_scores = self.calculate_scores(tidx, track)
+        #     all_scores.append(track_scores)	
         
         
         # # Create a pool of worker processes
-        # with mp.Pool(processes=mp.cpu_count()) as pool:
-        #     # Map the calculate_scores_mp function to the list of tracks
-        #     all_scores = list(pool.map(self.calculate_scores_mp, enumerate(all_tracks)))
+        with mp.Pool(processes=mp.cpu_count()) as pool:
+            # Map the calculate_scores_mp function to the list of tracks
+            all_scores = list(pool.map(self.calculate_scores_mp, enumerate(all_tracks)))
             
         return all_scores
     
@@ -104,12 +104,12 @@ class ASDNetwork():
 
         # Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
         # * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
-        video_feature_old = self.faces_frames[tidx]
+        # video_feature_old = self.faces_frames[tidx]
         video_feature = self.get_video_feature(tidx)
         
         # Check whether video_feature and video_feature_old are the same
-        if not numpy.array_equal(video_feature_old, video_feature):
-            print("video_feature and video_feature_old are not the same")
+        # if not numpy.array_equal(video_feature_old, video_feature):
+        #     print("video_feature and video_feature_old are not the same")
         
         
         # Remove all frames that have the value 0 (as they are not used)

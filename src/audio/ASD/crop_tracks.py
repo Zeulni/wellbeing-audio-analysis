@@ -166,10 +166,10 @@ class CropTracks:
         output_file = file_path_frames_storage
         chunk_size = 1000  # number of frames to process at a time
         
-        with open(output_file, 'wb') as f:
-            numpy.savez(f, faces=numpy.zeros((len(tracks), num_frames, 112, 112), dtype=numpy.float32))
+        # with open(output_file, 'wb') as f:
+        #     numpy.savez(f, faces=numpy.zeros((len(tracks), num_frames, 112, 112), dtype=numpy.float32))
             
-        chunk_faces = numpy.memmap(output_file, mode="r+", shape=(len(tracks), num_frames, 112, 112), dtype=float)
+        chunk_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), num_frames, 112, 112), dtype=float)
         
         for chunk_start in range(0, num_frames, chunk_size):
             chunk_end = min(chunk_start + chunk_size, num_frames) 
