@@ -1,7 +1,7 @@
 # -- THE FOLLOWING COMMANDS ARE ALL USED FOR ACTIVE SPEAKER DETECTION
 
 # Name of the input file to be processed (.mp4 or .avi)
-VIDEO_NAME: "001"
+VIDEO_NAME: "two_min_snippet"
 
 # Path for inputs, temporary files, and outputs
 VIDEO_FOLDER: "videos"

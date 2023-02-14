@@ -43,7 +43,5 @@ class FaceDetector:
                     dets[-1].append({'frame':fidx, 'bbox':bbox['bbox'], 'conf':bbox['conf']})
             sys.stderr.write('%s-%05d; %d dets\r' % (self.video_path, fidx, len(dets[-1])))
             fidx += 1
-        
-        safe_pickle_file(self.pywork_path, 'faces.pickle', dets, "Faces detected and stored in", self.pywork_path)
             
         return dets        
