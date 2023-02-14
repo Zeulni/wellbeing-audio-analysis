@@ -66,7 +66,10 @@ class ASDSpeakerDirPipeline:
 		self.pyavi_path = os.path.join(self.save_path, 'pyavi')
 		self.pywork_path = os.path.join(self.save_path, 'pywork')
   
-		self.storage_file_path = os.path.join(self.pywork_path,  "faces_frames.npz")
+		self.file_path_frames_storage = os.path.join(self.pywork_path,  "faces_frames.npz")
+		self.file_path_faces_bbox = os.path.join(self.pywork_path,  "faces_bbox.pickle")
+		self.file_path_scores = os.path.join(self.pywork_path,  "scores.pickle")
+		self.file_path_tracks = os.path.join(self.pywork_path,  "tracks.pickle")
 	
 		self.num_frames_per_sec = get_frames_per_second(self.video_path)
 		self.total_frames = get_num_total_frames(self.video_path)
@@ -100,7 +103,7 @@ class ASDSpeakerDirPipeline:
 		self.track_cropper = CropTracks(self.video_path, self.total_frames, self.frames_face_tracking, self.crop_scale, self.device)
   
 		# Initialize the ASD network
-		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec, self.frames_face_tracking, self.storage_file_path)
+		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec, self.frames_face_tracking, self.file_path_frames_storage, self.total_frames)
   
 		# Initialize the speaker diarization
 		self.speaker_diarization = SpeakerDiarization(self.pyavi_path, self.video_path, self.video_name, self.n_data_loader_thread, 
@@ -108,8 +111,8 @@ class ASDSpeakerDirPipeline:
 	
 
 	def __check_face_detection_done(self) -> bool:
-		if os.path.exists(os.path.join(self.pywork_path, 'faces_bbox.pickle')):
-			with open(os.path.join(self.pywork_path, 'faces_bbox.pickle'), 'rb') as f:
+		if os.path.exists(self.file_path_faces_bbox):
+			with open(self.file_path_faces_bbox, 'rb') as f:
 				self.faces_bbox = pickle.load(f)
 				write_to_terminal("Face detection is done, faces are loaded from the pickle files.")
 				return True
@@ -118,13 +121,8 @@ class ASDSpeakerDirPipeline:
 			return False
 
 	def __check_face_cropping_done(self) -> bool:
-		# if os.path.exists(os.path.join(self.pywork_path, 'tracks.pickle')):
-		# 	with open(os.path.join(self.pywork_path, 'tracks.pickle'), 'rb') as f:
-		# 		self.tracks = pickle.load(f)
-		# 		write_to_terminal("Face cropping is done, tracks are loaded from the pickle files.")
-		# 		return True
-		if os.path.exists(os.path.join(self.pywork_path, 'tracks.pickle')) and os.path.exists(os.path.join(self.pywork_path, 'faces_frames.npz')):
-			with open(os.path.join(self.pywork_path, 'tracks.pickle'), 'rb') as f:
+		if os.path.exists(self.file_path_tracks) and os.path.exists(os.path.join(self.pywork_path, 'faces_frames.npz')):
+			with open(self.file_path_tracks, 'rb') as f:
 				self.tracks = pickle.load(f)
 			return True
 		else:
@@ -132,8 +130,8 @@ class ASDSpeakerDirPipeline:
 			return False
 
 	def __check_asd_done(self) -> bool:
-		if os.path.exists(os.path.join(self.pywork_path, 'scores.pickle')):
-			with open(os.path.join(self.pywork_path, 'scores.pickle'), 'rb') as f:
+		if os.path.exists(self.file_path_scores):
+			with open(self.file_path_scores, 'rb') as f:
 				self.scores = pickle.load(f)
 				write_to_terminal("ASD is done, scores are loaded from the pickle files.")
 				return True
@@ -143,10 +141,10 @@ class ASDSpeakerDirPipeline:
 
 	def __check_pipeline_done(self) -> bool:
 		# If pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
-		if os.path.exists(os.path.join(self.pywork_path, 'scores.pickle')) and os.path.exists(os.path.join(self.pywork_path, 'tracks.pickle')):
-			with open(os.path.join(self.pywork_path, 'scores.pickle'), 'rb') as f:
+		if os.path.exists(self.file_path_scores) and os.path.exists(self.file_path_tracks):
+			with open(self.file_path_scores, 'rb') as f:
 				self.scores = pickle.load(f)
-			with open(os.path.join(self.pywork_path, 'tracks.pickle'), 'rb') as f:
+			with open(self.file_path_tracks, 'rb') as f:
 				self.tracks = pickle.load(f)
 			write_to_terminal("ASD is done, scores and tracks are loaded from the pickle files.")
 			return True
@@ -168,10 +166,6 @@ class ASDSpeakerDirPipeline:
 		#     ├── scores.pckl (ASD result) - score values over time whether one speaks, for each detected face (video)
 		#     └── tracks.pckl (face tracking result) - face bounding boxes over time for each detected face (video), per track x frames (e.g. in sample 7 tracks each ~500 frames)
 		# ```
-	
-		# TODO: store file names in variables!! (e.g. also correct in then in asd_network or wherever I use the filename)
-		# TODO: checkpoint for npz file, not pickle file anymore
-		# TODO: activate multiprocessing again
  
 		# Checkpoint ASD (Assumption: If pickle files in pywork folder exist, ASD is done and all the other files exist (to re-run ASD delete pickle files))
 		pipeline_done = self._ASDSpeakerDirPipeline__check_pipeline_done()
@@ -189,7 +183,7 @@ class ASDSpeakerDirPipeline:
 			face_detection_done = self._ASDSpeakerDirPipeline__check_face_detection_done()
 			if face_detection_done == False:
 				self.faces_bbox = self.face_detector.s3fd_face_detection()
-				safe_pickle_file(self.pywork_path, 'faces_bbox.pickle', self.faces_bbox, "Faces detected and stored in", self.pywork_path)
+				safe_pickle_file(self.file_path_faces_bbox, self.faces_bbox, "Faces detected and stored in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- Face detection done in {end_time - start_time:0.4f} seconds")
 		
@@ -205,9 +199,9 @@ class ASDSpeakerDirPipeline:
 			start_time = time.perf_counter()
 			face_cropping_done = self._ASDSpeakerDirPipeline__check_face_cropping_done()
 			if face_cropping_done == False:
-				self.tracks, self.faces_frames = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
-				self.tracks_new = self.track_cropper.crop_tracks_from_videos_parallel_chunks(all_tracks, self.storage_file_path)
-				safe_pickle_file(self.pywork_path, "tracks.pickle", self.tracks, "Track saved in", self.pywork_path)
+				test, self.faces_frames = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
+				self.tracks = self.track_cropper.crop_tracks_from_videos_parallel_chunks(all_tracks, self.file_path_frames_storage)
+				safe_pickle_file(self.file_path_tracks, self.tracks, "Track saved in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- Track cropping done in {end_time - start_time:0.4f} seconds")
 
@@ -216,7 +210,7 @@ class ASDSpeakerDirPipeline:
 			asd_done = self._ASDSpeakerDirPipeline__check_asd_done()
 			if asd_done == False:
 				self.scores = self.asd_network.talknet_network(all_tracks, self.faces_frames, audio_file_path)
-				safe_pickle_file(self.pywork_path, "scores.pickle", self.scores, "Scores extracted and saved in", self.pywork_path)
+				safe_pickle_file(self.file_path_scores, self.scores, "Scores extracted and saved in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- ASD done in {end_time - start_time:0.4f} seconds")
 		

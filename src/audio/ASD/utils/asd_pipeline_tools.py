@@ -17,8 +17,7 @@ from src.audio.utils.constants import ASD_DIR
 def write_to_terminal(text, argument = "") -> None:
     sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S ") + text + " " + argument + "\r\n")
 
-def safe_pickle_file(folder_path: str, filename: str, data, text = "pickle file stored", text_argument = "") -> None:
-    save_path = os.path.join(folder_path, filename)
+def safe_pickle_file(save_path, data, text = "pickle file stored", text_argument = "") -> None:
     with open(save_path, 'wb') as fil:
         pickle.dump(data, fil)
     write_to_terminal(text, text_argument)

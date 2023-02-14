@@ -112,7 +112,7 @@ class CropTracks:
 
         return proc_tracks, all_faces
     
-    def crop_tracks_from_videos_parallel_chunks(self, tracks, storage_file_path) -> tuple:
+    def crop_tracks_from_videos_parallel_chunks(self, tracks, file_path_frames_storage) -> tuple:
         # Instead of going only through one track in crop_track_faster, we only read the video ones and go through all the tracks
         # TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
         # dets = {'x':[], 'y':[], 's':[]}
@@ -163,8 +163,14 @@ class CropTracks:
         ])
         
         # To not store all the frames in memory, we read the video in chunks and store it to harddrive
-        output_file = storage_file_path
+        output_file = file_path_frames_storage
         chunk_size = 1000  # number of frames to process at a time
+        
+        with open(output_file, 'wb') as f:
+            numpy.savez(f, faces=numpy.zeros((len(tracks), num_frames, 112, 112), dtype=numpy.float32))
+            
+        chunk_faces = numpy.memmap(output_file, mode="r+", shape=(len(tracks), num_frames, 112, 112), dtype=float)
+        
         for chunk_start in range(0, num_frames, chunk_size):
             chunk_end = min(chunk_start + chunk_size, num_frames) 
             # Loop over every frame, read the frame, then loop over all the tracks per frame and if available, crop the face
@@ -198,23 +204,31 @@ class CropTracks:
                         all_faces[tidx, fidx, :, :] = face[0, :, :]
 
             # Store the processed faces for the current chunk
-            chunk_faces = all_faces[:, chunk_start:chunk_end, :, :]
-            if chunk_start == 0:
-                # Create a new output file if it doesn't exist yet
-                numpy.savez(output_file, faces=chunk_faces)
-            else:
-                # Append to the existing output file if it already exists
-                with numpy.load(output_file) as output:
-                    output["faces"] = numpy.concatenate((output["faces"], chunk_faces), axis=1)
-                    numpy.savez(output_file, **output)
+            # chunk_faces = all_faces[:, chunk_start:chunk_end, :, :]
+            
+            # Write all_faces to chunk_faces (numpy array)
+            chunk_faces[:, chunk_start:chunk_end, :, :] = all_faces[:, chunk_start:chunk_end, :, :]
+            
+            # if chunk_start == 0:
+            #     # Create a new output file if it doesn't exist yet
+            #     with open(output_file, 'wb') as f:
+            #         numpy.savez(f, faces=chunk_faces)
+            # else:
+            #     # Instead of loading the numpy array to the RAM, map the file to the memory and then concatenate the arrays
+            #     faces = numpy.memmap(output_file, mode="r+", shape=(len(tracks), num_frames, 112, 112), dtype=float)
+            #     faces[:, chunk_start:chunk_end, :, :] = chunk_faces
 
             # Clear the memory by resetting the `all_faces` array
             all_faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.float32)
         
         # Close the video
         vIn.release()
+        
+        # Flush the data to disk and close the file
+        chunk_faces.flush()
+        del chunk_faces
 
-        all_faces = all_faces.to(self.device)
+        #all_faces = all_faces.to(self.device)
         
         # Return the dets and the faces
 
