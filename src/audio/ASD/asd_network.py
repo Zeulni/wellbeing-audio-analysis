@@ -46,9 +46,26 @@ class ASDNetwork():
         
         
         # # Create a pool of worker processes
-        with mp.Pool(processes=mp.cpu_count()) as pool:
-            # Map the calculate_scores_mp function to the list of tracks
-            all_scores = list(pool.map(self.calculate_scores_mp, enumerate(all_tracks)))
+        # with mp.Pool(processes=mp.cpu_count()) as pool:
+        #     # Map the calculate_scores_mp function to the list of tracks
+        #     all_scores = list(pool.map(self.calculate_scores_mp, enumerate(all_tracks)))
+        
+        # # Create a pool of worker processes and show progress with tqdm
+        # with mp.Pool(processes=mp.cpu_count()) as pool:
+        #     # Map the calculate_scores_mp function to the list of tracks
+        #     all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks))) 
+        
+        # If a CPU is available, perform multiprocessing on CPU using the multiprocessing library. If a GPU is available, use the torch.multiprocessing library
+        if self.device == 'cuda':
+            # Create a pool of worker processes and show progress with tqdm
+            with torch.multiprocessing.Pool(processes=mp.cpu_count()) as pool:
+                # Map the calculate_scores_mp function to the list of tracks
+                all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks)))
+        else:   
+            # Create a pool of worker processes and show progress with tqdm
+            with mp.Pool(processes=mp.cpu_count()) as pool:
+                # Map the calculate_scores_mp function to the list of tracks
+                all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks)))
             
         return all_scores
     
@@ -65,14 +82,12 @@ class ASDNetwork():
         samplerate = segment.frame_rate
         trans_segment = numpy.array(segment.get_array_of_samples(), dtype=numpy.int16)
 
-        # TODO: Option 1
         # For every 10th value ins trans_segment leave the value, for the rest set it to 0 (to compensate for video skipping frames)
         trans_segment_filtered = numpy.zeros(0)
         for i, value in enumerate(trans_segment):
         	if i % self.frames_face_tracking == 0:
         		trans_segment_filtered = numpy.append(trans_segment_filtered, value)
 
-        # TODO: Option 1
         return trans_segment_filtered, samplerate
     
     def get_video_feature(self, tidx) -> numpy.ndarray:
@@ -136,7 +151,6 @@ class ASDNetwork():
             track_scores.append(scores)
         track_scores = numpy.round((numpy.mean(numpy.array(track_scores), axis = 0)), 1).astype(float)
 
-        # TODO: Option 1
         # To compensate for the skipping of frames, repeat the score for each frame (so it has the same length again)
         track_scores = numpy.repeat(track_scores, self.frames_face_tracking)
 
