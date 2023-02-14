@@ -112,7 +112,7 @@ class CropTracks:
 
         return proc_tracks, all_faces
     
-    def crop_tracks_from_videos_parallel_chunks(self, tracks, folder_path, file_name) -> tuple:
+    def crop_tracks_from_videos_parallel_chunks(self, tracks, storage_file_path) -> tuple:
         # Instead of going only through one track in crop_track_faster, we only read the video ones and go through all the tracks
         # TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
         # dets = {'x':[], 'y':[], 's':[]}
@@ -163,7 +163,7 @@ class CropTracks:
         ])
         
         # To not store all the frames in memory, we read the video in chunks and store it to harddrive
-        output_file = os.path.join(folder_path, file_name)
+        output_file = storage_file_path
         chunk_size = 1000  # number of frames to process at a time
         for chunk_start in range(0, num_frames, chunk_size):
             chunk_end = min(chunk_start + chunk_size, num_frames) 

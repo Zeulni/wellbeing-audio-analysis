@@ -11,7 +11,7 @@ from src.audio.ASD.talkNet import talkNet
 
 
 class ASDNetwork():
-    def __init__(self, device, pretrain_model, num_frames_per_sec, frames_face_tracking) -> None:
+    def __init__(self, device, pretrain_model, num_frames_per_sec, frames_face_tracking, storage_file_path) -> None:
         self.device = device
         self.pretrain_model = pretrain_model
         self.num_frames_per_sec = num_frames_per_sec
@@ -20,6 +20,8 @@ class ASDNetwork():
         self.faces_frames = None
         self.audio_file_path = None
         self.s = None 
+        
+        self.storage_file_path = storage_file_path
         
     def talknet_network(self, all_tracks, faces_frames, audio_file_path) -> list:
         # GPU: active speaker detection by pretrained TalkNet
@@ -32,30 +34,30 @@ class ASDNetwork():
         self.audio_file_path = audio_file_path
         self.s = s
 
-        # allScores= []
+        # all_scores= []
         # for tidx, track in enumerate(all_tracks):
 
-        #     allScore = self.calculate_scores(tidx, track)
-        #     allScores.append(allScore)	
+        #     track_scores = self.calculate_scores(tidx, track)
+        #     all_scores.append(track_scores)	
         
         
         # Create a pool of worker processes
         with mp.Pool(processes=mp.cpu_count()) as pool:
             # Map the calculate_scores_mp function to the list of tracks
-            allScores = list(pool.map(self.calculate_scores_mp, enumerate(all_tracks)))
+            all_scores = list(pool.map(self.calculate_scores_mp, enumerate(all_tracks)))
             
-        return allScores
+        return all_scores
     
     def calculate_scores_mp(self, tidx_track):
         tidx, track = tidx_track
         return self.calculate_scores(tidx, track)
     
     def extract_audio(self, audio_file, track) -> tuple:
-        audioStart  = (track['frame'][0]) / self.num_frames_per_sec
-        audioEnd    = (track['frame'][-1]+1) / self.num_frames_per_sec
+        audio_start  = (track['frame'][0]) / self.num_frames_per_sec
+        audio_end    = (track['frame'][-1]+1) / self.num_frames_per_sec
         sound = AudioSegment.from_wav(audio_file)
         
-        segment = sound[audioStart*1000:audioEnd*1000]
+        segment = sound[audio_start*1000:audio_end*1000]
         samplerate = segment.frame_rate
         trans_segment = numpy.array(segment.get_array_of_samples(), dtype=numpy.int16)
 
@@ -69,32 +71,40 @@ class ASDNetwork():
         # TODO: Option 1
         return trans_segment_filtered, samplerate
     
+    def get_video_feature(self, tidx) -> numpy.ndarray:
+        # Get the frames for the corresponding track from the frames_tracks.npz file in the pywork folder and then return it
+       all_track_data = numpy.load(self.storage_file_path)
+       all_track_data = all_track_data['faces']
+       track_data = all_track_data[tidx]
+       
+       return torch.tensor(track_data)
     
     def calculate_scores(self, tidx, track) -> list:
-        # durationSet = {1,2,4,6} # To make the result more reliable
-        durationSet = {1,1,1,2,2,2,3,3,4,5,6} # Use this line can get more reliable result
+        # duration_set = {1,2,4,6} # To make the result more reliable
+        duration_set = {1,1,1,2,2,2,3,3,4,5,6} # Use this line can get more reliable result
         
         segment, samplerate = self.extract_audio(self.audio_file_path, track)
 
-        audioFeature = python_speech_features.mfcc(segment, samplerate, numcep = 13, winlen = 0.025, winstep = 0.010)
+        audio_feature = python_speech_features.mfcc(segment, samplerate, numcep = 13, winlen = 0.025, winstep = 0.010)
 
         # Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
         # * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
-        videoFeature = self.faces_frames[tidx]
+        # video_feature_old = self.faces_frames[tidx]
+        video_feature = self.get_video_feature(tidx)
         # Remove all frames that have the value 0 (as they are not used)
-        videoFeature = videoFeature[videoFeature.sum(axis=(1,2)) != 0]
+        video_feature = video_feature[video_feature.sum(axis=(1,2)) != 0]
 
-        length = min((audioFeature.shape[0] - audioFeature.shape[0] % 4) / 100, videoFeature.shape[0])
-        audioFeature = audioFeature[:int(round(length * 100)),:]
-        videoFeature = videoFeature[:int(round(length * self.num_frames_per_sec)),:,:]
-        allScore = [] # Evaluation use TalkNet
-        for duration in durationSet:
-            batchSize = int(math.ceil(length / duration))
+        length = min((audio_feature.shape[0] - audio_feature.shape[0] % 4) / 100, video_feature.shape[0])
+        audio_feature = audio_feature[:int(round(length * 100)),:]
+        video_feature = video_feature[:int(round(length * self.num_frames_per_sec)),:,:]
+        track_scores = [] # Evaluation use TalkNet
+        for duration in duration_set:
+            batch_size = int(math.ceil(length / duration))
             scores = []
             with torch.no_grad():
-                for i in range(batchSize):
-                    inputA = torch.FloatTensor(audioFeature[i * duration * 100:(i+1) * duration * 100,:]).unsqueeze(0).to(self.device)
-                    inputV = videoFeature[i * duration * self.num_frames_per_sec: (i+1) * duration * self.num_frames_per_sec,:,:].unsqueeze(0).to(self.device)
+                for i in range(batch_size):
+                    inputA = torch.FloatTensor(audio_feature[i * duration * 100:(i+1) * duration * 100,:]).unsqueeze(0).to(self.device)
+                    inputV = video_feature[i * duration * self.num_frames_per_sec: (i+1) * duration * self.num_frames_per_sec,:,:].unsqueeze(0).to(self.device)
                     embedA = self.s.model.forward_audio_frontend(inputA).to(self.device)
                     embedV = self.s.model.forward_visual_frontend(inputV).to(self.device)
     
@@ -102,18 +112,18 @@ class ASDNetwork():
                     out = self.s.model.forward_audio_visual_backend(embedA, embedV)
                     score = self.s.lossAV.forward(out, labels = None)
                     scores.extend(score)
-            allScore.append(scores)
-        allScore = numpy.round((numpy.mean(numpy.array(allScore), axis = 0)), 1).astype(float)
+            track_scores.append(scores)
+        track_scores = numpy.round((numpy.mean(numpy.array(track_scores), axis = 0)), 1).astype(float)
 
         # TODO: Option 1
         # To compensate for the skipping of frames, repeat the score for each frame (so it has the same length again)
-        allScore = numpy.repeat(allScore, self.frames_face_tracking)
+        track_scores = numpy.repeat(track_scores, self.frames_face_tracking)
 
         # To make sure the length is not longer than the video, crop it (if its the same length, just cut 3 frames off to be on the safe side)
-        if allScore.shape[0] > track['bbox'].shape[0]:
-            allScore = allScore[:track['bbox'].shape[0]]
-        elif (allScore.shape[0] - track['bbox'].shape[0]) >= -3:
-            allScore = allScore[:-3]
+        if track_scores.shape[0] > track['bbox'].shape[0]:
+            track_scores = track_scores[:track['bbox'].shape[0]]
+        elif (track_scores.shape[0] - track['bbox'].shape[0]) >= -3:
+            track_scores = track_scores[:-3]
             
-        return allScore
+        return track_scores
     
