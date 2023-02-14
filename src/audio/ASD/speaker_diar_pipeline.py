@@ -89,7 +89,7 @@ class ASDSpeakerDirPipeline:
 		self.score = None
    
 		# Initialize the face detector
-		self.face_detector = FaceDetector(self.device, self.video_path, self.frames_face_tracking, self.face_det_scale, self.pywork_path)
+		self.face_detector = FaceDetector(self.device, self.video_path, self.frames_face_tracking, self.face_det_scale, self.pywork_path, self.total_frames)
   
 		# Initialize the face tracker
 		self.face_tracker = FaceTracker(self.num_failed_det, self.min_track, self.min_face_size)
@@ -133,6 +133,16 @@ class ASDSpeakerDirPipeline:
 			return False
 
 	def __check_asd_done(self) -> bool:
+		if os.path.exists(os.path.join(self.pywork_path, 'scores.pickle')):
+			with open(os.path.join(self.pywork_path, 'scores.pickle'), 'rb') as f:
+				self.scores = pickle.load(f)
+				write_to_terminal("ASD is done, scores are loaded from the pickle files.")
+				return True
+		else:
+			self.scores = None
+			return False
+
+	def __check_pipeline_done(self) -> bool:
 		# If pickle files exist in the pywork folder, then directly load the scores and tracks pickle files
 		if os.path.exists(os.path.join(self.pywork_path, 'scores.pickle')) and os.path.exists(os.path.join(self.pywork_path, 'tracks.pickle')):
 			with open(os.path.join(self.pywork_path, 'scores.pickle'), 'rb') as f:
@@ -161,8 +171,8 @@ class ASDSpeakerDirPipeline:
 		# ```
 	
 		# Checkpoint ASD (Assumption: If pickle files in pywork folder exist, ASD is done and all the other files exist (to re-run ASD delete pickle files))
-		asd_done = self._ASDSpeakerDirPipeline__check_asd_done()
-		if asd_done == False:
+		pipeline_done = self._ASDSpeakerDirPipeline__check_pipeline_done()
+		if pipeline_done == False:
 	
 			# Extract audio from video
 
@@ -200,8 +210,10 @@ class ASDSpeakerDirPipeline:
 
 			# Active Speaker Detection by TalkNet
 			start_time = time.perf_counter()
-			self.scores = self.asd_network.talknet_network(all_tracks, self.faces_frames, audio_file_path)
-			safe_pickle_file(self.pywork_path, "scores.pickle", self.scores, "Scores extracted and saved in", self.pywork_path)
+			asd_done = self._ASDSpeakerDirPipeline__check_asd_done()
+			if asd_done == False:
+				self.scores = self.asd_network.talknet_network(all_tracks, self.faces_frames, audio_file_path)
+				safe_pickle_file(self.pywork_path, "scores.pickle", self.scores, "Scores extracted and saved in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- ASD done in {end_time - start_time:0.4f} seconds")
 		
