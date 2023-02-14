@@ -169,7 +169,7 @@ class CropTracks:
         # with open(output_file, 'wb') as f:
         #     numpy.savez(f, faces=numpy.zeros((len(tracks), num_frames, 112, 112), dtype=numpy.float32))
             
-        chunk_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), num_frames, 112, 112), dtype=float)
+        chunk_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), num_frames, 112, 112), dtype=numpy.uint8)
         
         for chunk_start in range(0, num_frames, chunk_size):
             chunk_end = min(chunk_start + chunk_size, num_frames) 

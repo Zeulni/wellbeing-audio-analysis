@@ -85,7 +85,7 @@ class ASDNetwork():
          
          # Load the faces array from self.file_path_frames_storage using memmap, then extract only the relevant track into the memory
             # and then return it
-        faces = numpy.memmap(self.file_path_frames_storage, mode="r+", shape=(self.number_tracks, self.total_frames, 112, 112), dtype=float)
+        faces = numpy.memmap(self.file_path_frames_storage, mode="r+", shape=(self.number_tracks, self.total_frames, 112, 112), dtype=numpy.uint8)
         track_data = faces[tidx]
         
         # Change it to float32
