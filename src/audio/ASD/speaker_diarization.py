@@ -126,17 +126,6 @@ class SpeakerDiarization:
         for tidx, track in enumerate(track_list_y):
             track_avg_y[tidx] = numpy.mean(track)    
 
-        # # Calculate the distance between the tracks
-        # track_dist = numpy.zeros((len(tracks), len(tracks)))
-        # for i in range(len(tracks)):
-        #     for j in range(len(tracks)):
-        #         track_dist[i,j] = math.sqrt((track_avg_x[i] - track_avg_x[j])**2 + (track_avg_y[i] - track_avg_y[j])**2)
-
-        # # Do make it independent of the image size in pixel, we need to normalize the distances
-        # track_dist = track_dist / numpy.max(track_dist)
-
-
-        # TODO:
         
         dbscan = DBSCAN(eps=1.05, min_samples=2)
         
@@ -158,11 +147,11 @@ class SpeakerDiarization:
             for j in range(len(tracks)):
                 track_dist[i,j] = math.sqrt((x_transformed[i,0] - x_transformed[j,0])**2 + (x_transformed[i,1] - x_transformed[j,1])**2)
         
-        # Using matplotlib, plot the data points (label each point with the index of the track)
-        for i in range(len(x_transformed)):
-            plt.scatter(x_transformed[i,0], x_transformed[i,1], label=i)  
-        plt.legend()  
-        plt.show()
+        # # Using matplotlib, plot the data points (label each point with the index of the track)
+        # for i in range(len(x_transformed)):
+        #     plt.scatter(x_transformed[i,0], x_transformed[i,1], label=i)  
+        # plt.legend()  
+        # plt.show()
 
         # perform clustering
         labels = dbscan.fit_predict(x_transformed)
@@ -201,49 +190,6 @@ class SpeakerDiarization:
                     
         # If one cluster has only one track, then it is not a cluster, so delete it
         speaking_clusters = [x for x in speaking_clusters if len(x) > 1]
-        
-        # # Print the speaking clusters
-        # for i in range(len(speaking_clusters)):
-        #     print(f'Speaking cluster {i}: {speaking_clusters[i]}')
-
-        # # Create a list of the tracks that are close to each other (if the distance is below defined threshold)
-        # track_close = [[] for i in range(len(tracks))]
-        # for i in range(len(tracks)):
-        #     for j in range(len(tracks)):
-        #         if track_dist[i,j] < threshold_same_person and i != j:
-        #             track_close[i].append(j)
-
-        # # Check for the tracks that are close to each other if they are speaking at the same time (by checking if they if the lists in trackSpeakingFaces have shared elements/frames)
-        # # If no, store the track number in the list track_close_speaking
-        # track_close_speaking = []
-        # for i in range(len(tracks)):
-        #     for j in range(len(track_close[i])):
-        #         if len(set(track_speaking_faces[i]) & set(track_speaking_faces[track_close[i][j]])) == 0:
-        #             track_close_speaking.append(i)
-        #             break
-
-        # # A cluster is a list of tracks that are close to each other and are not speaking at the same time
-        # # Create a list of clusters
-        # cluster = []
-        # for i in range(len(tracks)):
-        #     if i in track_close_speaking:
-        #         cluster.append([i])
-        #         for j in range(len(track_close[i])):
-        #             if track_close[i][j] in track_close_speaking:
-        #                 cluster[-1].append(track_close[i][j])
-
-        # # Remove duplicates from the clusters (e.g. [1,2,3] and [3,2,1] are the same)
-        # unique_clusters = set()
-        # for i in cluster:
-        #     i.sort()
-        #     if tuple(i) in unique_clusters:
-        #         cluster.remove(i)
-        #     else:
-        #         unique_clusters.add(tuple(i))
-
-        # # Print the unique clusters
-        # for i in unique_clusters:
-        #     write_to_terminal("Tracks that belong together: " + str(i))
 
         return speaking_clusters
     

@@ -46,16 +46,11 @@ class ASDNetwork():
         if self.device.type == 'cuda':            
                 
             # Show a progress bar using tqdm (based on the function above)
-            # all_scores = []
-            # for tidx, track in enumerate(tqdm.tqdm(all_tracks)):
-            #     track_scores = self.calculate_scores(tidx, track)
-            #     all_scores.append(track_scores)   
-            
-            # Use multiprocessing on the GPU 
-            # Using the "spawn" method to create a pool of worker processes and show progress with tqdm (using torch.multiprocessing)
-            with torch.multiprocessing.get_context("spawn").Pool(processes=torch.multiprocessing.cpu_count()) as pool:
-                # Map the calculate_scores_mp function to the list of tracks
-                all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks)))
+            # *Multiprocessing for GPU did not work on Colab
+            all_scores = []
+            for tidx, track in enumerate(tqdm.tqdm(all_tracks)):
+                track_scores = self.calculate_scores(tidx, track)
+                all_scores.append(track_scores)   
                 
         else:     
             # Using the "spawn" method to create a pool of worker processes and show progress with tqdm
