@@ -127,7 +127,7 @@ class SpeakerDiarization:
             track_avg_y[tidx] = numpy.mean(track)    
 
         
-        dbscan = DBSCAN(eps=1.05, min_samples=2)
+        dbscan = DBSCAN(eps=threshold_same_person, min_samples=2)
         
         # Create the datapoints for the DBSCAN algorithm
         x = []

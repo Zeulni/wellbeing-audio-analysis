@@ -41,7 +41,7 @@ START: 0
 DURATION: 0
 
 # If two face tracks (see folder pycrop) are close together (-> below that threshold) and are not speaking at the same time, then it is the same person
-THRESHOLD_SAME_PERSON: 0.15
+THRESHOLD_SAME_PERSON: 1.05
 
 # If enabled, it will create a video for each track, where only the segments where the person is speaking are included
 CREATE_TRACK_VIDEOS: False
