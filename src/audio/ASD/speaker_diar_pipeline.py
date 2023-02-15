@@ -4,6 +4,7 @@
 
 import os
 import pickle
+import time
 
 # from shutil import rmtree
 
@@ -149,23 +150,35 @@ class ASDSpeakerDirPipeline:
 			audio_file_path = extract_audio_from_video(self.pyavi_path, self.video_path, self.n_data_loader_thread)
 		
 			# Face detection (check for checkpoint first)
+			start_time = time.perf_counter()
 			face_detection_done = self._ASDSpeakerDirPipeline__check_face_detection_done()
 			if face_detection_done == False:
 				self.faces = self.face_detector.s3fd_face_detection()
+			end_time = time.perf_counter()
+			print(f"--- Face detection done in {end_time - start_time:0.4f} seconds")
 		
 			# Face tracking
+			start_time = time.perf_counter()
 			all_tracks = []
 			all_tracks.extend(self.face_tracker.track_shot_face_tracker(self.faces))
 			write_to_terminal("Face tracks created - detected", str(len(all_tracks)))
+			end_time = time.perf_counter()
+			print(f"--- Face tracking done in {end_time - start_time:0.4f} seconds")
 
 			# Crop all the tracks from the video (are stored in CPU memory)
+			start_time = time.perf_counter()
 			self.tracks, faces_all_tracks = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
 			safe_pickle_file(self.pywork_path, "tracks.pkl", self.tracks, "Track saved in", self.pywork_path)
+			end_time = time.perf_counter()
+			print(f"--- Track cropping done in {end_time - start_time:0.4f} seconds")
+
 
 			# Active Speaker Detection by TalkNet
+			start_time = time.perf_counter()
 			self.scores = self.asd_network.talknet_network(all_tracks, faces_all_tracks, audio_file_path)
 			safe_pickle_file(self.pywork_path, "scores.pkl", self.scores, "Scores extracted and saved in", self.pywork_path)
-		
+			end_time = time.perf_counter()
+			print(f"--- ASD done in {end_time - start_time:0.4f} seconds")
 
 		# Visualization, save the result as the new video	
 		if self.include_visualization == True:

@@ -157,4 +157,4 @@ def cut_track_videos(track_speaking_segments, pyavi_path, video_path, n_data_loa
         # Concatenate the clips
         final_clip = concatenate_videoclips(clips)
         # Write the final video
-        final_clip.write_videofile(cutted_file_name, threads=n_data_loader_thread, logger=None)
+        final_clip.write_videofile(cutted_file_name, threads=n_data_loader_thread)
