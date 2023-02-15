@@ -66,7 +66,8 @@ class CropTracks:
         ])
         
         # Loop over every frame, read the frame, then loop over all the tracks per frame and if available, crop the face
-        for fidx in range(0, num_frames, self.frames_face_tracking):
+        # for fidx in range(0, num_frames, self.frames_face_tracking):
+        for fidx in range(0, num_frames):
             vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
             ret, image = vIn.read()
 

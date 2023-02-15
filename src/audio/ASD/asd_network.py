@@ -84,13 +84,15 @@ class ASDNetwork():
         samplerate = segment.frame_rate
         trans_segment = numpy.array(segment.get_array_of_samples(), dtype=numpy.int16)
 
-        # For every 10th value ins trans_segment leave the value, for the rest set it to 0 (to compensate for video skipping frames)
-        trans_segment_filtered = numpy.zeros(0)
-        for i, value in enumerate(trans_segment):
-        	if i % self.frames_face_tracking == 0:
-        		trans_segment_filtered = numpy.append(trans_segment_filtered, value)
+        # TODO: change
+        # # For every 10th value ins trans_segment leave the value, for the rest set it to 0 (to compensate for video skipping frames)
+        # trans_segment_filtered = numpy.zeros(0)
+        # for i, value in enumerate(trans_segment):
+        # 	if i % self.frames_face_tracking == 0:
+        # 		trans_segment_filtered = numpy.append(trans_segment_filtered, value)
 
-        return trans_segment_filtered, samplerate
+        # TODO: change
+        return trans_segment, samplerate
     
     def get_video_feature(self, tidx) -> numpy.ndarray:
          
@@ -114,8 +116,8 @@ class ASDNetwork():
 
         # Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
         # * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
-        # video_feature = self.faces_frames[tidx]
-        video_feature = self.get_video_feature(tidx)
+        video_feature = self.faces_frames[tidx]
+        # video_feature = self.get_video_feature(tidx)
         
         # Check whether video_feature and video_feature_old are the same
         # if not numpy.array_equal(video_feature_old, video_feature):
@@ -146,14 +148,15 @@ class ASDNetwork():
             track_scores.append(scores)
         track_scores = numpy.round((numpy.mean(numpy.array(track_scores), axis = 0)), 1).astype(float)
 
-        # To compensate for the skipping of frames, repeat the score for each frame (so it has the same length again)
-        track_scores = numpy.repeat(track_scores, self.frames_face_tracking)
+        # TODO: change
+        # # To compensate for the skipping of frames, repeat the score for each frame (so it has the same length again)
+        # track_scores = numpy.repeat(track_scores, self.frames_face_tracking)
 
-        # To make sure the length is not longer than the video, crop it (if its the same length, just cut 3 frames off to be on the safe side)
-        if track_scores.shape[0] > track['bbox'].shape[0]:
-            track_scores = track_scores[:track['bbox'].shape[0]]
-        elif (track_scores.shape[0] - track['bbox'].shape[0]) >= -3:
-            track_scores = track_scores[:-3]
+        # # To make sure the length is not longer than the video, crop it (if its the same length, just cut 3 frames off to be on the safe side)
+        # if track_scores.shape[0] > track['bbox'].shape[0]:
+        #     track_scores = track_scores[:track['bbox'].shape[0]]
+        # elif (track_scores.shape[0] - track['bbox'].shape[0]) >= -3:
+        #     track_scores = track_scores[:-3]
             
         return track_scores
     
