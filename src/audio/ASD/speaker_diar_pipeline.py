@@ -142,14 +142,14 @@ class ASDSpeakerDirPipeline:
 		# ```
 	
 		# Checkpoint ASD (Assumption: If pickle files in pywork folder exist, ASD is done and all the other files exist (to re-run ASD delete pickle files))
-		asd_done = self._ASDPipeline__check_asd_done()
+		asd_done = self._ASDSpeakerDirPipeline__check_asd_done()
 		if asd_done == False:
 	
 			# Extract audio from video
 			audio_file_path = extract_audio_from_video(self.pyavi_path, self.video_path, self.n_data_loader_thread)
 		
 			# Face detection (check for checkpoint first)
-			face_detection_done = self._ASDPipeline__check_face_detection_done()
+			face_detection_done = self._ASDSpeakerDirPipeline__check_face_detection_done()
 			if face_detection_done == False:
 				self.faces = self.face_detector.s3fd_face_detection()
 		
