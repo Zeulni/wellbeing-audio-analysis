@@ -32,7 +32,7 @@ class ASDNetwork():
         sys.stderr.write("Model %s loaded from previous state! \r\n"%self.pretrain_model)
         s.eval()	
         
-        self.faces_frames = faces_frames
+        self.faces_frames = faces_frames.to(self.device)
         self.audio_file_path = audio_file_path
         self.s = s
         
@@ -44,29 +44,26 @@ class ASDNetwork():
         #     track_scores = self.calculate_scores(tidx, track)
         #     all_scores.append(track_scores)	
         
-        
-        # # Create a pool of worker processes
-        # with mp.Pool(processes=mp.cpu_count()) as pool:
-        #     # Map the calculate_scores_mp function to the list of tracks
-        #     all_scores = list(pool.map(self.calculate_scores_mp, enumerate(all_tracks)))
-        
-        # # Create a pool of worker processes and show progress with tqdm
-        # with mp.Pool(processes=mp.cpu_count()) as pool:
-        #     # Map the calculate_scores_mp function to the list of tracks
-        #     all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks))) 
-        
         # If a CPU is available, perform multiprocessing on CPU using the multiprocessing library. If a GPU is available, use the torch.multiprocessing library
-        if self.device == 'cuda':
-            # Create a pool of worker processes and show progress with tqdm
-            with torch.multiprocessing.Pool(processes=mp.cpu_count()) as pool:
-                # Map the calculate_scores_mp function to the list of tracks
-                all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks)))
-        else:   
-            # Create a pool of worker processes and show progress with tqdm
-            # with mp.Pool(processes=mp.cpu_count()) as pool:
-            #     # Map the calculate_scores_mp function to the list of tracks
-            #     all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks)))
-            
+        print("Double check, device: ", self.device)
+        
+        test_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        
+        if self.device.type == 'cuda':            
+            # all_scores= []
+            # for tidx, track in enumerate(all_tracks):
+
+            #     track_scores = self.calculate_scores(tidx, track)
+            #     all_scores.append(track_scores)	
+                
+            # Show a progress bar using tqdm (based on the function above)
+            print("Using GPU")
+            all_scores = []
+            for tidx, track in enumerate(tqdm.tqdm(all_tracks)):
+                track_scores = self.calculate_scores(tidx, track)
+                all_scores.append(track_scores)        
+                
+        else:     
             # Using the "spawn" method to create a pool of worker processes and show progress with tqdm
             with mp.get_context("spawn").Pool(processes=mp.cpu_count()) as pool:
                 # Map the calculate_scores_mp function to the list of tracks
@@ -96,15 +93,8 @@ class ASDNetwork():
         return trans_segment_filtered, samplerate
     
     def get_video_feature(self, tidx) -> numpy.ndarray:
-        # Get the frames for the corresponding track from the frames_tracks.npz file in the pywork folder and then return it
-    #    all_track_data = numpy.load(self.file_path_frames_storage, allow_pickle=True)
-    #    all_track_data = all_track_data['faces']
-    #    track_data = all_track_data[tidx]
-    
-         # faces = numpy.memmap(self.file_path_frames_storage, mode="r+", shape=(7, 501, 112, 112), dtype=float)
          
-         # Load the faces array from self.file_path_frames_storage using memmap, then extract only the relevant track into the memory
-            # and then return it
+        # Load the faces array from self.file_path_frames_storage using memmap, then extract only the relevant track into the memory
         faces = numpy.memmap(self.file_path_frames_storage, mode="r+", shape=(self.number_tracks, self.total_frames, 112, 112), dtype=numpy.uint8)
         track_data = faces[tidx]
         
@@ -124,7 +114,7 @@ class ASDNetwork():
 
         # Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
         # * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
-        # video_feature_old = self.faces_frames[tidx]
+        # video_feature = self.faces_frames[tidx]
         video_feature = self.get_video_feature(tidx)
         
         # Check whether video_feature and video_feature_old are the same
