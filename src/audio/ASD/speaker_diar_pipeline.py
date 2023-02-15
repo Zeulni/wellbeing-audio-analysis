@@ -49,6 +49,7 @@ class ASDSpeakerDirPipeline:
 		self.threshold_same_person = args.get("THRESHOLD_SAME_PERSON",0.15)
 		self.create_track_videos = args.get("CREATE_TRACK_VIDEOS",True)
 		self.include_visualization = args.get("INCLUDE_VISUALIZATION",True)
+		self.crop_chunk_size = args.get("CROP_CHUNK_SIZE",True)
   
 		#warnings.filterwarnings("ignore")
 
@@ -100,7 +101,7 @@ class ASDSpeakerDirPipeline:
 		self.face_tracker = FaceTracker(self.num_failed_det, self.min_track, self.min_face_size)
   
 		# Initialize the track cropper
-		self.track_cropper = CropTracks(self.video_path, self.total_frames, self.frames_face_tracking, self.crop_scale, self.device)
+		self.track_cropper = CropTracks(self.video_path, self.total_frames, self.frames_face_tracking, self.crop_scale, self.device, self.crop_chunk_size)
   
 		# Initialize the ASD network
 		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec, self.frames_face_tracking, self.file_path_frames_storage, self.total_frames)
@@ -199,8 +200,8 @@ class ASDSpeakerDirPipeline:
 			start_time = time.perf_counter()
 			face_cropping_done = self._ASDSpeakerDirPipeline__check_face_cropping_done()
 			if face_cropping_done == False:
-				self.tracks, self.faces_frames = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
-				# self.tracks = self.track_cropper.crop_tracks_from_videos_parallel_chunks(all_tracks, self.file_path_frames_storage)
+				# self.tracks, self.faces_frames = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
+				self.tracks = self.track_cropper.crop_tracks_from_videos_parallel_chunks(all_tracks, self.file_path_frames_storage)
 				safe_pickle_file(self.file_path_tracks, self.tracks, "Track saved in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- Track cropping done in {end_time - start_time:0.4f} seconds")
