@@ -1,6 +1,9 @@
 import numpy
 import os
 import math
+import matplotlib.pyplot as plt
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
 
 from src.audio.ASD.utils.asd_pipeline_tools import cut_track_videos
 from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
@@ -60,7 +63,7 @@ class SpeakerDiarization:
         # Divide all number in track_speaking_segments by 25 (apart from 0) to get the time in seconds
         track_speaking_segments = [[[round(float(w/self.frames_per_second),2) if w != 0 else w for w in x] for x in y] for y in track_speaking_segments]
 
-        # Check whether the start and end of a segment is the same (if yes, remove it) - throug rouding errors (conversion to seconds), this can happen
+        # Check whether the start and end of a segment is the same (if yes, remove it) - through rouding errors (conversion to seconds), this can happen
         for tidx, track in enumerate(track_speaking_segments):
             for i in range(len(track)):
                 if track[i][0] == track[i][1]:
@@ -95,9 +98,9 @@ class SpeakerDiarization:
                 if len(track) == 0:
                     continue
                 # Go through each segment
-                for sidx, segment in enumerate(track):
+                check, lowestTrack = self.check_if_in_cluster_list(tidx, same_tracks)
+                for segment in track:
                     # If the track belongs to cluster (in the sameTracks list), then write the lowest number (track) of that cluster to the rttm file
-                    check, lowestTrack = self.check_if_in_cluster_list(tidx, same_tracks)
                     if check:
                         rttmFile.write('SPEAKER %s 1 %s %s <NA> <NA> %s <NA> <NA>\n' % (video_name, segment[0],round(segment[1] - segment[0],2), lowestTrack))
                     else:
@@ -123,56 +126,72 @@ class SpeakerDiarization:
         for tidx, track in enumerate(track_list_y):
             track_avg_y[tidx] = numpy.mean(track)    
 
-        # Calculate the distance between the tracks
+        
+        dbscan = DBSCAN(eps=threshold_same_person, min_samples=2)
+        
+        # Create the datapoints for the DBSCAN algorithm
+        x = []
+        for i in range(len(tracks)):
+            x.append([track_avg_x[i], track_avg_y[i]])
+            
+        # create scaler object and fit to data
+        scaler = StandardScaler()
+        scaler.fit(x)
+
+        # transform data using scaler
+        x_transformed = scaler.transform(x)
+        
+        # Calculate the pairwise distances between the scaled data points
         track_dist = numpy.zeros((len(tracks), len(tracks)))
         for i in range(len(tracks)):
             for j in range(len(tracks)):
-                track_dist[i,j] = math.sqrt((track_avg_x[i] - track_avg_x[j])**2 + (track_avg_y[i] - track_avg_y[j])**2)
+                track_dist[i,j] = math.sqrt((x_transformed[i,0] - x_transformed[j,0])**2 + (x_transformed[i,1] - x_transformed[j,1])**2)
+        
+        # # Using matplotlib, plot the data points (label each point with the index of the track)
+        # for i in range(len(x_transformed)):
+        #     plt.scatter(x_transformed[i,0], x_transformed[i,1], label=i)  
+        # plt.legend()  
+        # plt.show()
 
-        # Do make it independent of the image size in pixel, we need to normalize the distances
-        track_dist = track_dist / numpy.max(track_dist)
-
-
-        # Create a list of the tracks that are close to each other (if the distance is below defined threshold)
-        track_close = [[] for i in range(len(tracks))]
-        for i in range(len(tracks)):
-            for j in range(len(tracks)):
-                if track_dist[i,j] < threshold_same_person and i != j:
-                    track_close[i].append(j)
-
-        # Check for the tracks that are close to each other if they are speaking at the same time (by checking if they if the lists in trackSpeakingFaces have shared elements/frames)
-        # If no, store the track number in the list trackCloseSpeaking
-        track_close_speaking = []
-        for i in range(len(tracks)):
-            for j in range(len(track_close[i])):
-                if len(set(track_speaking_faces[i]) & set(track_speaking_faces[track_close[i][j]])) == 0:
-                    track_close_speaking.append(i)
-                    break
-
-        # A cluster is a list of tracks that are close to each other and are not speaking at the same time
-        # Create a list of clusters
-        cluster = []
-        for i in range(len(tracks)):
-            if i in track_close_speaking:
-                cluster.append([i])
-                for j in range(len(track_close[i])):
-                    if track_close[i][j] in track_close_speaking:
-                        cluster[-1].append(track_close[i][j])
-
-        # Remove duplicates from the clusters (e.g. [1,2,3] and [3,2,1] are the same)
-        unique_clusters = set()
-        for i in cluster:
-            i.sort()
-            if tuple(i) in unique_clusters:
-                cluster.remove(i)
+        # perform clustering
+        labels = dbscan.fit_predict(x_transformed)
+        
+        # Print the indices of each cluster (if the label is -1, then print it as a cluster with only one index)
+        unique_labels = numpy.unique(labels)
+        for label in unique_labels:
+            if label == -1:
+                print("Outlier:")
+                outlier_indices = numpy.where(labels == label)[0]
+                for i in outlier_indices:
+                    if track_speaking_faces[i] != []:
+                        print(f"\t\t{i}")
             else:
-                unique_clusters.add(tuple(i))
+                print(f"Cluster {label}:")
+                cluster_indices = numpy.where(labels == label)[0]
+                for i in cluster_indices:
+                    if track_speaking_faces[i] != []:
+                        print(f"\t\t{i}")
+        
+            
 
-        # Print the unique clusters
-        for i in unique_clusters:
-            write_to_terminal("Tracks that belong together: " + str(i))
+        # Store the indices of the tracks that belong to the same cluster
+        clusters = []
+        for i in range(0, labels.max() + 1):
+            clusters.append(numpy.where(labels == i)[0])
 
-        return list(unique_clusters)
+                
+        # Create a copy of the clusters list where only the indices of the tracks that are speaking are stored (the have at least one element in the track_speaking_faces list)
+        speaking_clusters = []
+        for i in range(len(clusters)):
+            speaking_clusters.append([])
+            for j in range(len(clusters[i])):
+                if len(track_speaking_faces[clusters[i][j]]) > 0:
+                    speaking_clusters[i].append(clusters[i][j])
+                    
+        # If one cluster has only one track, then it is not a cluster, so delete it
+        speaking_clusters = [x for x in speaking_clusters if len(x) > 1]
+
+        return speaking_clusters
     
     
     def check_if_in_cluster_list(self, track, clusterList):

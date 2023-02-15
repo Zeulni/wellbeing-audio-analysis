@@ -8,12 +8,13 @@ import os
 from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
 
 class CropTracks:
-    def __init__(self, video_path, total_frames, frames_face_tracking, crop_scale, device):
+    def __init__(self, video_path, total_frames, frames_face_tracking, crop_scale, device, crop_chunk_size):
         self.video_path = video_path
         self.total_frames = total_frames
         self.frames_face_tracking = frames_face_tracking
         self.crop_size = crop_scale
         self.device = device
+        self.crop_chunk_size = crop_chunk_size
 
     def crop_tracks_from_videos_parallel(self, tracks) -> tuple:
         # Instead of going only through one track in crop_track_faster, we only read the video ones and go through all the tracks
@@ -164,7 +165,7 @@ class CropTracks:
         
         # To not store all the frames in memory, we read the video in chunks and store it to harddrive
         output_file = file_path_frames_storage
-        chunk_size = 1000  # number of frames to process at a time
+        chunk_size = self.crop_chunk_size  # number of frames to process at a time (and storing into RAM)
         
         # with open(output_file, 'wb') as f:
         #     numpy.savez(f, faces=numpy.zeros((len(tracks), num_frames, 112, 112), dtype=numpy.float32))

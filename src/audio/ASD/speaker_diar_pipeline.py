@@ -49,6 +49,7 @@ class ASDSpeakerDirPipeline:
 		self.threshold_same_person = args.get("THRESHOLD_SAME_PERSON",0.15)
 		self.create_track_videos = args.get("CREATE_TRACK_VIDEOS",True)
 		self.include_visualization = args.get("INCLUDE_VISUALIZATION",True)
+		self.crop_chunk_size = args.get("CROP_CHUNK_SIZE",True)
   
 		#warnings.filterwarnings("ignore")
 
@@ -100,7 +101,7 @@ class ASDSpeakerDirPipeline:
 		self.face_tracker = FaceTracker(self.num_failed_det, self.min_track, self.min_face_size)
   
 		# Initialize the track cropper
-		self.track_cropper = CropTracks(self.video_path, self.total_frames, self.frames_face_tracking, self.crop_scale, self.device)
+		self.track_cropper = CropTracks(self.video_path, self.total_frames, self.frames_face_tracking, self.crop_scale, self.device, self.crop_chunk_size)
   
 		# Initialize the ASD network
 		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec, self.frames_face_tracking, self.file_path_frames_storage, self.total_frames)
