@@ -63,7 +63,12 @@ class ASDNetwork():
                 all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks)))
         else:   
             # Create a pool of worker processes and show progress with tqdm
-            with mp.Pool(processes=mp.cpu_count()) as pool:
+            # with mp.Pool(processes=mp.cpu_count()) as pool:
+            #     # Map the calculate_scores_mp function to the list of tracks
+            #     all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks)))
+            
+            # Using the "spawn" method to create a pool of worker processes and show progress with tqdm
+            with mp.get_context("spawn").Pool(processes=mp.cpu_count()) as pool:
                 # Map the calculate_scores_mp function to the list of tracks
                 all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks)))
             
