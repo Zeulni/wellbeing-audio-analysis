@@ -66,6 +66,27 @@ class ComPatternAnalysis:
             
             self.speaker_overview.append([speaker, start_time_speaker, end_time_speaker])
             
+    def run(self) -> None:
+        # PERMA score higher for teams that start more conversations (e.g. shorter ones)
+        self.calculate_number_turns()
+        
+        # PERMA score higher for teams that have a equal distribution of turns?
+        self.calculate_number_turns_share()
+        self.calculate_number_turns_equality()
+        
+        # PERMA score higher for teams that speak more? (-> calculate one score that indicates how much they are speaking in percent)
+        self.calculate_speaking_duration()
+        
+        # PERMA score higher for teams that have a equal distribution of speaking time? (-> one score that indicates how equaly distributed they are speaking)
+        self.calculate_speaking_duration_share()
+        self.calculate_speaking_duration_equality()
+        
+        #overlaps
+        self.calculate_amount_overlaps()
+        
+        # Visualize the communication patterns
+        self.visualize_pattern()
+            
     def get_rttm_path(self, video_name) -> str:
         
         rttm_folder_path = str(VIDEOS_DIR / video_name / "pyavi")
