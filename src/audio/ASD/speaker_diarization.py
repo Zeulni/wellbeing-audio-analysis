@@ -18,6 +18,8 @@ class SpeakerDiarization:
         self.create_track_videos = create_track_videos
         self.total_frames = total_frames
         self.frames_per_second = frames_per_second
+        
+        self.length_video = int(self.total_frames / self.frames_per_second)
     
     def run(self, tracks, scores):
         
@@ -90,10 +92,15 @@ class SpeakerDiarization:
         # Calculate an rttm file based on trackSpeakingSegments (merge the speakers for the same tracks into one speaker)
         self.write_rttm(self.pyavi_path, self.video_name, track_speaking_segments, same_tracks)   
         
+        return self.length_video
+        
         
     def write_rttm(self, pyavi_path, video_name, track_speaking_segments, same_tracks):
         # Create the rttm file
-        with open(os.path.join(pyavi_path, video_name + '.rttm'), 'w') as rttmFile:
+        
+        file_name = video_name + "_" + str(self.length_video) + ".rttm"
+        
+        with open(os.path.join(pyavi_path, file_name), 'w') as rttmFile:
             for tidx, track in enumerate(track_speaking_segments):
                 if len(track) == 0:
                     continue
