@@ -46,4 +46,7 @@ CREATE_TRACK_VIDEOS: False
 # If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)
 INCLUDE_VISUALIZATION: False
 
-# -- THE FOLLOWING CONFIGS ARE ALL USED FOR XYZ
+# -- THE FOLLOWING CONFIGS ARE ALL USED FOR Analysing the audio files
+
+# This is the amount of seconds in which the audio is split and analyzed (300s means in chunks of 5 min)
+UNIT_OF_ANALYSIS: 300
