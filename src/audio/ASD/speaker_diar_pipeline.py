@@ -33,7 +33,6 @@ from src.audio.utils.constants import ASD_DIR
 class ASDSpeakerDirPipeline:
 	def __init__(self, args):
 		self.video_name = args.get("VIDEO_NAME","001")
-		self.video_folder = args.get("VIDEO_FOLDER","src/audio/ASD/demo")
 		self.pretrain_model = args.get("PRETRAIN_ASD_MODEL","pretrain_TalkSet.model")
 		self.pretrain_model = os.path.join(ASD_DIR, self.pretrain_model)
   
@@ -46,7 +45,7 @@ class ASDSpeakerDirPipeline:
 		self.frames_face_tracking = args.get("FRAMES_FACE_TRACKING",1)
 		self.start = args.get("START",0)
 		self.duration = args.get("DURATION",0)
-		self.threshold_same_person = args.get("THRESHOLD_SAME_PERSON",0.15)
+		self.threshold_same_person = args.get("THRESHOLD_SAME_PERSON",1.05)
 		self.create_track_videos = args.get("CREATE_TRACK_VIDEOS",True)
 		self.include_visualization = args.get("INCLUDE_VISUALIZATION",True)
 		self.crop_chunk_size = args.get("CROP_CHUNK_SIZE",True)
@@ -61,7 +60,7 @@ class ASDSpeakerDirPipeline:
 		# Download the pretrained model if not exist
 		download_model(self.pretrain_model)
 	
-		self.video_path, self.save_path = get_video_path(self.video_folder, self.video_name)
+		self.video_path, self.save_path = get_video_path(self.video_name)
 
 		# Initialization
 		self.pyavi_path = os.path.join(self.save_path, 'pyavi')

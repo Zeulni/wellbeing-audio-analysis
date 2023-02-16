@@ -13,6 +13,7 @@ from moviepy.video.compositing.concatenate import concatenate_videoclips
 
 
 from src.audio.utils.constants import ASD_DIR
+from src.audio.utils.constants import VIDEOS_DIR
 
 def write_to_terminal(text, argument = "") -> None:
     sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S ") + text + " " + argument + "\r\n")
@@ -56,15 +57,19 @@ def download_model(pretrain_model_path: str) -> None:
         subprocess.call(cmd, shell=True, stdout=None)
         
         
-def get_video_path(video_folder, video_name) -> tuple:
-    
-    video_folder_path = os.path.join(ASD_DIR, video_folder)
+def get_video_path(video_name) -> tuple:
     
     # video path is the absolute path from root to the video (e.g. .mp4)
-    video_path = glob.glob(os.path.join(video_folder_path, video_name + '.*'))[0]
+    video_path = glob.glob(os.path.join(VIDEOS_DIR, video_name + '.*'))
+    
+    if not video_path:
+        video_path = str(VIDEOS_DIR / video_name)
+        raise Exception("No video found for path:  " + video_path)
+    else:
+        video_path = video_path[0]
 
     # video path is the absolute path to the folder where all the resulting files are located
-    save_path = os.path.join(video_folder_path, video_name)
+    save_path = os.path.join(VIDEOS_DIR, video_name)
 
     return video_path, save_path
 

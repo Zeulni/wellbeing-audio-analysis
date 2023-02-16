@@ -38,20 +38,13 @@ class ASDNetwork():
         
         self.number_tracks = len(all_tracks)
         
-        # If a CPU is available, perform multiprocessing on CPU using the multiprocessing library. If a GPU is available, use the torch.multiprocessing library
-        print("Double check, device: ", self.device)
-        
-        test_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        
         if self.device.type == 'cuda':            
-                
             # Show a progress bar using tqdm (based on the function above)
             # *Multiprocessing for GPU did not work on Colab
             all_scores = []
             for tidx, track in enumerate(tqdm.tqdm(all_tracks)):
                 track_scores = self.calculate_scores(tidx, track)
-                all_scores.append(track_scores)   
-                
+                all_scores.append(track_scores)        
         else:     
             # Using the "spawn" method to create a pool of worker processes and show progress with tqdm
             with mp.get_context("spawn").Pool(processes=mp.cpu_count()) as pool:
