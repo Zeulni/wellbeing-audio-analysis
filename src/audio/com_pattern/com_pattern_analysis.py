@@ -58,6 +58,6 @@ class ComPatternAnalysis:
         csv_path = write_results_to_csv(self.turn_taking, self.speaking_duration, self.overlaps, self.video_name)
         
         # Visualize the communication patterns
-        visualize_pattern(csv_path)
+        visualize_pattern(csv_path, self.unit_of_analysis, self.video_name)
         
             

@@ -24,7 +24,7 @@ def write_results_to_csv(turn_taking_obj, speaking_duration_obj, overlaps_obj, v
     
     return csv_path
     
-def visualize_pattern(csv_path) -> None:
+def visualize_pattern(csv_path, unit_of_analysis, video_name) -> None:
     
     # Read the data from the csv file into a pandas dataframe
     df = pd.read_csv(csv_path)
@@ -34,6 +34,9 @@ def visualize_pattern(csv_path) -> None:
     
     # Set the amount of padding between subplots
     plt.subplots_adjust(wspace=0.4, hspace=0.4)
+    
+    # Add a heading to the plot
+    fig.suptitle('Audio analysis results of ' + video_name)
     
     # Plot the first feature
     axes[0].plot(df['block'], df['number_turns_equality'])
@@ -50,23 +53,7 @@ def visualize_pattern(csv_path) -> None:
     axes[2].set_title('Norm. number of overlaps per block - per minute per speaker')
     axes[2].set_ylabel('Norm. number of overlaps')
     
-    
-    
-    # # Create a figure and two subplots (one for each dictionary)
-    # fig, axes = plt.subplots(2, 2, figsize=(12, 9))
-
-    # # Plot the first dictionary
-    # axes[0,0].plot(blocks_number_turns_equality['block'], blocks_number_turns_equality['number_turns_equality'])
-    # axes[0,0].set_title('Equality (based on number of turns) per block \n - 0 is perfectly equal')
-    # axes[0,0].set_ylabel('Equality')
-
-    # # Plot the second dictionary
-    # axes[0,1].plot(blocks_speaking_duration_equality['block'], blocks_speaking_duration_equality['speaking_duration_equality'])
-    # axes[0,1].set_title('Equality (based on speaking duration) per block \n - 0 is perfectly equal')
-    # axes[0,1].set_ylabel('Equality')
-    
-    # axes[1,0].plot(blocks_norm_num_overlaps['block'], blocks_norm_num_overlaps['norm_num_overlaps'])
-    # axes[1,0].set_title('Norm. number of overlaps per block \n - per minute per speaker')
-    # axes[1,0].set_ylabel('Norm. number of overlaps')
+    # Add a note to the bottom of the plot
+    fig.text(0.5, 0.04, '1 unit on x-axis = ' + str(unit_of_analysis) + "s", ha='center')
     
     plt.show()

@@ -3,7 +3,6 @@ from src.audio.app_gui import parse_arguments
 
 # TODO: create new requirements.txt, create readme etc.
 
-
 def main() -> None:
     args = parse_arguments()
     runner = Runner(args)
