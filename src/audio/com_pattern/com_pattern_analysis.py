@@ -1,8 +1,11 @@
 import glob
-import math
 import matplotlib.pyplot as plt
 import statistics
 import os
+
+from src.audio.com_pattern.turn_taking import TurnTaking
+from src.audio.com_pattern.speaking_duration import SpeakingDuration
+from src.audio.com_pattern.overlaps import Overlaps
 
 from src.audio.utils.constants import VIDEOS_DIR
 
@@ -43,6 +46,11 @@ class ComPatternAnalysis:
         
         # Number of speakers
         self.num_speakers = len(unique_speaker_id)
+        
+        # Initialize the communication pattern classes
+        self.turn_taking = TurnTaking()
+        self.speaking_duration = SpeakingDuration()
+        self.overlaps = Overlaps(self.num_speakers)
         
         # List including all start and end times of all speakers
         self.speaker_overview = []
@@ -109,58 +117,40 @@ class ComPatternAnalysis:
             
     def run(self) -> None:
         
-        # Store group features in a list to plot them later
-        
-        # TODO: Store as class variables!
-        # For each block store the equality feature (based on the number of turns)
-        blocks_number_turns_equality = {}
-        blocks_number_turns_equality["block"] = []
-        blocks_number_turns_equality["number_turns_equality"] = []
-        
-        # For each block store the equality feature (based on the speaking duration)
-        blocks_speaking_duration_equality = {}
-        blocks_speaking_duration_equality["block"] = []
-        blocks_speaking_duration_equality["speaking_duration_equality"] = []
-        
-        # For each block store the normalized number of overlaps
-        blocks_norm_num_overlaps = {}
-        blocks_norm_num_overlaps["block"] = []
-        blocks_norm_num_overlaps["norm_num_overlaps"] = []
-        
         # For each unit of analysis (block) perform the following calculations
         for block_id, speaker_overview in enumerate(self.splitted_speaker_overview):
             # PERMA score higher for teams that start more conversations (e.g. shorter ones)
-            number_turns = self.calculate_number_turns(speaker_overview)
+            number_turns = self.turn_taking.calculate_number_turns(speaker_overview)
 
             # PERMA score higher for teams that have a equal distribution of turns?
-            # number_turns_share = self.calculate_number_turns_share(number_turns)
+            # number_turns_share = self.turn_taking.calculate_number_turns_share(number_turns)
 
-            number_turns_equality = self.calculate_number_turns_equality(number_turns)
+            number_turns_equality = self.turn_taking.calculate_number_turns_equality(number_turns)
             print("Number turns equality (0 would be perfectly equal): ", number_turns_equality)
-            blocks_number_turns_equality["block"].append(block_id)
-            blocks_number_turns_equality["number_turns_equality"].append(number_turns_equality)
+            self.turn_taking.blocks_number_turns_equality["block"].append(block_id)
+            self.turn_taking.blocks_number_turns_equality["number_turns_equality"].append(number_turns_equality)
         
             # PERMA score higher for teams that speak more? (-> calculate one score that indicates how much they are speaking in percent)
-            speaking_duration = self.calculate_speaking_duration(speaker_overview)
+            speaking_duration = self.speaking_duration.calculate_speaking_duration(speaker_overview)
         
             # PERMA score higher for teams that have a equal distribution of speaking time? (-> one score that indicates how equaly distributed they are speaking)
             # speaking_duration_share = self.calculate_speaking_duration_share(speaking_duration)
             
-            speaking_duration_equality = self.calculate_speaking_duration_equality(speaking_duration)
+            speaking_duration_equality = self.speaking_duration.calculate_speaking_duration_equality(speaking_duration)
             print("Speaking duration equality (0 would be perfectly equal): ", speaking_duration_equality)
-            blocks_speaking_duration_equality["block"].append(block_id)
-            blocks_speaking_duration_equality["speaking_duration_equality"].append(speaking_duration_equality)
+            self.speaking_duration.blocks_speaking_duration_equality["block"].append(block_id)
+            self.speaking_duration.blocks_speaking_duration_equality["speaking_duration_equality"].append(speaking_duration_equality)
         
             #overlaps
-            norm_num_overlaps = self.calculate_amount_overlaps(speaker_overview, self.block_length[block_id])
+            norm_num_overlaps = self.overlaps.calculate_amount_overlaps(speaker_overview, self.block_length[block_id])
             print("Number of overlaps (per minute per speaker): ", norm_num_overlaps)
-            blocks_norm_num_overlaps["block"].append(block_id)
-            blocks_norm_num_overlaps["norm_num_overlaps"].append(norm_num_overlaps)
+            self.overlaps.blocks_norm_num_overlaps["block"].append(block_id)
+            self.overlaps.blocks_norm_num_overlaps["norm_num_overlaps"].append(norm_num_overlaps)
             
             print("\n")
         
             # Visualize the communication patterns
-        self.visualize_pattern(blocks_number_turns_equality, blocks_speaking_duration_equality, blocks_norm_num_overlaps)
+        self.visualize_pattern(self.turn_taking.blocks_number_turns_equality, self.speaking_duration.blocks_speaking_duration_equality, self.overlaps.blocks_norm_num_overlaps)
             
     def get_rttm_path(self, video_name) -> str:
         
@@ -173,153 +163,26 @@ class ComPatternAnalysis:
             rttm_path = rttm_file[0]
 
         return rttm_path
-            
-    def calculate_number_turns(self, speaker_overview) -> dict:
-        # Calculates the number of turns (number of times each speakers starts a speaking turn) and saves it in a dict 
-        
-        number_turns = {}
-        
-        number_turns["speaker"] = []
-        number_turns["number_turns"] = []
-        
-        for speaker in speaker_overview:
-            number_turns["speaker"].append(speaker[0])
-            number_turns["number_turns"].append(len(speaker[1]))
-            
-        return number_turns
-        
-    # Calculate based on the number_turns dict the share in number of turns of each speaker
-    def calculate_number_turns_share(self, number_turns) -> dict:
-        
-        # Initialize the com pattern dictionaries
-        number_turns_share = {}
-        
-        # Calculate the total number of turns
-        total_number_turns = sum(number_turns["number_turns"])
-        
-        # Calculate the share in number of turns of each speaker
-        number_turns_share["speaker"] = []
-        number_turns_share["share_number_turns"] = []
-        
-        for speaker in number_turns["speaker"]:
-            number_turns_share["speaker"].append(speaker)
-            share = (number_turns["number_turns"][number_turns["speaker"].index(speaker)] / total_number_turns)*100
-            share = round(share, 1)
-            number_turns_share["share_number_turns"].append(share)
-            
-        return number_turns_share
-        
-    # Calculating the equality based on the number of turns  
-    def calculate_number_turns_equality(self, number_turns) -> float:
-        
-        # TODO: Independent of number of length (as normalized by mean), but also ind. of #speakers?
-        mean_time = statistics.mean(number_turns["number_turns"])
-        stdev_time = statistics.stdev(number_turns["number_turns"])
-        cv = (stdev_time / mean_time) * 100
-        
-        # TODO: Formula see Ignacio's thesis
-        # Calculating the speaker equality under the assumption, that the max speaker duration is a good proxy for the 
-        # expected speaking duration that each member should take in a perfectly equal distribution
-        # max_cv = (math.sqrt(self.num_speakers) - 1) / math.sqrt(self.num_speakers)
-        # speaker_equality = 1 - (cv / max_cv)
-
-        return cv        
-        
-    def calculate_speaking_duration(self, speaker_overview) -> dict:
-        # Calculates the speaking duration of each speaker and saves it in a list 
-        
-        speaking_duration = {}
-        
-        speaking_duration["speaker"] = []
-        speaking_duration["speaking_duration"] = []
-
-        for speaker in speaker_overview:
-            speaking_duration["speaker"].append(speaker[0])
-            speaking_duration["speaking_duration"].append(round(sum(speaker[2]) - sum(speaker[1]),2))
-            
-        return speaking_duration
-        
-    # Calculates based on the speaking_duration dict the share in speaking time of each speaker    
-    def calculate_speaking_duration_share(self, speaking_duration) -> dict:
-        
-        speaking_duration_share = {}
-        
-        # Calculate the total speaking duration
-        total_speaking_duration = sum(speaking_duration["speaking_duration"])
-        
-        # Calculate the share in speaking time of each speaker
-        speaking_duration_share["speaker"] = []
-        speaking_duration_share["share_speaking_time"] = []
-        
-        for speaker in speaking_duration["speaker"]:
-            speaking_duration_share["speaker"].append(speaker)
-            share = (speaking_duration["speaking_duration"][speaking_duration["speaker"].index(speaker)] / total_speaking_duration)*100
-            share = round(share, 1)
-            speaking_duration_share["share_speaking_time"].append(share)
-            
-        return speaking_duration_share
-        
-    # Calculating the equality based on the speaking duration   
-    def calculate_speaking_duration_equality(self, speaking_duration) -> float:
-        
-        # TODO: Independent of number of length (as normalized by mean), but also ind. of #speakers?
-        mean_time = statistics.mean(speaking_duration["speaking_duration"])
-        stdev_time = statistics.stdev(speaking_duration["speaking_duration"])
-        cv = (stdev_time / mean_time) * 100
-        
-        # TODO: Formula see Ignacio's thesis
-        # Calculating the speaker equality under the assumption, that the max speaker duration is a good proxy for the 
-        # expected speaking duration that each member should take in a perfectly equal distribution
-        # max_cv = (math.sqrt(self.num_speakers) - 1) / math.sqrt(self.num_speakers)
-        # speaker_equality = 1 - (cv / max_cv)
-
-        return cv
-        
-        
-    def calculate_amount_overlaps(self, speaker_overview, block_length) -> float:
-
-        num_overlaps = 0
-
-        # Iterate through the speaker list and compare speech segments
-        for i in range(len(speaker_overview)):
-            for j in range(i+1, len(speaker_overview)):
-                # Iterate through all speech segments for speaker i
-                for seg_i in range(len(speaker_overview[i][1])):
-                    # Iterate through all speech segments for speaker j
-                    for seg_j in range(len(speaker_overview[j][1])):
-                        # Check if the speech segments overlap
-                        if max(speaker_overview[i][1][seg_i], speaker_overview[j][1][seg_j]) < min(speaker_overview[i][2][seg_i], speaker_overview[j][2][seg_j]):
-                            num_overlaps += 1
-        
-        # Normalize the number of overlaps bei the length of the audio snippet and the number of speakers
-        # -> #overlaps per minute per speaker
-        
-        # TODO: current assumption: the number of speakers is constant and does not change during one meeting
-        
-        norm_num_overlaps = (num_overlaps / (block_length * self.num_speakers))*60
-        
-        # Print the number of overlaps
-        return norm_num_overlaps
         
         
         
     def visualize_pattern(self, blocks_number_turns_equality, blocks_speaking_duration_equality, blocks_norm_num_overlaps) -> None:
         
         # Create a figure and two subplots (one for each dictionary)
-        fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+        fig, axes = plt.subplots(2, 2, figsize=(12, 9))
 
         # Plot the first dictionary
         axes[0,0].plot(blocks_number_turns_equality['block'], blocks_number_turns_equality['number_turns_equality'])
-        axes[0,0].set_title('Equality (based on number of turns) per block')
+        axes[0,0].set_title('Equality (based on number of turns) per block \n - 0 is perfectly equal')
         axes[0,0].set_ylabel('Equality')
 
         # Plot the second dictionary
         axes[0,1].plot(blocks_speaking_duration_equality['block'], blocks_speaking_duration_equality['speaking_duration_equality'])
-        axes[0,1].set_title('Equality (based on speaking duration) per block')
+        axes[0,1].set_title('Equality (based on speaking duration) per block \n - 0 is perfectly equal')
         axes[0,1].set_ylabel('Equality')
         
         axes[1,0].plot(blocks_norm_num_overlaps['block'], blocks_norm_num_overlaps['norm_num_overlaps'])
-        axes[1,0].set_title('Norm. number of overlaps per block')
+        axes[1,0].set_title('Norm. number of overlaps per block \n - per minute per speaker')
         axes[1,0].set_ylabel('Norm. number of overlaps')
         
         plt.show()
