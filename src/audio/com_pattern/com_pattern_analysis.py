@@ -1,15 +1,19 @@
-import matplotlib.pyplot as plt
-
 from src.audio.utils.rttm_file_preparation import RTTMFilePreparation
+from src.audio.utils.rttm_file_analysis_tools import write_results_to_csv, visualize_pattern
+
 from src.audio.com_pattern.turn_taking import TurnTaking
 from src.audio.com_pattern.speaking_duration import SpeakingDuration
 from src.audio.com_pattern.overlaps import Overlaps
+
 
 # Perform certain communication pattern evaluations on the rttm file
 class ComPatternAnalysis:
     def __init__(self, args, length_video) -> None:
         
-        self.rttm_file_preparation = RTTMFilePreparation(args.get("VIDEO_NAME","001"), args.get("UNIT_OF_ANALYSIS", 300), length_video)
+        self.video_name = args.get("VIDEO_NAME","001")
+        self.unit_of_analysis = args.get("UNIT_OF_ANALYSIS", 300)
+        
+        self.rttm_file_preparation = RTTMFilePreparation(self.video_name, self.unit_of_analysis, length_video)
         
         self.splitted_speaker_overview = self.rttm_file_preparation.read_rttm_file()
         
@@ -50,29 +54,10 @@ class ComPatternAnalysis:
             
             print("\n")
         
-            # Visualize the communication patterns
-        self.visualize_pattern(self.turn_taking.get("blocks_number_turns_equality"), self.speaking_duration.get("blocks_speaking_duration_equality"), self.overlaps.get("blocks_norm_num_overlaps"))
+        # Write results to a csv file
+        csv_path = write_results_to_csv(self.turn_taking, self.speaking_duration, self.overlaps, self.video_name)
         
+        # Visualize the communication patterns
+        visualize_pattern(csv_path)
         
-        
-    def visualize_pattern(self, blocks_number_turns_equality, blocks_speaking_duration_equality, blocks_norm_num_overlaps) -> None:
-        
-        # Create a figure and two subplots (one for each dictionary)
-        fig, axes = plt.subplots(2, 2, figsize=(12, 9))
-
-        # Plot the first dictionary
-        axes[0,0].plot(blocks_number_turns_equality['block'], blocks_number_turns_equality['number_turns_equality'])
-        axes[0,0].set_title('Equality (based on number of turns) per block \n - 0 is perfectly equal')
-        axes[0,0].set_ylabel('Equality')
-
-        # Plot the second dictionary
-        axes[0,1].plot(blocks_speaking_duration_equality['block'], blocks_speaking_duration_equality['speaking_duration_equality'])
-        axes[0,1].set_title('Equality (based on speaking duration) per block \n - 0 is perfectly equal')
-        axes[0,1].set_ylabel('Equality')
-        
-        axes[1,0].plot(blocks_norm_num_overlaps['block'], blocks_norm_num_overlaps['norm_num_overlaps'])
-        axes[1,0].set_title('Norm. number of overlaps per block \n - per minute per speaker')
-        axes[1,0].set_ylabel('Norm. number of overlaps')
-        
-        plt.show()
             

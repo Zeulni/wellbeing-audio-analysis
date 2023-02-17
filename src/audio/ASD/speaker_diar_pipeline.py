@@ -106,8 +106,8 @@ class ASDSpeakerDirPipeline:
 		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec, self.frames_face_tracking, self.file_path_frames_storage, self.total_frames)
   
 		# Initialize the speaker diarization
-		self.speaker_diarization = SpeakerDiarization(self.pyavi_path, self.video_path, self.video_name, self.n_data_loader_thread, 
-                                                	  self.threshold_same_person, self.create_track_videos, self.total_frames, self.num_frames_per_sec)
+		self.speaker_diarization = SpeakerDiarization(self.pyavi_path, self.video_path, self.video_name, self.n_data_loader_thread, self.threshold_same_person, 
+                                                	  self.create_track_videos, self.total_frames, self.num_frames_per_sec, self.save_path)
 	
 
 	def __check_face_detection_done(self) -> bool:

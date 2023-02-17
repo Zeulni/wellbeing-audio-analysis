@@ -8,8 +8,10 @@ from sklearn.preprocessing import StandardScaler
 from src.audio.ASD.utils.asd_pipeline_tools import cut_track_videos
 from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
 
+from src.audio.utils.constants import VIDEOS_DIR
+
 class SpeakerDiarization:
-    def __init__(self, pyavi_path, video_path, video_name, n_data_loader_thread, threshold_same_person, create_track_videos, total_frames, frames_per_second):
+    def __init__(self, pyavi_path, video_path, video_name, n_data_loader_thread, threshold_same_person, create_track_videos, total_frames, frames_per_second, save_path):
         self.pyavi_path = pyavi_path 
         self.video_path = video_path
         self.video_name = video_name
@@ -18,6 +20,7 @@ class SpeakerDiarization:
         self.create_track_videos = create_track_videos
         self.total_frames = total_frames
         self.frames_per_second = frames_per_second
+        self.save_path = save_path
         
         self.length_video = int(self.total_frames / self.frames_per_second)
     
@@ -87,20 +90,20 @@ class SpeakerDiarization:
         # 	To correct for that, I would have to leverage face verification using the stored videos in pycrop 
 
         # Calculate tracks that belong together 
-        same_tracks = self.cluster_tracks(tracks, all_faces, track_speaking_faces, self.threshold_same_person)
+        same_tracks = self.cluster_tracks(tracks, all_faces, track_speaking_faces)
 
         # Calculate an rttm file based on trackSpeakingSegments (merge the speakers for the same tracks into one speaker)
-        self.write_rttm(self.pyavi_path, self.video_name, track_speaking_segments, same_tracks)   
+        self.write_rttm(track_speaking_segments, same_tracks)   
         
         return self.length_video
         
         
-    def write_rttm(self, pyavi_path, video_name, track_speaking_segments, same_tracks):
+    def write_rttm(self, track_speaking_segments, same_tracks):
         # Create the rttm file
         
-        file_name = video_name + "_" + str(self.length_video) + ".rttm"
+        file_name = self.video_name + "_" + str(self.length_video) + ".rttm"
         
-        with open(os.path.join(pyavi_path, file_name), 'w') as rttmFile:
+        with open(os.path.join(self.save_path, file_name), 'w') as rttmFile:
             for tidx, track in enumerate(track_speaking_segments):
                 if len(track) == 0:
                     continue
@@ -109,13 +112,13 @@ class SpeakerDiarization:
                 for segment in track:
                     # If the track belongs to cluster (in the sameTracks list), then write the lowest number (track) of that cluster to the rttm file
                     if check:
-                        rttmFile.write('SPEAKER %s 1 %s %s <NA> <NA> %s <NA> <NA>\n' % (video_name, segment[0],round(segment[1] - segment[0],2), lowestTrack))
+                        rttmFile.write('SPEAKER %s 1 %s %s <NA> <NA> %s <NA> <NA>\n' % (self.video_name, segment[0],round(segment[1] - segment[0],2), lowestTrack))
                     else:
                         # Write the line to the rttm file, placeholder: file identifier, start time, duration, speaker ID
-                        rttmFile.write('SPEAKER %s 1 %s %s <NA> <NA> %s <NA> <NA>\n' % (video_name, segment[0], round(segment[1] - segment[0],2), tidx))
+                        rttmFile.write('SPEAKER %s 1 %s %s <NA> <NA> %s <NA> <NA>\n' % (self.video_name, segment[0], round(segment[1] - segment[0],2), tidx))
 
                 
-    def cluster_tracks(self, tracks, faces, track_speaking_faces, threshold_same_person):
+    def cluster_tracks(self, tracks, faces, track_speaking_faces):
         
         # Store the bounding boxes (x and y values) for each track by going through the face list
         track_list_x = [[] for i in range(len(tracks))]
@@ -134,7 +137,7 @@ class SpeakerDiarization:
             track_avg_y[tidx] = numpy.mean(track)    
 
         
-        dbscan = DBSCAN(eps=threshold_same_person, min_samples=2)
+        dbscan = DBSCAN(eps= self.threshold_same_person, min_samples=2)
         
         # Create the datapoints for the DBSCAN algorithm
         x = []

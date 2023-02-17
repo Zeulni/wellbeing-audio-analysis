@@ -16,7 +16,7 @@ class RTTMFilePreparation:
     
     def get_rttm_path(self) -> str:
         
-        rttm_folder_path = str(VIDEOS_DIR / self.video_name / "pyavi")
+        rttm_folder_path = str(VIDEOS_DIR / self.video_name)
         rttm_file = glob.glob(os.path.join(rttm_folder_path, "*.rttm"))
         
         if not rttm_file:
