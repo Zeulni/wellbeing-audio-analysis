@@ -7,6 +7,9 @@ class SpeakingDuration:
         self.blocks_speaking_duration_equality["block"] = []
         self.blocks_speaking_duration_equality["speaking_duration_equality"] = []
         
+    def get(self, attribute):
+        return getattr(self, attribute)
+        
     def calculate_speaking_duration(self, speaker_overview) -> dict:
         # Calculates the speaking duration of each speaker and saves it in a list 
         
@@ -42,7 +45,7 @@ class SpeakingDuration:
         return speaking_duration_share
         
     # Calculating the equality based on the speaking duration   
-    def calculate_speaking_duration_equality(self, speaking_duration) -> float:
+    def calculate_speaking_duration_equality(self, speaking_duration, block_id) -> float:
         
         # TODO: Independent of number of length (as normalized by mean), but also ind. of #speakers?
         mean_time = statistics.mean(speaking_duration["speaking_duration"])
@@ -54,5 +57,8 @@ class SpeakingDuration:
         # expected speaking duration that each member should take in a perfectly equal distribution
         # max_cv = (math.sqrt(self.num_speakers) - 1) / math.sqrt(self.num_speakers)
         # speaker_equality = 1 - (cv / max_cv)
+        
+        self.blocks_speaking_duration_equality["block"].append(block_id)
+        self.blocks_speaking_duration_equality["speaking_duration_equality"].append(cv)
 
         return cv

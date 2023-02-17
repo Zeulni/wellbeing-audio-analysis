@@ -7,6 +7,8 @@ class TurnTaking:
         self.blocks_number_turns_equality["block"] = []
         self.blocks_number_turns_equality["number_turns_equality"] = []
         
+    def get(self, attribute):
+        return getattr(self, attribute)
     
     def calculate_number_turns(self, speaker_overview) -> dict:
         # Calculates the number of turns (number of times each speakers starts a speaking turn) and saves it in a dict 
@@ -44,7 +46,7 @@ class TurnTaking:
         return number_turns_share
         
     # Calculating the equality based on the number of turns  
-    def calculate_number_turns_equality(self, number_turns) -> float:
+    def calculate_number_turns_equality(self, number_turns, block_id) -> float:
         
         # TODO: Independent of number of length (as normalized by mean), but also ind. of #speakers?
         mean_time = statistics.mean(number_turns["number_turns"])
@@ -56,5 +58,8 @@ class TurnTaking:
         # expected speaking duration that each member should take in a perfectly equal distribution
         # max_cv = (math.sqrt(self.num_speakers) - 1) / math.sqrt(self.num_speakers)
         # speaker_equality = 1 - (cv / max_cv)
+        
+        self.blocks_number_turns_equality["block"].append(block_id)
+        self.blocks_number_turns_equality["number_turns_equality"].append(cv)
 
         return cv       

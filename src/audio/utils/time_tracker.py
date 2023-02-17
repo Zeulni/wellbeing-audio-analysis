@@ -1,4 +1,5 @@
-import time
+# TODO: depricated as of now
+# import time
 
 # Implement a class that allows me to track time, when calling it before and after a function
 
