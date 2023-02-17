@@ -211,7 +211,7 @@ class ASDSpeakerDirPipeline:
 			start_time = time.perf_counter()
 			asd_done = self._ASDSpeakerDirPipeline__check_asd_done()
 			if asd_done == False:
-				self.scores = self.asd_network.talknet_network(all_tracks, self.faces_frames, audio_file_path)
+				self.scores = self.asd_network.talknet_network(all_tracks, audio_file_path)
 				safe_pickle_file(self.file_path_scores, self.scores, "Scores extracted and saved in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- ASD done in {end_time - start_time:0.4f} seconds")

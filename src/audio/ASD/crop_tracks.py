@@ -166,15 +166,13 @@ class CropTracks:
         # To not store all the frames in memory, we read the video in chunks and store it to harddrive
         output_file = file_path_frames_storage
         chunk_size = self.crop_chunk_size  # number of frames to process at a time (and storing into RAM)
-        
-        # with open(output_file, 'wb') as f:
-        #     numpy.savez(f, faces=numpy.zeros((len(tracks), num_frames, 112, 112), dtype=numpy.float32))
             
         chunk_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), num_frames, 112, 112), dtype=numpy.uint8)
         
         for chunk_start in range(0, num_frames, chunk_size):
             chunk_end = min(chunk_start + chunk_size, num_frames) 
             # Loop over every frame, read the frame, then loop over all the tracks per frame and if available, crop the face
+            # for fidx in range(chunk_start, chunk_end):
             for fidx in range(chunk_start, chunk_end, self.frames_face_tracking):
                 vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
                 ret, image = vIn.read()
@@ -203,21 +201,9 @@ class CropTracks:
 
                         # Store in the faces array
                         all_faces[tidx, fidx, :, :] = face[0, :, :]
-
-            # Store the processed faces for the current chunk
-            # chunk_faces = all_faces[:, chunk_start:chunk_end, :, :]
             
             # Write all_faces to chunk_faces (numpy array)
             chunk_faces[:, chunk_start:chunk_end, :, :] = all_faces[:, chunk_start:chunk_end, :, :]
-            
-            # if chunk_start == 0:
-            #     # Create a new output file if it doesn't exist yet
-            #     with open(output_file, 'wb') as f:
-            #         numpy.savez(f, faces=chunk_faces)
-            # else:
-            #     # Instead of loading the numpy array to the RAM, map the file to the memory and then concatenate the arrays
-            #     faces = numpy.memmap(output_file, mode="r+", shape=(len(tracks), num_frames, 112, 112), dtype=float)
-            #     faces[:, chunk_start:chunk_end, :, :] = chunk_faces
 
             # Clear the memory by resetting the `all_faces` array
             all_faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.float32)
@@ -228,10 +214,6 @@ class CropTracks:
         # Flush the data to disk and close the file
         chunk_faces.flush()
         del chunk_faces
-
-        #all_faces = all_faces.to(self.device)
-        
-        # Return the dets and the faces
 
         # Create a list where each element has the format {'track':track, 'proc_track':dets}
         proc_tracks = []

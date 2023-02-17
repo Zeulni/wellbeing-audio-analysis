@@ -25,7 +25,7 @@ class ASDNetwork():
         
         self.file_path_frames_storage = file_path_frames_storage
         
-    def talknet_network(self, all_tracks, faces_frames, audio_file_path) -> list:
+    def talknet_network(self, all_tracks, audio_file_path) -> list:
         # GPU: active speaker detection by pretrained TalkNet
         s = talkNet(device=self.device).to(self.device)
         s.loadParameters(self.pretrain_model)

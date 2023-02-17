@@ -14,7 +14,7 @@ class Runner:
         length_video = self.asd_pipeline.run()
 
         # TODO: make it more generell -> provide list of features what to calculate
-        self.com_pattern = ComPatternAnalysis(self.args, length_video)
-        # Calculate communication patterns based on the output of the ASD pipeline (rttm file)
-        self.com_pattern.run()
+        # self.com_pattern = ComPatternAnalysis(self.args, length_video)
+        # # Calculate communication patterns based on the output of the ASD pipeline (rttm file)
+        # self.com_pattern.run()
 

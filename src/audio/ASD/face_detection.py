@@ -23,29 +23,54 @@ class FaceDetector:
         # This is done to reduce the number of frames that need to be processed for the face detection
         
         # Instead of appending the dets list, preallocate the dets list and then insert the values to save time
-        dets = [None] * self.num_frames
+        dets = [None] * int(self.num_frames/self.frames_face_tracking)
         cap = cv2.VideoCapture(self.video_path)
-        fidx = 0
-        while(cap.isOpened()):
+        #fidx = 0
+        
+        for fidx in range(0, int(self.num_frames/self.frames_face_tracking)):
+            cap.set(cv2.CAP_PROP_POS_FRAMES, int(fidx*self.frames_face_tracking))
             ret, image = cap.read()
             if ret == False:
-                break    
-
-            if fidx%self.frames_face_tracking == 0:
-                imageNumpy = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                bboxes = DET.detect_faces(imageNumpy, conf_th=0.9, scales=[self.face_det_scale])
-                dets[fidx] = []
-                for bbox in bboxes:
-                    dets[fidx].append({'frame':fidx, 'bbox':(bbox[:-1]).tolist(), 'conf':bbox[-1]})
-            else:
-                dets[fidx] = []
-                for bbox in dets[fidx-1]:
-                    dets[fidx].append({'frame':fidx, 'bbox':bbox['bbox'], 'conf':bbox['conf']})
-                    
+                break
+            imageNumpy = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            bboxes = DET.detect_faces(imageNumpy, conf_th=0.9, scales=[self.face_det_scale])
+            dets[fidx] = []
+            for bbox in bboxes:
+                dets[fidx].append({'frame':int(fidx*self.frames_face_tracking), 'bbox':(bbox[:-1]).tolist(), 'conf':bbox[-1]})
+            #fidx += self.frames_face_tracking
             if fidx%100 == 0:  
-                sys.stderr.write('%s-%05d; %d dets\r' % (self.video_path, fidx, len(dets[fidx])))
-            fidx += 1
+                sys.stderr.write('%s-%05d; %d dets\r' % (self.video_path, int(fidx*self.frames_face_tracking), len(dets[fidx])))
+        
+        cap.release()  
+        
+        # dets= [None] * self.num_frames
+        # cap_old = cv2.VideoCapture(self.video_path)       
+        
+        # fidx = 0 
+        
+        # while(cap_old.isOpened()):
+        #     ret, image = cap_old.read()
+        #     if ret == False:
+        #         break    
+
+        #     if fidx%self.frames_face_tracking == 0:
+        #         imageNumpy = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        #         bboxes = DET.detect_faces(imageNumpy, conf_th=0.9, scales=[self.face_det_scale])
+        #         dets[fidx] = []
+        #         for bbox in bboxes:
+        #             dets[fidx].append({'frame':fidx, 'bbox':(bbox[:-1]).tolist(), 'conf':bbox[-1]})
             
-        cap.release()   
+        #     else:
+        #         dets[fidx] = []
+        #         for bbox in dets[fidx-1]:
+        #             dets[fidx].append({'frame':fidx, 'bbox':bbox['bbox'], 'conf':bbox['conf']})
+                    
+        #     if fidx%100 == 0:  
+        #         sys.stderr.write('%s-%05d; %d dets\r' % (self.video_path, fidx, len(dets[fidx])))
+            
+        #     fidx += 1
+            
+            
+        # cap_old.release()   
         
         return dets       
