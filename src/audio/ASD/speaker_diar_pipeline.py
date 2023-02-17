@@ -2,6 +2,7 @@
 # Original repository: https://github.com/TaoRuijie/TalkNet-ASD
 # Obtained on: 2023-01-31
 
+import copy
 import os
 import pickle
 import time
@@ -190,7 +191,8 @@ class ASDSpeakerDirPipeline:
 			# Face tracking
 			start_time = time.perf_counter()
 			all_tracks = []
-			all_tracks.extend(self.face_tracker.track_shot_face_tracker(self.faces_bbox))
+			copy_faces_bbox = copy.deepcopy(self.faces_bbox)
+			all_tracks.extend(self.face_tracker.track_shot_face_tracker(copy_faces_bbox))
 			write_to_terminal("Face tracks created - detected", str(len(all_tracks)))
 			end_time = time.perf_counter()
 			print(f"--- Face tracking done in {end_time - start_time:0.4f} seconds")

@@ -1,7 +1,7 @@
 # -- THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
 # Name of the input file to be processed (.mp4 or .avi)
-VIDEO_NAME: "team_13_day_1_1"
+VIDEO_NAME: "001"
 
 # Path for the pretrained TalkNet model
 PRETRAINED_ASD_MODEL: "pretrain_TalkSet.model"
