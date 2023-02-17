@@ -13,10 +13,10 @@ N_DATA_LOADER_THREAD: 32
 FACE_DET_SCALE: 0.25
 
 # Number of min frames for each scene and track
-MIN_TRACK: 10
+MIN_TRACK: 25
 
 # Number of missed detections allowed before tracking is stopped (e.g. 25 fps -> 1 sec)
-NUM_FAILED_DET: 25
+NUM_FAILED_DET: 100
 
 # Minimum face size in pixels
 MIN_FACE_SIZE: 1
@@ -29,7 +29,7 @@ CROP_SCALE: 0.40
 CROP_CHUNK_SIZE: 1000
 
 # To speed up the face tracking, we only track the face in every x frames
-FRAMES_FACE_TRACKING: 2
+FRAMES_FACE_TRACKING: 1
 
 # The start time of the video
 START: 0

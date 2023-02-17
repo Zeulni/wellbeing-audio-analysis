@@ -30,6 +30,8 @@ class ComPatternAnalysis:
         
         # For each unit of analysis (block) perform the following calculations
         for block_id, speaker_overview in enumerate(self.splitted_speaker_overview):
+            
+            # TODO: not the best feature for my use case, as some times one turn is recognized as mutliple turns instead
             # PERMA score higher for teams that start more conversations (e.g. shorter ones)
             number_turns = self.turn_taking.calculate_number_turns(speaker_overview)
 
