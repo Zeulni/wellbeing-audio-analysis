@@ -1,6 +1,7 @@
 import cv2
 import sys
 import numpy as np
+from scipy.interpolate import interp1d
 
 from src.audio.ASD.model.faceDetector.s3fd import S3FD
 
@@ -18,59 +19,62 @@ class FaceDetector:
         # GPU: Face detection, output is the list contains the face location and score in this frame
         DET = S3FD(device=self.device)
         
-        # TODO: Interpolate linearly between the bounding boxes of the previous and next frame
-        # Instead of going through every frame for the face detection, we go through every xth (e.g. 10th) frame and then use the bounding boxes from the previous frame to track the faces in the next frames
-        # This is done to reduce the number of frames that need to be processed for the face detection
+        dets= [None] * self.num_frames
+        cap_old = cv2.VideoCapture(self.video_path)       
         
-        # Instead of appending the dets list, preallocate the dets list and then insert the values to save time
-        dets = [None] * int(self.num_frames/self.frames_face_tracking)
-        cap = cv2.VideoCapture(self.video_path)
-        #fidx = 0
+        fidx = 0 
         
-        for fidx in range(0, int(self.num_frames/self.frames_face_tracking)):
-            cap.set(cv2.CAP_PROP_POS_FRAMES, int(fidx*self.frames_face_tracking))
-            ret, image = cap.read()
+        while(cap_old.isOpened()):
+            ret, image = cap_old.read()
             if ret == False:
-                break
-            imageNumpy = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            bboxes = DET.detect_faces(imageNumpy, conf_th=0.9, scales=[self.face_det_scale])
-            dets[fidx] = []
-            for bbox in bboxes:
-                dets[fidx].append({'frame':int(fidx*self.frames_face_tracking), 'bbox':(bbox[:-1]).tolist(), 'conf':bbox[-1]})
-            #fidx += self.frames_face_tracking
-            if fidx%100 == 0:  
-                sys.stderr.write('%s-%05d; %d dets\r' % (self.video_path, int(fidx*self.frames_face_tracking), len(dets[fidx])))
-        
-        cap.release()  
-        
-        # dets= [None] * self.num_frames
-        # cap_old = cv2.VideoCapture(self.video_path)       
-        
-        # fidx = 0 
-        
-        # while(cap_old.isOpened()):
-        #     ret, image = cap_old.read()
-        #     if ret == False:
-        #         break    
+                break    
 
-        #     if fidx%self.frames_face_tracking == 0:
-        #         imageNumpy = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        #         bboxes = DET.detect_faces(imageNumpy, conf_th=0.9, scales=[self.face_det_scale])
-        #         dets[fidx] = []
-        #         for bbox in bboxes:
-        #             dets[fidx].append({'frame':fidx, 'bbox':(bbox[:-1]).tolist(), 'conf':bbox[-1]})
+            if fidx%self.frames_face_tracking == 0:
+                imageNumpy = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                bboxes = DET.detect_faces(imageNumpy, conf_th=0.9, scales=[self.face_det_scale])
+                dets[fidx] = []
+                for bbox in bboxes:
+                    dets[fidx].append({'frame':fidx, 'bbox':(bbox[:-1]).tolist(), 'conf':bbox[-1]})
             
-        #     else:
-        #         dets[fidx] = []
-        #         for bbox in dets[fidx-1]:
-        #             dets[fidx].append({'frame':fidx, 'bbox':bbox['bbox'], 'conf':bbox['conf']})
+            else:
+                dets[fidx] = []
                     
-        #     if fidx%100 == 0:  
-        #         sys.stderr.write('%s-%05d; %d dets\r' % (self.video_path, fidx, len(dets[fidx])))
+            if fidx%100 == 0:  
+                sys.stderr.write('%s-%05d; %d dets\r' % (self.video_path, fidx, len(dets[fidx])))
             
-        #     fidx += 1
+            fidx += 1
             
+        # Remove all the entrys in the dets list that are 1
+        dets = [x for x in dets if x != []]
+        
+        # Interpolate the face location for the frames without face detection
+        # interpolated_dets = self.interpolate_face_location(dets)
             
-        # cap_old.release()   
+        cap_old.release()   
         
         return dets       
+    
+    # def interpolate_face_location(self, dets) -> list:
+    #     for i in range(len(dets)):
+    #         if dets[i] == []:
+    #             # Find nearest frames with bounding boxes
+    #             j = i-1
+    #             while j >= 0 and dets[j] == []:
+    #                 j -= 1
+    #             k = i+1
+    #             while k < len(dets) and dets[k] == []:
+    #                 k += 1
+                
+    #             if j < 0 or k >= len(dets):
+    #                 # Cannot interpolate missing value at beginning or end
+    #                 continue
+                
+    #             # Linearly interpolate bounding boxes
+    #             bbox_j = np.array([f['bbox'] for f in dets[j]])
+    #             bbox_k = np.array([f['bbox'] for f in dets[k]])
+    #             bbox_interp = interp1d([j,k], np.stack([bbox_j, bbox_k]), axis=0)([i])[0]
+                
+    #             # Create fake detections for missing frame
+    #             dets[i] = [{'frame':i, 'bbox':bbox.tolist(), 'conf':1.0} for bbox in bbox_interp]
+                
+    #     return dets

@@ -12,7 +12,7 @@ class FaceTracker:
       
     # CPU: Face tracking  
     def track_shot_face_tracker(self, faces) -> list:
-        iouThres  = 0.5     # Minimum IOU between consecutive face detections
+        iouThres  = 0.3     # Minimum IOU between consecutive face detections
         tracks    = []
         while True:
             track     = []

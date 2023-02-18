@@ -133,6 +133,8 @@ def visualization(tracks, scores, total_frames, video_path, pyavi_path, num_fram
             txt = round(face['score'], 1)
             cv2.rectangle(image, (int(face['x']-face['s']), int(face['y']-face['s'])), (int(face['x']+face['s']), int(face['y']+face['s'])),(0,clr,255-clr),10)
             cv2.putText(image,'%s'%(txt), (int(face['x']-face['s']), int(face['y']-face['s'])), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,clr,255-clr),5)
+            # Also add the track number as text (but below the bounding box)
+            cv2.putText(image,'%s'%(face['track']), (int(face['x']-face['s']), int(face['y']+face['s'])), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,clr,255-clr),5)
         vOut.write(image)
     vOut.release()
 
