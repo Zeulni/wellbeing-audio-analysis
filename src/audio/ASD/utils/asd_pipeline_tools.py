@@ -137,6 +137,8 @@ def visualization(tracks, scores, total_frames, video_path, pyavi_path, num_fram
             cv2.putText(image,'%s'%(face['track']), (int(face['x']-face['s']), int(face['y']+face['s'])), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,clr,255-clr),5)
         vOut.write(image)
     vOut.release()
+    
+    write_to_terminal("Visualizatin finished - now it will be saved.")
 
     command = ("ffmpeg -y -i %s -i %s -threads %d -c:v copy -c:a copy %s -loglevel panic" % \
         (os.path.join(pyavi_path, 'video_only.avi'), os.path.join(pyavi_path, 'audio.wav'), \

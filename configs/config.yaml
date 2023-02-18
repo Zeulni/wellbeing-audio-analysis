@@ -1,7 +1,7 @@
 # -- THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
 # Name of the input file to be processed (.mp4 or .avi)
-VIDEO_NAME: "001"
+VIDEO_NAME: "team_13_day_1_1"
 
 # Path for the pretrained TalkNet model
 PRETRAINED_ASD_MODEL: "pretrain_TalkSet.model"
@@ -41,10 +41,10 @@ DURATION: 0
 THRESHOLD_SAME_PERSON: 1.05
 
 # If enabled, it will create a video for each track, where only the segments where the person is speaking are included
-CREATE_TRACK_VIDEOS: True
+CREATE_TRACK_VIDEOS: False
 
 # If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)
-INCLUDE_VISUALIZATION: True
+INCLUDE_VISUALIZATION: False
 
 # -- THE FOLLOWING CONFIGS ARE ALL USED FOR Analysing the audio files
 
