@@ -38,6 +38,7 @@ class ASDNetwork():
         
         self.number_tracks = len(all_tracks)
         
+        # TODO: multiprocessing back to "cuda"!!!
         if self.device.type == 'cuda':            
             # Show a progress bar using tqdm (based on the function above)
             # *Multiprocessing for GPU did not work on Colab
@@ -67,7 +68,8 @@ class ASDNetwork():
         trans_segment = numpy.array(segment.get_array_of_samples(), dtype=numpy.int16)
         
         # Shorten the length of the audio segment by factor self.frames_face_tracking
-        trans_segment = trans_segment[::self.frames_face_tracking]
+        # TODO: Audio Squeezing - Reverting depending on outcome
+        # trans_segment = trans_segment[::self.frames_face_tracking]
 
         return trans_segment, samplerate
     
@@ -132,16 +134,16 @@ class ASDNetwork():
             track_scores.append(scores)
         track_scores = numpy.round((numpy.mean(numpy.array(track_scores), axis = 0)), 1).astype(float)
 
-        # TODO: change
-        # To compensate for the skipping of frames, repeat the score for each frame (so it has the same length again)
-        track_scores = numpy.repeat(track_scores, self.frames_face_tracking)
+        # TODO: Squeezing reverted
+        # # To compensate for the skipping of frames, repeat the score for each frame (so it has the same length again)
+        # track_scores = numpy.repeat(track_scores, self.frames_face_tracking)
         
 
-        # To make sure the length is not longer than the video, crop it (if its the same length, just cut 3 frames off to be on the safe side)
-        if track_scores.shape[0] > track['bbox'].shape[0]:
-            track_scores = track_scores[:track['bbox'].shape[0]]
-        elif (track_scores.shape[0] - track['bbox'].shape[0]) >= -3:
-            track_scores = track_scores[:-3]
+        # # To make sure the length is not longer than the video, crop it (if its the same length, just cut 3 frames off to be on the safe side)
+        # if track_scores.shape[0] > track['bbox'].shape[0]:
+        #     track_scores = track_scores[:track['bbox'].shape[0]]
+        # elif (track_scores.shape[0] - track['bbox'].shape[0]) >= -3:
+        #     track_scores = track_scores[:-3]
             
         return track_scores
     

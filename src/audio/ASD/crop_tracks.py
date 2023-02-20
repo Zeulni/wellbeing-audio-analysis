@@ -114,14 +114,6 @@ class CropTracks:
         return proc_tracks, all_faces
     
     def crop_tracks_from_videos_parallel_chunks(self, tracks, file_path_frames_storage) -> tuple:
-        # Instead of going only through one track in crop_track_faster, we only read the video ones and go through all the tracks
-        # TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
-        # dets = {'x':[], 'y':[], 's':[]}
-        # for det in track['bbox']: # Read the tracks
-        # 	dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
-        # 	dets['y'].append((det[1]+det[3])/2) # crop center x 
-        # 	dets['x'].append((det[0]+det[2])/2) # crop center y
-
 
         # Go through all the tracks and get the dets values (not through the frames yet, only dets)
         # Save for each track the dats in a list
@@ -172,8 +164,8 @@ class CropTracks:
         for chunk_start in range(0, num_frames, chunk_size):
             chunk_end = min(chunk_start + chunk_size, num_frames) 
             # Loop over every frame, read the frame, then loop over all the tracks per frame and if available, crop the face
-            # for fidx in range(chunk_start, chunk_end):
-            for fidx in range(chunk_start, chunk_end, self.frames_face_tracking):
+            for fidx in range(chunk_start, chunk_end):
+            # for fidx in range(chunk_start, chunk_end, self.frames_face_tracking):
                 vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
                 ret, image = vIn.read()
 
@@ -181,26 +173,32 @@ class CropTracks:
                 for tidx, track in enumerate(tracks):
                     # In the current frame, first check whether the track has a bbox for this frame (if yes, perform opererations)
                     if fidx in track['frame']:
-                        # Get the index of the frame in the track
-                        index = numpy.where(track['frame'] == fidx)
-                        index = int(index[0][0])
-            
-                        # Calculate the bsi and pad the image
-                        bsi = int(dets[tidx]['s'][index] * (1 + 2 * cs))
-                        frame_image = numpy.pad(image, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
+                        
+                        # Only insert the face if the frame is a multiple of self.frames_face_tracking
+                        if fidx%self.frames_face_tracking == 0:
+                        
+                            # Get the index of the frame in the track
+                            index = numpy.where(track['frame'] == fidx)
+                            index = int(index[0][0])
+                
+                            # Calculate the bsi and pad the image
+                            bsi = int(dets[tidx]['s'][index] * (1 + 2 * cs))
+                            frame_image = numpy.pad(image, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
 
-                        bs  = dets[tidx]['s'][index]
-                        my  = dets[tidx]['y'][index] + bsi
-                        mx  = dets[tidx]['x'][index] + bsi
+                            bs  = dets[tidx]['s'][index]
+                            my  = dets[tidx]['y'][index] + bsi
+                            mx  = dets[tidx]['x'][index] + bsi
 
-                        # Crop the face from the image (depending on the track choose the image)
-                        face = frame_image[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
+                            # Crop the face from the image (depending on the track choose the image)
+                            face = frame_image[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
 
-                        # Apply the transformations
-                        face = transform(face)
+                            # Apply the transformations
+                            face = transform(face)
 
-                        # Store in the faces array
-                        all_faces[tidx, fidx, :, :] = face[0, :, :]
+                            # Store in the faces array
+                            all_faces[tidx, fidx, :, :] = face[0, :, :]
+                        else:
+                            all_faces[tidx, fidx, :, :] = all_faces[tidx, fidx-1, :, :]
             
             # Write all_faces to chunk_faces (numpy array)
             chunk_faces[:, chunk_start:chunk_end, :, :] = all_faces[:, chunk_start:chunk_end, :, :]
