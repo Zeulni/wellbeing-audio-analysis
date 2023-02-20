@@ -38,7 +38,6 @@ class ASDNetwork():
         
         self.number_tracks = len(all_tracks)
         
-        # TODO: multiprocessing back to "cuda"!!!
         if self.device.type == 'cuda':            
             # Show a progress bar using tqdm (based on the function above)
             # *Multiprocessing for GPU did not work on Colab
@@ -67,9 +66,19 @@ class ASDNetwork():
         samplerate = segment.frame_rate
         trans_segment = numpy.array(segment.get_array_of_samples(), dtype=numpy.int16)
         
-        # Shorten the length of the audio segment by factor self.frames_face_tracking
         # TODO: Audio Squeezing - Reverting depending on outcome
-        # trans_segment = trans_segment[::self.frames_face_tracking]
+        length_segment = len(trans_segment)
+        
+        # Shorten the length of the audio segment by factor self.frames_face_tracking
+        trans_segment = trans_segment[::self.frames_face_tracking]
+        
+        # TODO:
+        trans_segment = numpy.repeat(trans_segment, self.frames_face_tracking)
+        
+        # TODO:
+        # Cut the audio segment to the same length as before (length_segment)
+        trans_segment = trans_segment[:length_segment]
+    
 
         return trans_segment, samplerate
     
