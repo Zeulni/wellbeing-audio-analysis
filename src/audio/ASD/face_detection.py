@@ -53,28 +53,3 @@ class FaceDetector:
         cap_old.release()   
         
         return dets       
-    
-    # def interpolate_face_location(self, dets) -> list:
-    #     for i in range(len(dets)):
-    #         if dets[i] == []:
-    #             # Find nearest frames with bounding boxes
-    #             j = i-1
-    #             while j >= 0 and dets[j] == []:
-    #                 j -= 1
-    #             k = i+1
-    #             while k < len(dets) and dets[k] == []:
-    #                 k += 1
-                
-    #             if j < 0 or k >= len(dets):
-    #                 # Cannot interpolate missing value at beginning or end
-    #                 continue
-                
-    #             # Linearly interpolate bounding boxes
-    #             bbox_j = np.array([f['bbox'] for f in dets[j]])
-    #             bbox_k = np.array([f['bbox'] for f in dets[k]])
-    #             bbox_interp = interp1d([j,k], np.stack([bbox_j, bbox_k]), axis=0)([i])[0]
-                
-    #             # Create fake detections for missing frame
-    #             dets[i] = [{'frame':i, 'bbox':bbox.tolist(), 'conf':1.0} for bbox in bbox_interp]
-                
-    #     return dets
