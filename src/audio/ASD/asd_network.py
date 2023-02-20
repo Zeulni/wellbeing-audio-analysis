@@ -111,12 +111,7 @@ class ASDNetwork():
 
         # Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
         # * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
-        # video_feature = self.faces_frames[tidx]
         video_feature = self.get_video_feature(tidx)
-        
-        # Check whether video_feature and video_feature_old are the same
-        # if not numpy.array_equal(video_feature_old, video_feature):
-        #     print("video_feature and video_feature_old are not the same")
         
         
         # Remove all frames that have the value 0 (as they are not used)
