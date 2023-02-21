@@ -39,11 +39,11 @@ class ASDSpeakerDirPipeline:
   
 		self.n_data_loader_thread = args.get("N_DATA_LOADER_THREAD",32)
 		self.face_det_scale = args.get("FACE_DET_SCALE",0.25)
-		self.min_track = args.get("MIN_TRACK",10)
-		self.num_failed_det = args.get("NUM_FAILED_DET",25)
+		self.min_track = args.get("MIN_TRACK",25)
+		self.num_failed_det = args.get("NUM_FAILED_DET",100)
 		self.min_face_size = args.get("MIN_FACE_SIZE",1)
 		self.crop_scale = args.get("CROP_SCALE",0.40)
-		self.frames_face_tracking = args.get("FRAMES_FACE_TRACKING",1)
+		self.frames_face_tracking = args.get("FRAMES_FACE_TRACKING",2)
 		self.start = args.get("START",0)
 		self.duration = args.get("DURATION",0)
 		self.threshold_same_person = args.get("THRESHOLD_SAME_PERSON",1.05)
@@ -66,6 +66,7 @@ class ASDSpeakerDirPipeline:
 		# Initialization
 		self.pyavi_path = os.path.join(self.save_path, 'pyavi')
 		self.pywork_path = os.path.join(self.save_path, 'pywork')
+		self.faces_id_path = os.path.join(self.save_path, 'faces_id')
   
 		self.file_path_frames_storage = os.path.join(self.pywork_path,  "faces_frames.npz")
 		self.file_path_faces_bbox = os.path.join(self.pywork_path,  "faces_bbox.pickle")
@@ -88,6 +89,9 @@ class ASDSpeakerDirPipeline:
 		if not os.path.exists(self.pyavi_path): # The path for the input video, input audio, output video
 			os.makedirs(self.pyavi_path) 
    
+		if not os.path.exists(self.faces_id_path): # Here are the found faces and their IDs stored
+			os.makedirs(self.faces_id_path) 
+   
 		# The pickle files
 		self.faces_bbox = None
 		self.tracks = None
@@ -108,7 +112,7 @@ class ASDSpeakerDirPipeline:
   
 		# Initialize the speaker diarization
 		self.speaker_diarization = SpeakerDiarization(self.pyavi_path, self.video_path, self.video_name, self.n_data_loader_thread, self.threshold_same_person, 
-                                                	  self.create_track_videos, self.total_frames, self.num_frames_per_sec, self.save_path)
+                                                	  self.create_track_videos, self.total_frames, self.num_frames_per_sec, self.save_path, self.faces_id_path, self.crop_scale)
 	
 
 	def __check_face_detection_done(self) -> bool:

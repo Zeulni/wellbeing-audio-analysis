@@ -1,7 +1,7 @@
 import numpy
 import os
 import math
-import matplotlib.pyplot as plt
+import cv2
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
 
@@ -11,7 +11,7 @@ from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
 from src.audio.utils.constants import VIDEOS_DIR
 
 class SpeakerDiarization:
-    def __init__(self, pyavi_path, video_path, video_name, n_data_loader_thread, threshold_same_person, create_track_videos, total_frames, frames_per_second, save_path):
+    def __init__(self, pyavi_path, video_path, video_name, n_data_loader_thread, threshold_same_person, create_track_videos, total_frames, frames_per_second, save_path, faces_id_path, crop_scale):
         self.pyavi_path = pyavi_path 
         self.video_path = video_path
         self.video_name = video_name
@@ -21,6 +21,8 @@ class SpeakerDiarization:
         self.total_frames = total_frames
         self.frames_per_second = frames_per_second
         self.save_path = save_path
+        self.faces_id_path = faces_id_path
+        self.crop_scale = crop_scale
         
         self.length_video = int(self.total_frames / self.frames_per_second)
     
@@ -87,7 +89,7 @@ class SpeakerDiarization:
         # - x and y values are flipped (in contrast to normal convention)
         # - I make the assumption people do not change the place during one video I get as input 
         #   (-> if bounding boxes are close by and do not speak at the same time, then they are from the same person)
-        # 	To correct for that, I would have to leverage face verification using the stored videos in pycrop 
+        # 	To correct for that, I would have to leverage face verification
 
         # Calculate tracks that belong together 
         same_tracks = self.cluster_tracks(tracks, all_faces, track_speaking_faces)
@@ -95,7 +97,43 @@ class SpeakerDiarization:
         # Calculate an rttm file based on trackSpeakingSegments (merge the speakers for the same tracks into one speaker)
         self.write_rttm(track_speaking_segments, same_tracks)   
         
+        self.store_face_ids(self.faces_id_path, tracks)
+        
         return self.length_video
+    
+    # TODO: store one face per ID (track), or only the clustered ones? (it might be confusing for user to see more ids then recognized, but it is helpful more me to debug)
+    def store_face_ids(self, faces_id_path, tracks) -> None:
+        # Store in a dict for each track the track id, the frame number of the first frame and the corresponding bounding box
+        track_bboxes = [None for i in range(len(tracks))]
+        for tidx, track in enumerate(tracks):
+            # Take the first frame of every track and store it
+            frame_number = 0
+            track_bboxes[tidx] = [track['track']['frame'][frame_number] ,track['proc_track']['s'][frame_number], track['proc_track']['x'][frame_number], track['proc_track']['y'][frame_number]]
+            
+        # Using faces_id dict, now crop for each track the bounding box at the corresponding frame and save it as an image            
+        for tidx, track_bbox in enumerate(track_bboxes):
+            cap = cv2.VideoCapture(self.video_path)
+            cap.set(1, track_bbox[0])
+            ret, frame = cap.read()
+            cap.release()
+            
+            # Using the bbox from the faces_id dict to crop the image
+            
+            s = track_bbox[1]
+            x = track_bbox[2]
+            y = track_bbox[3]
+            
+            cs  = self.crop_scale
+            bs  = s   # Detection box size
+            bsi = int(bs * (1 + 2 * cs))  # Pad videos by this amount 
+            frame = numpy.pad(frame, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
+            my  = y + bsi  # BBox center Y
+            mx  = x + bsi  # BBox center X
+            face = frame[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
+
+            
+            # Save the image
+            cv2.imwrite(os.path.join(faces_id_path, str(tidx) + ".jpg"), cv2.resize(face, (224, 224)))
         
         
     def write_rttm(self, track_speaking_segments, same_tracks):

@@ -102,7 +102,7 @@ def visualization(tracks, scores, total_frames, video_path, pyavi_path, num_fram
     # CPU: visulize the result for video format
     all_faces = [[] for i in range(total_frames)]
     
-    # *Pick one track (e.g. one of the 7 as in in the sample)
+    # *Pick one track
     for tidx, track in enumerate(tracks):
         score = scores[tidx]
         # *Go through each frame in the selected track
