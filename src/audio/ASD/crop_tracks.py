@@ -152,7 +152,8 @@ class CropTracks:
         output_file = file_path_frames_storage
         chunk_size = self.crop_chunk_size  # number of frames to process at a time (and storing into RAM)
             
-        chunk_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), num_frames, 112, 112), dtype=numpy.uint8)
+        length_frames = int(num_frames / self.frames_face_tracking)
+        chunk_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), length_frames, 112, 112), dtype=numpy.uint8)
         
         for chunk_start in range(0, num_frames, chunk_size):
             chunk_end = min(chunk_start + chunk_size, num_frames) 
@@ -187,8 +188,13 @@ class CropTracks:
                         # Store in the faces array
                         all_faces[tidx, fidx, :, :] = face[0, :, :]
             
+            # Remove all the zeros from all_faces (-> half the length + only relevant data to be inserted, chunk size does not matter)
+        
+            # Insert only every second value of all_faces into chunk_faces (-> only relevant data)
+
+            
             # Write all_faces to chunk_faces (numpy array)
-            chunk_faces[:, chunk_start:chunk_end, :, :] = all_faces[:, chunk_start:chunk_end, :, :]
+            chunk_faces[:, chunk_start//self.frames_face_tracking:chunk_end//self.frames_face_tracking, :, :] = all_faces[:, chunk_start:chunk_end:self.frames_face_tracking, :, :]
 
             # Clear the memory by resetting the `all_faces` array
             all_faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.float32)

@@ -85,7 +85,8 @@ class ASDNetwork():
     def get_video_feature(self, tidx) -> numpy.ndarray:
          
         # Load the faces array from self.file_path_frames_storage using memmap, then extract only the relevant track into the memory
-        faces = numpy.memmap(self.file_path_frames_storage, mode="r+", shape=(self.number_tracks, self.total_frames, 112, 112), dtype=numpy.uint8)
+        length_frames = int(self.total_frames / self.frames_face_tracking)
+        faces = numpy.memmap(self.file_path_frames_storage, mode="r+", shape=(self.number_tracks, length_frames, 112, 112), dtype=numpy.uint8)
         # track_data = faces[tidx]
         
         # Convert faces directly to a torch tensor, and put it on the GPU

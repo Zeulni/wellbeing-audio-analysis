@@ -1,7 +1,7 @@
 # -- THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
 # Name of the input file to be processed (.mp4 or .avi)
-VIDEO_NAME: "team_13_day_1_1_fr_sk_2_laggy_a_v"
+VIDEO_NAME: "001"
 
 # Path for the pretrained TalkNet model
 PRETRAINED_ASD_MODEL: "pretrain_TalkSet.model"
@@ -26,7 +26,7 @@ CROP_SCALE: 0.40
 
 # To not overload the RAM when loading a larger video, we have to do it in chunks (and only store the cunks in RAM)
 # 10000 frames ~ 1GB RAM (~6 min video at 25 fps)
-CROP_CHUNK_SIZE: 1000
+CROP_CHUNK_SIZE: 100
 
 # To speed up the face tracking, we only track the face in every x frames
 FRAMES_FACE_TRACKING: 2
@@ -44,7 +44,7 @@ THRESHOLD_SAME_PERSON: 1.05
 CREATE_TRACK_VIDEOS: False
 
 # If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)
-INCLUDE_VISUALIZATION: False
+INCLUDE_VISUALIZATION: True
 
 # -- THE FOLLOWING CONFIGS ARE ALL USED FOR Analysing the audio files
 
