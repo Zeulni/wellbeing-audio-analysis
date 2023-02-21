@@ -70,10 +70,42 @@ class RTTMFilePreparation:
             end_time_speaker.sort()
             
             self.speaker_overview.append([speaker, start_time_speaker, end_time_speaker])
+            
+        self.user_input_handling()
         
         self.block_speaker_overview = self.split_speaker_overview()
         
         return self.block_speaker_overview
+    
+    def user_input_handling(self) -> None:
+        # Ask the user if he wants to remove a speaker (if he wants to remove a speaker, he should enter the speaker ID)
+        # Once that speaker was removed, ask again (until the user enters nothing)
+        while True: 
+            # Print the list of speakers
+            print("The following speakers were detected:", end=" ")
+            for speaker_id, speaker_starts, speaker_ends in self.speaker_overview:
+                print(str(speaker_id), end=" ")
+            speaker_id = input("\nPlease enter the speaker ID of the speaker you want to remove, see folder 'faces_id' (if you don't want to remove a speaker, just press enter): ")
+            
+            # Error handling, if input is not one of the speaker IDs
+            if speaker_id != "" and speaker_id not in [speaker_id for speaker_id, speaker_starts, speaker_ends in self.speaker_overview]:
+                print("Please enter a valid speaker ID!")
+                continue
+            
+            if speaker_id == "":
+                break
+            else:
+                # If he wants to remove the last speaker, throw an error
+                if len(self.speaker_overview) == 2:
+                    print("You need at least two people for one team!")
+                    continue
+                self.remove_speaker(speaker_id)
+    
+    def remove_speaker(self, speaker_id):
+        for i in range(len(self.speaker_overview)):
+            if self.speaker_overview[i][0] == speaker_id:
+                del self.speaker_overview[i]
+                break
     
     def get_block_length(self):
         block_length = []

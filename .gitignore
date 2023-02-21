@@ -9,6 +9,8 @@
 *.rttm
 *.npz
 *.DS_Store
+*.jpg
+*.csv
 data/
 tests/
 exps/

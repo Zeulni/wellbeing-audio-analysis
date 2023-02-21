@@ -18,13 +18,6 @@ class CropTracks:
 
     def crop_tracks_from_videos_parallel(self, tracks) -> tuple:
         # Instead of going only through one track in crop_track_faster, we only read the video ones and go through all the tracks
-        # TODO: Maybe still needed if I make smooth transition between frames (instead of just fixing the bbox for 10 frames)
-        # dets = {'x':[], 'y':[], 's':[]}
-        # for det in track['bbox']: # Read the tracks
-        # 	dets['s'].append(max((det[3]-det[1]), (det[2]-det[0]))/2) 
-        # 	dets['y'].append((det[1]+det[3])/2) # crop center x 
-        # 	dets['x'].append((det[0]+det[2])/2) # crop center y
-
 
         # Go through all the tracks and get the dets values (not through the frames yet, only dets)
         # Save for each track the dats in a list

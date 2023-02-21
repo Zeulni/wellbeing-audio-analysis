@@ -101,7 +101,6 @@ class SpeakerDiarization:
         
         return self.length_video
     
-    # TODO: store one face per ID (track), or only the clustered ones? (it might be confusing for user to see more ids then recognized, but it is helpful more me to debug)
     def store_face_ids(self, faces_id_path, tracks) -> None:
         # Store in a dict for each track the track id, the frame number of the first frame and the corresponding bounding box
         track_bboxes = [None for i in range(len(tracks))]
