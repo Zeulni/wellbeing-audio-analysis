@@ -11,6 +11,7 @@
 *.DS_Store
 *.jpg
 *.csv
+*.onnx
 data/
 tests/
 exps/
