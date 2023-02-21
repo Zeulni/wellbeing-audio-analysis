@@ -8,7 +8,7 @@
 *.pickle
 *.rttm
 *.npz
-.DS_Store
+*.DS_Store
 data/
 tests/
 exps/
