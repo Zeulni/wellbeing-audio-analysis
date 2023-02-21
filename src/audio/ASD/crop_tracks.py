@@ -187,10 +187,6 @@ class CropTracks:
 
                         # Store in the faces array
                         all_faces[tidx, fidx, :, :] = face[0, :, :]
-            
-            # Remove all the zeros from all_faces (-> half the length + only relevant data to be inserted, chunk size does not matter)
-        
-            # Insert only every second value of all_faces into chunk_faces (-> only relevant data)
 
             
             # Write all_faces to chunk_faces (numpy array)

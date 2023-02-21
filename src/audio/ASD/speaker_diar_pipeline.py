@@ -229,6 +229,6 @@ class ASDSpeakerDirPipeline:
 			print(f"--- Visualization done in {end_time - start_time:0.4f} seconds")
   
 		# Speaker diarization
-		length_video = self.speaker_diarization.run(self.tracks, self.scores)
+		self.speaker_diarization.run(self.tracks, self.scores)
   
-		return length_video
+		return

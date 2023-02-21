@@ -99,7 +99,7 @@ class SpeakerDiarization:
         
         self.store_face_ids(self.faces_id_path, tracks)
         
-        return self.length_video
+        return
     
     def store_face_ids(self, faces_id_path, tracks) -> None:
         # Store in a dict for each track the track id, the frame number of the first frame and the corresponding bounding box
