@@ -2,6 +2,7 @@
 
 from src.audio.ASD.speaker_diar_pipeline import ASDSpeakerDirPipeline
 from src.audio.com_pattern.com_pattern_analysis import ComPatternAnalysis
+from src.audio.emotions.test import run_test
 
 from src.audio.ASD.utils.asd_pipeline_tools import get_video_path
 from src.audio.ASD.utils.asd_pipeline_tools import get_frames_per_second
@@ -23,7 +24,7 @@ class Runner:
         
         # Perform combined Active Speaker Detection and Speaker Diarization - if selected in config file
         if 1 in self.run_pipeline_parts:
-            self.asd_pipeline = ASDSpeakerDirPipeline(self.args)
+            self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.length_video)
             self.asd_pipeline.run()
 
         # TODO: make it more generell -> provide list of features what to calculate
@@ -32,3 +33,4 @@ class Runner:
             self.com_pattern = ComPatternAnalysis(self.args, self.length_video)
             self.com_pattern.run()
 
+        run_test()

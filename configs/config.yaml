@@ -1,8 +1,8 @@
 # Decide which parts of the pipeline you want to run (only part 1 (ASD with rttm file output), only part 2 (input is rttm file and output the analysis, csv file), or both)
 # [1, 2] means run both parts
-RUN_PIPELINE_PARTS: [1,2]
+RUN_PIPELINE_PARTS: []
 
-# -- THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
+# -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
 # Name of the input file to be processed (.mp4 or .avi)
 VIDEO_NAME: "001"
@@ -50,7 +50,7 @@ CREATE_TRACK_VIDEOS: False
 # If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)
 INCLUDE_VISUALIZATION: False
 
-# -- THE FOLLOWING CONFIGS ARE ALL USED FOR Analysing the audio files
+# -- PART 2: THE FOLLOWING CONFIGS ARE ALL USED FOR Analysing the audio files
 
 # This is the amount of seconds in which the audio is split and analyzed (300s means in chunks of 5 min)
 UNIT_OF_ANALYSIS: 300

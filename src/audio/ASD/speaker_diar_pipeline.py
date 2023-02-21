@@ -32,7 +32,7 @@ from src.audio.ASD.speaker_diarization import SpeakerDiarization
 from src.audio.utils.constants import ASD_DIR
 
 class ASDSpeakerDirPipeline:
-	def __init__(self, args):
+	def __init__(self, args, num_frames_per_sec, total_frames):
 		self.video_name = args.get("VIDEO_NAME","001")
 		self.pretrain_model = args.get("PRETRAIN_ASD_MODEL","pretrain_TalkSet.model")
 		self.pretrain_model = os.path.join(ASD_DIR, self.pretrain_model)
@@ -73,8 +73,8 @@ class ASDSpeakerDirPipeline:
 		self.file_path_scores = os.path.join(self.pywork_path,  "scores.pickle")
 		self.file_path_tracks = os.path.join(self.pywork_path,  "tracks.pickle")
 	
-		self.num_frames_per_sec = get_frames_per_second(self.video_path)
-		self.total_frames = get_num_total_frames(self.video_path)
+		self.num_frames_per_sec = num_frames_per_sec
+		self.total_frames = total_frames
 		
 		# Extract the video from the start time to the duration
 		self.video_path = extract_video(self.pyavi_path, self.video_path, self.duration, self.n_data_loader_thread, self.start, self.num_frames_per_sec)	
