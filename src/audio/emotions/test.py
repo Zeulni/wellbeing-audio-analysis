@@ -2,6 +2,7 @@
 import audonnx
 import numpy as np
 import audinterface
+import torch
 
 from pydub import AudioSegment
 
@@ -44,7 +45,16 @@ def run_test() -> None:
         
     model_root = os.path.join(EMOTIONS_DIR, model_name)    
         
-    model = audonnx.load(model_root)
+        
+    # When GPU available, use 'cuda' instead of 'cpu'
+    if torch.cuda.is_available():
+        device = 'cuda'
+    else:
+        device = 'cpu'
+
+
+    
+    model = audonnx.load(model_root, device=device)
     
     np.random.seed(0)
 
@@ -60,18 +70,18 @@ def run_test() -> None:
     samplerate = sound.frame_rate
     trans_segment = np.array(sound.get_array_of_samples(), dtype=np.float32)
 
-    #model(signal, sampling_rate)
+    print(model(trans_segment, sampling_rate))
     
-    interface = audinterface.Feature(
-    model.labels('logits'),
-    process_func=model,
-    process_func_args={
-        'outputs': 'logits',
-    },
-    sampling_rate=sampling_rate,
-    resample=True,    
-    verbose=True,
-    )
+    # interface = audinterface.Feature(
+    # model.labels('logits'),
+    # process_func=model,
+    # process_func_args={
+    #     'outputs': 'logits',
+    # },
+    # sampling_rate=sampling_rate,
+    # resample=True,    
+    # verbose=True,
+    # )
     
-    # TODO: Files have to be in smaller chunks (RAM or memory overflow)
-    print(interface.process_signal(trans_segment, sampling_rate))
+    # # TODO: Files have to be in smaller chunks (RAM or memory overflow) 20 min for 4 min audio -> 5x on CPU
+    # print(interface.process_signal(trans_segment, sampling_rate))
