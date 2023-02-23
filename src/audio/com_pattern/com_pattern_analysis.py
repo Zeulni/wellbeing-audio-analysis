@@ -19,6 +19,8 @@ class ComPatternAnalysis:
             
     def run(self, splitted_speaker_overview, block_length, num_speakers) -> None:
         
+        com_pattern_output = [[] for i in range(len(splitted_speaker_overview))]
+        
         # For each unit of analysis (block) perform the following calculations
         for block_id, speaker_overview in enumerate(splitted_speaker_overview):
             
@@ -30,7 +32,7 @@ class ComPatternAnalysis:
             # number_turns_share = self.turn_taking.calculate_number_turns_share(number_turns)
 
             number_turns_equality = self.turn_taking.calculate_number_turns_equality(number_turns, block_id)
-            print("Number turns equality (0 would be perfectly equal): ", number_turns_equality)
+            # print("Number turns equality (0 would be perfectly equal): ", number_turns_equality)
         
             # PERMA score higher for teams that speak more? (-> calculate one score that indicates how much they are speaking in percent)
             speaking_duration = self.speaking_duration.calculate_speaking_duration(speaker_overview)
@@ -39,22 +41,43 @@ class ComPatternAnalysis:
             # speaking_duration_share = self.calculate_speaking_duration_share(speaking_duration)
             
             speaking_duration_equality = self.speaking_duration.calculate_speaking_duration_equality(speaking_duration, block_id)
-            print("Speaking duration equality (0 would be perfectly equal): ", speaking_duration_equality)
+            # print("Speaking duration equality (0 would be perfectly equal): ", speaking_duration_equality)
         
             #overlaps
             norm_num_overlaps = self.overlaps.calculate_amount_overlaps(speaker_overview, block_length[block_id], block_id, num_speakers)
-            print("Number of overlaps (per minute per speaker): ", norm_num_overlaps)
+            # print("Number of overlaps (per minute per speaker): ", norm_num_overlaps)
             
             print("\n")
-        
-        # Write results to a csv file
-        csv_path = write_results_to_csv(self.turn_taking, self.speaking_duration, self.overlaps, self.video_name)
-        
-        # Visualize the communication patterns
-        visualize_pattern(csv_path, self.unit_of_analysis, self.video_name)
-        
-        # Visualizes only the speaking duration overview of the last block
-        # visualize_individual_speaking_shares(speaking_duration)
-
-        
             
+            #com_pattern_output[block_id].append({speaker_id: [arousal, dominance, valence]})
+            
+            # Loop through each speaker and then add number_turns, speaking_duration, norm_num_overlaps to the com_pattern_output (for each block there should be one list, within each list there should be a dict with the speaker ID as the key and the values as a list)
+            for speaker_id in number_turns["speaker"]:
+                
+                # Get the index of the speaker ID from the number_turns list
+                speaker_id_index = number_turns["speaker"].index(speaker_id)
+                
+                com_pattern_output[block_id].append({speaker_id: [number_turns["number_turns"][speaker_id_index], speaking_duration["speaking_duration"][speaker_id_index]]})
+        
+                # print("Speaker ID: ", speaker_id, "Arousal: ", arousal, "Dominance: ", dominance, "Valence: ", valence)
+                print("Speaker ID: ", speaker_id, "Number of turns: ", number_turns["number_turns"][speaker_id_index], "Speaking duration: ", speaking_duration["speaking_duration"][speaker_id_index])
+                
+        # Write results to a csv file
+        # csv_path = write_results_to_csv(self.turn_taking, self.speaking_duration, self.overlaps, self.video_name)
+        
+        com_pattern_output_reform = self.parse_emotions_output(com_pattern_output)
+        
+        return com_pattern_output_reform
+        
+    def parse_emotions_output(self, com_pattern_output) -> dict:
+        com_pattern_output_reform = {}
+        for block in com_pattern_output:
+            for speaker_dict in block:
+                speaker_id = list(speaker_dict.keys())[0]
+                if speaker_id not in com_pattern_output_reform:
+                    com_pattern_output_reform[speaker_id] = {'turn_taking': [], 'speaking_duration': []}
+                values = speaker_dict[speaker_id]
+                com_pattern_output_reform[speaker_id]['turn_taking'].append(values[0])
+                com_pattern_output_reform[speaker_id]['speaking_duration'].append(values[1])
+                    
+        return com_pattern_output_reform  

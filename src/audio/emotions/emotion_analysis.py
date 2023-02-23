@@ -75,8 +75,8 @@ class EmotionAnalysis:
                 
                 
                 # *For debugging: Save for each block and speaker the audio segment
-                audio_snippet_path = os.path.join(EMOTIONS_DIR, "audio_snippets" + "_s" + speaker_id + "_b" + str(block_id) + ".wav")
-                speaker_audio.export(audio_snippet_path, format="wav")
+                # audio_snippet_path = os.path.join(EMOTIONS_DIR, "audio_snippets" + "_s" + speaker_id + "_b" + str(block_id) + ".wav")
+                # speaker_audio.export(audio_snippet_path, format="wav")
                 
                 output = self.get_audeer_emotions(speaker_audio, sampling_rate)
             

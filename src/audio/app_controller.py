@@ -11,7 +11,7 @@ from src.audio.ASD.utils.asd_pipeline_tools import get_video_path
 from src.audio.ASD.utils.asd_pipeline_tools import get_frames_per_second
 from src.audio.ASD.utils.asd_pipeline_tools import get_num_total_frames
 
-from src.audio.utils.analysis_tools import visualize_emotions
+from src.audio.utils.analysis_tools import visualize_emotions, write_results_to_csv
 
 from src.audio.utils.constants import VIDEOS_DIR
 
@@ -57,11 +57,14 @@ class Runner:
             block_length = self.rttm_file_preparation.get_block_length()
             num_speakers = self.rttm_file_preparation.get("num_speakers")            
     
-            # self.com_pattern_analysis.run(splitted_speaker_overview, block_length, num_speakers)
+            # TODO: Check, if the features are correct (print them out before)
+            com_pattern_output = self.com_pattern_analysis.run(splitted_speaker_overview, block_length, num_speakers)
 
             emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
         
-            # TODO: "clean" audio file -> better audio quality?
-            # TODO: could also use it for ASD?
+            csv_path = write_results_to_csv(emotions_output, com_pattern_output, self.video_name)
+            
             # TODO: Write results to csv (then get visualization from csv file -> independent of pipeline, move if out of step 2)
             visualize_emotions(emotions_output, self.unit_of_analysis, self.video_name)
+            
+     

@@ -4,19 +4,31 @@ import numpy as np
 
 from src.audio.utils.constants import VIDEOS_DIR
 
-def write_results_to_csv(turn_taking_obj, speaking_duration_obj, overlaps_obj, video_name) -> str:
-    # TODO: I only write the team features to a csv file (no individual features yet)
-    # TODO: how to attach the results from one day into one csv file is open (e.g. pandas db as intermediate step? and first look if for that day one dataframe is already here? but what if run twice? and it just attaches to the old one)
-    
-    # Store the features in a pandas dataframe
-    # The rows are the blocks and the columns are the features
-    df = pd.DataFrame(columns=['block', 'number_turns_equality', 'speaking_duration_equality', 'norm_num_overlaps'])
+def write_results_to_csv(emotions_output, com_pattern_output, video_name) -> str:
 
-    # Add the features to the dataframe
-    df['block'] = turn_taking_obj.get("blocks_number_turns_equality")['block']
-    df['number_turns_equality'] = turn_taking_obj.get("blocks_number_turns_equality")['number_turns_equality']
-    df['speaking_duration_equality'] = speaking_duration_obj.get("blocks_speaking_duration_equality")['speaking_duration_equality']
-    df['norm_num_overlaps'] = overlaps_obj.get("blocks_norm_num_overlaps")['norm_num_overlaps']
+    data_emotions_output = []
+    for speaker_id, values in emotions_output.items():
+        for key, val in values.items():
+            for i, v in enumerate(val):
+                col_name = f"{key}_{i+1}"
+                data_emotions_output.append([speaker_id, col_name, v])
+
+    df_emotions_output = pd.DataFrame(data_emotions_output, columns=["Speaker ID", "Emotion", "Value"])
+    df_emotions_output = df_emotions_output.pivot(index="Speaker ID", columns="Emotion", values="Value")
+    
+    data_com_pattern_output = []
+    for speaker_id, values in com_pattern_output.items():
+        for key, val in values.items():
+            for i, v in enumerate(val):
+                col_name = f"{key}_{i+1}"
+                data_com_pattern_output.append([speaker_id, col_name, v])
+
+    df_com_pattern_output = pd.DataFrame(data_com_pattern_output, columns=["Speaker ID", "ComPattern", "Value"])
+    df_com_pattern_output = df_com_pattern_output.pivot(index="Speaker ID", columns="ComPattern", values="Value")  
+    
+    df = df_emotions_output.join(df_com_pattern_output, on="Speaker ID")
+    
+    print(df)
     
     # Store the pandas dataframe to a csv file
     filename = video_name + "_audio_analysis_results.csv"
