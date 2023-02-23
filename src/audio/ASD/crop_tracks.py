@@ -190,7 +190,13 @@ class CropTracks:
 
             
             # Write all_faces to chunk_faces (numpy array)
-            chunk_faces[:, chunk_start//self.frames_face_tracking:chunk_end//self.frames_face_tracking, :, :] = all_faces[:, chunk_start:chunk_end:self.frames_face_tracking, :, :]
+            int_all_faces = all_faces[:, chunk_start:chunk_end:self.frames_face_tracking, :, :]
+            
+            # If is was an uneven chunk, we need to remove the last frame
+            if int_all_faces.shape[1] != chunk_faces[:, chunk_start//self.frames_face_tracking:chunk_end//self.frames_face_tracking, :, :].shape[1]:
+                int_all_faces = int_all_faces[:, :-1, :, :]
+            
+            chunk_faces[:, chunk_start//self.frames_face_tracking:chunk_end//self.frames_face_tracking, :, :] = int_all_faces
 
             # Clear the memory by resetting the `all_faces` array
             all_faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.float32)

@@ -1,16 +1,14 @@
 class Overlaps:
-    def __init__(self, num_speakers) -> None:
+    def __init__(self) -> None:
         # For each block store the normalized number of overlaps
         self.blocks_norm_num_overlaps = {}
         self.blocks_norm_num_overlaps["block"] = []
         self.blocks_norm_num_overlaps["norm_num_overlaps"] = []
         
-        self.num_speakers = num_speakers
-        
     def get(self, attribute):
         return getattr(self, attribute)
         
-    def calculate_amount_overlaps(self, speaker_overview, block_length, block_id) -> float:
+    def calculate_amount_overlaps(self, speaker_overview, block_length, block_id, num_speakers) -> float:
 
         num_overlaps = 0
 
@@ -30,7 +28,7 @@ class Overlaps:
         
         # TODO: current assumption: the number of speakers is constant and does not change during one meeting
         
-        norm_num_overlaps = (num_overlaps / (block_length * self.num_speakers))*60
+        norm_num_overlaps = (num_overlaps / (block_length * num_speakers))*60
         
         self.blocks_norm_num_overlaps["block"].append(block_id)
         self.blocks_norm_num_overlaps["norm_num_overlaps"].append(norm_num_overlaps)

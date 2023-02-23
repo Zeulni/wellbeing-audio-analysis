@@ -3,6 +3,7 @@ import audonnx
 import numpy as np
 import audinterface
 import torch
+import math
 
 from pydub import AudioSegment
 
@@ -67,10 +68,28 @@ def run_test() -> None:
     
     sound = AudioSegment.from_wav(audio_file)
     
-    samplerate = sound.frame_rate
-    trans_segment = np.array(sound.get_array_of_samples(), dtype=np.float32)
+    # Set the chunk length in milliseconds (20 seconds) , 20, 22, 24, 35 for 2 min
+    chunk_length_ms = 20000
 
-    print(model(trans_segment, sampling_rate))
+    # Calculate the number of chunks needed
+    num_chunks = math.ceil(len(sound) / chunk_length_ms)
+
+    # Split the audio file into chunks
+    for i in range(num_chunks):
+        start = i * chunk_length_ms
+        end = (i + 1) * chunk_length_ms
+        chunk = sound[start:end]
+        chunk = np.array(chunk.get_array_of_samples(), dtype=np.float32)
+        print(model(chunk, sampling_rate))
+
+    
+   #  samplerate = sound.frame_rate
+    
+    
+    # Cut the the sound file into 20 second chunks and run the model on each chunk
+
+
+    # print(model(trans_segment, sampling_rate))
     
     # interface = audinterface.Feature(
     # model.labels('logits'),
@@ -84,4 +103,6 @@ def run_test() -> None:
     # )
     
     # # TODO: Files have to be in smaller chunks (RAM or memory overflow) 20 min for 4 min audio -> 5x on CPU
+    
+    # TODO: 20 sec video ging verhältnismäßig schnell!! alles einfach kleiner machen?
     # print(interface.process_signal(trans_segment, sampling_rate))

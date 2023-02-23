@@ -57,3 +57,16 @@ def visualize_pattern(csv_path, unit_of_analysis, video_name) -> None:
     fig.text(0.5, 0.04, '1 unit on x-axis = ' + str(unit_of_analysis) + "s", ha='center')
     
     plt.show()
+    
+def visualize_individual_speaking_shares(speaking_duration):
+    # Visualize the speaking_duration in a bar chart (one bar for each speaker)
+
+
+    fig, ax = plt.subplots()
+    ax.bar(speaking_duration["speaker"], speaking_duration["speaking_duration"])
+
+    ax.set_xlabel("Speaker")
+    ax.set_ylabel("Speaking Duration in Seconds")
+    ax.set_title("Speaking Duration per Speaker")
+
+    plt.show()

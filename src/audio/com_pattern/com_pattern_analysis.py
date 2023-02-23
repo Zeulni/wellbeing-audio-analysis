@@ -1,5 +1,4 @@
-from src.audio.utils.rttm_file_preparation import RTTMFilePreparation
-from src.audio.utils.rttm_file_analysis_tools import write_results_to_csv, visualize_pattern
+from src.audio.utils.rttm_file_analysis_tools import write_results_to_csv, visualize_pattern, visualize_individual_speaking_shares
 
 from src.audio.com_pattern.turn_taking import TurnTaking
 from src.audio.com_pattern.speaking_duration import SpeakingDuration
@@ -8,28 +7,20 @@ from src.audio.com_pattern.overlaps import Overlaps
 
 # Perform certain communication pattern evaluations on the rttm file
 class ComPatternAnalysis:
-    def __init__(self, args, length_video) -> None:
+    def __init__(self, video_name, unit_of_analysis) -> None:
         
-        self.video_name = args.get("VIDEO_NAME","001")
-        self.unit_of_analysis = args.get("UNIT_OF_ANALYSIS", 300)
-        
-        self.rttm_file_preparation = RTTMFilePreparation(self.video_name, self.unit_of_analysis, length_video)
-        
-        self.splitted_speaker_overview = self.rttm_file_preparation.read_rttm_file()
-        
-        # Based on the unit of analysis and the length of the video, create a list with the length of each block
-        self.block_length = self.rttm_file_preparation.get_block_length()
+        self.video_name = video_name
+        self.unit_of_analysis = unit_of_analysis
         
         # Initialize the communication pattern classes
         self.turn_taking = TurnTaking()
         self.speaking_duration = SpeakingDuration()
-        self.overlaps = Overlaps(self.rttm_file_preparation.get("num_speakers"))
-   
+        self.overlaps = Overlaps()
             
-    def run(self) -> None:
+    def run(self, splitted_speaker_overview, block_length, num_speakers) -> None:
         
         # For each unit of analysis (block) perform the following calculations
-        for block_id, speaker_overview in enumerate(self.splitted_speaker_overview):
+        for block_id, speaker_overview in enumerate(splitted_speaker_overview):
             
             # TODO: not the best feature for my use case, as some times one turn is recognized as mutliple turns instead
             # PERMA score higher for teams that start more conversations (e.g. shorter ones)
@@ -51,7 +42,7 @@ class ComPatternAnalysis:
             print("Speaking duration equality (0 would be perfectly equal): ", speaking_duration_equality)
         
             #overlaps
-            norm_num_overlaps = self.overlaps.calculate_amount_overlaps(speaker_overview, self.block_length[block_id], block_id)
+            norm_num_overlaps = self.overlaps.calculate_amount_overlaps(speaker_overview, block_length[block_id], block_id, num_speakers)
             print("Number of overlaps (per minute per speaker): ", norm_num_overlaps)
             
             print("\n")
@@ -61,5 +52,9 @@ class ComPatternAnalysis:
         
         # Visualize the communication patterns
         visualize_pattern(csv_path, self.unit_of_analysis, self.video_name)
+        
+        # Visualizes only the speaking duration overview of the last block
+        # visualize_individual_speaking_shares(speaking_duration)
+
         
             
