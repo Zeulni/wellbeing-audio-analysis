@@ -57,4 +57,6 @@ class Runner:
     
             # self.com_pattern_analysis.run(splitted_speaker_overview, block_length, num_speakers)
 
-            self.emotion_analysis.run(splitted_speaker_overview)
+            emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
+            
+            print("Emotions output: ", emotions_output)
