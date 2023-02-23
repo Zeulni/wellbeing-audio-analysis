@@ -4,7 +4,7 @@ from src.audio.utils.rttm_file_preparation import RTTMFilePreparation
 
 from src.audio.ASD.speaker_diar_pipeline import ASDSpeakerDirPipeline
 from src.audio.com_pattern.com_pattern_analysis import ComPatternAnalysis
-#from src.audio.emotions.test import run_test
+from src.audio.emotions.emotion_analysis import EmotionAnalysis
 
 from src.audio.ASD.utils.asd_pipeline_tools import get_video_path
 from src.audio.ASD.utils.asd_pipeline_tools import get_frames_per_second
@@ -30,23 +30,24 @@ class Runner:
         
         # Initialize the parts of the pipelines
         self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames)
-        self.com_pattern = ComPatternAnalysis(self.video_name, self.unit_of_analysis)
+        self.com_pattern_analysis = ComPatternAnalysis(self.video_name, self.unit_of_analysis)
+        self.emotion_analysis = EmotionAnalysis()
 
     def run(self):
         
         # Perform combined Active Speaker Detection and Speaker Diarization - if selected in config file
         if 1 in self.run_pipeline_parts:
             self.asd_pipeline.run()
-            
-        # Get the speaker overview and other data from the rttm file
-        splitted_speaker_overview = self.rttm_file_preparation.read_rttm_file()
-        # Based on the unit of analysis and the length of the video, create a list with the length of each block
-        block_length = self.rttm_file_preparation.get_block_length()
-        num_speakers = self.rttm_file_preparation.get("num_speakers")
 
         # TODO: make it more generell -> provide list of features what to calculate
         # Calculate communication patterns based on the output of the ASD pipeline (rttm file) - if selected in config file
         if 2 in self.run_pipeline_parts:
-            self.com_pattern.run(splitted_speaker_overview, block_length, num_speakers)
+            # Get the speaker overview and other data from the rttm file
+            splitted_speaker_overview = self.rttm_file_preparation.read_rttm_file()
+            # Based on the unit of analysis and the length of the video, create a list with the length of each block
+            block_length = self.rttm_file_preparation.get_block_length()
+            num_speakers = self.rttm_file_preparation.get("num_speakers")            
+    
+            # self.com_pattern_analysis.run(splitted_speaker_overview, block_length, num_speakers)
 
-        #run_test()
+            self.emotion_analysis.run()
