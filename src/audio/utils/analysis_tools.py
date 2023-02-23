@@ -4,7 +4,7 @@ import numpy as np
 
 from src.audio.utils.constants import VIDEOS_DIR
 
-def write_results_to_csv(emotions_output, com_pattern_output, video_name) -> str:
+def write_results_to_csv(emotions_output, com_pattern_output, csv_path) -> str:
 
     data_emotions_output = []
     for speaker_id, values in emotions_output.items():
@@ -30,50 +30,11 @@ def write_results_to_csv(emotions_output, com_pattern_output, video_name) -> str
     
     print(df)
     
-    # Store the pandas dataframe to a csv file
-    filename = video_name + "_audio_analysis_results.csv"
-    csv_path = str(VIDEOS_DIR / video_name / filename)
-    
-    # df.to_csv(csv_path, index=False)
     # Also save the Speaker ID as a column
     df.reset_index(inplace=True)
     df.to_csv(csv_path, index=False)
     
-    return csv_path
-    
-def visualize_pattern(csv_path, unit_of_analysis, video_name) -> None:
-    
-    # Read the data from the csv file into a pandas dataframe
-    df = pd.read_csv(csv_path)
-    
-    # Plot the data (one plot for each feature)
-    fig, axes = plt.subplots(3, 1, figsize=(12, 9))
-    
-    # Set the amount of padding between subplots
-    plt.subplots_adjust(wspace=0.4, hspace=0.4)
-    
-    # Add a heading to the plot
-    fig.suptitle('Audio analysis results of ' + video_name)
-    
-    # Plot the first feature
-    axes[0].plot(df['block'], df['number_turns_equality'])
-    axes[0].set_title('Equality (based on number of turns) per block - 0 is perfectly equal')
-    axes[0].set_ylabel('Equality')
-    
-    # Plot the second feature
-    axes[1].plot(df['block'], df['speaking_duration_equality'])
-    axes[1].set_title('Equality (based on speaking duration) per block - 0 is perfectly equal')
-    axes[1].set_ylabel('Equality')
-    
-    # Plot the third feature
-    axes[2].plot(df['block'], df['norm_num_overlaps'])
-    axes[2].set_title('Norm. number of overlaps per block - per minute per speaker')
-    axes[2].set_ylabel('Norm. number of overlaps')
-    
-    # Add a note to the bottom of the plot
-    fig.text(0.5, 0.04, '1 unit on x-axis = ' + str(unit_of_analysis) + "s", ha='center')
-    
-    plt.show()
+    return
     
 def visualize_individual_speaking_shares(speaking_duration):
     # Visualize the speaking_duration in a bar chart (one bar for each speaker)
@@ -88,43 +49,8 @@ def visualize_individual_speaking_shares(speaking_duration):
 
     plt.show()
     
-def visualize_emotions(emotions_output, unit_of_analysis, video_name):
-
-    # Compute the range of the y-axis
-    values = [value for data in emotions_output.values() for value in data.values()]
-    y_min = np.min(values)
-    y_max = np.max(values)
-
-    # Create subplots for each speaker
-    fig, axs = plt.subplots(len(emotions_output), 1, figsize=(10, 2*len(emotions_output)))
-    for i, (speaker_id, data) in enumerate(emotions_output.items()):
-        
-        arousal_data = data['arousal']
-        dominance_data = data['dominance']
-        valence_data = data['valence']
-        
-        axs[i].plot(arousal_data, marker='o', label='arousal')
-        axs[i].plot(dominance_data, marker='o', label='dominance')
-        axs[i].plot(valence_data, marker='o', label='valence')
-        axs[i].set_title(f'Speaker {speaker_id}')
-        axs[i].legend()
-        axs[i].set_ylim(y_min, y_max)
-        #axs[i].set_xlim(1, len(data['arousal']))
-        
-    # Add a heading to the plot
-    fig.suptitle('Audio analysis results of ' + video_name)
-
-    # Set the x label for the bottom subplot
-    axs[-1].set_xlabel('Unit of Analysis (1 unit = ' + str(unit_of_analysis) + 's)')
-
-    # Adjust spacing between subplots
-    plt.tight_layout()
-
-    # Show the plot
-    plt.show()
     
-    
-def visualize_emotions_new(csv_path, unit_of_analysis, video_name):
+def visualize_emotions(csv_path, unit_of_analysis, video_name):
     
     # Read in the CSV file
     df = pd.read_csv(csv_path)
@@ -170,4 +96,44 @@ def visualize_emotions_new(csv_path, unit_of_analysis, video_name):
     # Show the plot
     plt.show()
     
-    print("stop")
+def visualize_com_pattern(csv_path, unit_of_analysis, video_name) -> None:
+    # Read in the CSV file
+    df = pd.read_csv(csv_path)
+    
+    # Only keep the emotion columns (if it starts with dominance,...) + the speaker ID
+    emotions_df = df[[col for col in df.columns if col.startswith('number_turns') or col.startswith('speaking_duration') or col == 'Speaker ID']]
+
+    # Extract the columns containing arousal, dominance, and valence
+    number_turns_cols = [col for col in emotions_df.columns if 'number_turns' in col]
+    speaking_duration_cols = [col for col in emotions_df.columns if 'speaking_duration' in col]
+
+    # # Compute the range of the y-axis
+    intermediate_df = df[[col for col in df.columns if col.startswith('number_turns') or col.startswith('speaking_duration')]]
+    values = intermediate_df.values.flatten()
+    y_min = np.min(values)
+    y_max = np.max(values)
+
+    # Create subplots for each speaker
+    fig, axs = plt.subplots(emotions_df.shape[0], 1, figsize=(10, 2*emotions_df.shape[0]))
+    for i, speaker_id in enumerate(list(df["Speaker ID"])):
+        
+        number_turns_data = emotions_df.loc[emotions_df["Speaker ID"] == speaker_id, number_turns_cols].values.tolist()[0]
+        speaking_duration_data = emotions_df.loc[emotions_df["Speaker ID"] == speaker_id, speaking_duration_cols].values.tolist()[0]
+        
+        axs[i].plot(number_turns_data, marker='o', label='number turns (normalized)')
+        axs[i].plot(speaking_duration_data, marker='o', label='speaking duration (normalized))')
+        axs[i].set_title(f'Speaker {speaker_id}')
+        axs[i].legend()
+        axs[i].set_ylim(y_min, y_max)
+        
+    # Add a heading to the plot
+    fig.suptitle('Audio analysis results of ' + video_name)
+
+    # Set the x label for the bottom subplot
+    axs[-1].set_xlabel('Unit of Analysis (1 unit = ' + str(unit_of_analysis) + 's)')
+
+    # Adjust spacing between subplots
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()

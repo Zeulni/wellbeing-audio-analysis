@@ -1,4 +1,4 @@
-from src.audio.utils.analysis_tools import write_results_to_csv, visualize_pattern, visualize_individual_speaking_shares
+from src.audio.utils.analysis_tools import write_results_to_csv, visualize_individual_speaking_shares
 
 from src.audio.com_pattern.turn_taking import TurnTaking
 from src.audio.com_pattern.speaking_duration import SpeakingDuration
@@ -75,9 +75,9 @@ class ComPatternAnalysis:
             for speaker_dict in block:
                 speaker_id = list(speaker_dict.keys())[0]
                 if speaker_id not in com_pattern_output_reform:
-                    com_pattern_output_reform[speaker_id] = {'turn_taking': [], 'speaking_duration': []}
+                    com_pattern_output_reform[speaker_id] = {'number_turns': [], 'speaking_duration': []}
                 values = speaker_dict[speaker_id]
-                com_pattern_output_reform[speaker_id]['turn_taking'].append(values[0])
+                com_pattern_output_reform[speaker_id]['number_turns'].append(values[0])
                 com_pattern_output_reform[speaker_id]['speaking_duration'].append(values[1])
                     
         return com_pattern_output_reform  

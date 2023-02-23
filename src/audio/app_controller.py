@@ -11,7 +11,7 @@ from src.audio.ASD.utils.asd_pipeline_tools import get_video_path
 from src.audio.ASD.utils.asd_pipeline_tools import get_frames_per_second
 from src.audio.ASD.utils.asd_pipeline_tools import get_num_total_frames
 
-from src.audio.utils.analysis_tools import visualize_emotions, write_results_to_csv, visualize_emotions_new
+from src.audio.utils.analysis_tools import visualize_emotions, write_results_to_csv, visualize_com_pattern
 
 from src.audio.utils.constants import VIDEOS_DIR
 
@@ -37,6 +37,9 @@ class Runner:
         audio_storage_folder = str(VIDEOS_DIR / self.video_name )
         self.audio_file_path = extract_audio_from_video(audio_storage_folder, self.video_path, self.n_data_loader_thread)
 
+        # Path to the csv file with all the results
+        csv_filename = self.video_name + "_audio_analysis_results.csv"
+        self.csv_path = str(VIDEOS_DIR / self.video_name / csv_filename)
         
         # Initialize the parts of the pipelines
         self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.audio_file_path)
@@ -57,15 +60,15 @@ class Runner:
             block_length = self.rttm_file_preparation.get_block_length()
             num_speakers = self.rttm_file_preparation.get("num_speakers")            
     
-            # TODO: Check, if the features are correct (print them out before)
+            # TODO: Nomalize com features (e.g. by time or max amount of turns)
             com_pattern_output = self.com_pattern_analysis.run(splitted_speaker_overview, block_length, num_speakers)
 
             emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
         
-            csv_path = write_results_to_csv(emotions_output, com_pattern_output, self.video_name)
+            write_results_to_csv(emotions_output, com_pattern_output, self.csv_path)
             
-            # TODO: Write results to csv (then get visualization from csv file -> independent of pipeline, move if out of step 2)
-            visualize_emotions(emotions_output, self.unit_of_analysis, self.video_name)
-            visualize_emotions_new(csv_path, self.unit_of_analysis, self.video_name)
+        # TODO: Write results to csv (then get visualization from csv file -> independent of pipeline, move if out of step 2)
+        visualize_emotions(self.csv_path, self.unit_of_analysis, self.video_name)
+        visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name)
             
      
