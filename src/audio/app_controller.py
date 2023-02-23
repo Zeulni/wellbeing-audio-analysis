@@ -52,6 +52,7 @@ class Runner:
         if 2 in self.run_pipeline_parts:
             # Get the speaker overview and other data from the rttm file
             # TODO: if possible sort splitted_speaker_overview based on ID
+            # TODO: listen at audio snippets, if they are even correct for all the speakers?
             splitted_speaker_overview = self.rttm_file_preparation.read_rttm_file()
             # Based on the unit of analysis and the length of the video, create a list with the length of each block
             block_length = self.rttm_file_preparation.get_block_length()
@@ -62,4 +63,4 @@ class Runner:
             emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
         
             # TODO: Write results to csv (then get visualization from csv file -> independent of pipeline)
-            visualize_emotions(emotions_output, self.unit_of_analysis)
+            visualize_emotions(emotions_output, self.unit_of_analysis, self.video_name)

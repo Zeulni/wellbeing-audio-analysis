@@ -72,7 +72,7 @@ def visualize_individual_speaking_shares(speaking_duration):
 
     plt.show()
     
-def visualize_emotions(emotions_output, unit_of_analysis):
+def visualize_emotions(emotions_output, unit_of_analysis, video_name):
 
     # Compute the range of the y-axis
     values = [value for data in emotions_output.values() for value in data.values()]
@@ -88,6 +88,10 @@ def visualize_emotions(emotions_output, unit_of_analysis):
         axs[i].set_title(f'Speaker {speaker_id}')
         axs[i].legend()
         axs[i].set_ylim(y_min, y_max)
+        axs[i].set_xlim(1, len(data['arousal']))
+        
+    # Add a heading to the plot
+    fig.suptitle('Audio analysis results of ' + video_name)
 
     # Set the x label for the bottom subplot
     axs[-1].set_xlabel('Unit of Analysis (1 unit = ' + str(unit_of_analysis) + 's)')
