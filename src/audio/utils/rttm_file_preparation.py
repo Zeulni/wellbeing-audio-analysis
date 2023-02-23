@@ -71,6 +71,10 @@ class RTTMFilePreparation:
             
             self.speaker_overview.append([speaker, start_time_speaker, end_time_speaker])
             
+        
+        # Sort the speaker overview based on the speaker_id
+        self.speaker_overview.sort(key=lambda x: x[0])
+        
         self.user_input_handling()
         
         self.block_speaker_overview = self.split_speaker_overview()

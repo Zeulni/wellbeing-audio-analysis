@@ -88,7 +88,7 @@ def visualize_emotions(emotions_output, unit_of_analysis, video_name):
         axs[i].set_title(f'Speaker {speaker_id}')
         axs[i].legend()
         axs[i].set_ylim(y_min, y_max)
-        axs[i].set_xlim(1, len(data['arousal']))
+        #axs[i].set_xlim(1, len(data['arousal']))
         
     # Add a heading to the plot
     fig.suptitle('Audio analysis results of ' + video_name)

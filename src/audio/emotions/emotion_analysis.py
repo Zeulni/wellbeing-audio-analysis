@@ -51,9 +51,6 @@ class EmotionAnalysis:
 
     def run(self, splitted_speaker_overview) -> None:
         
-        # emotions_output = []
-        #emotions_chunk_output = []
-        
         # Create an empty list that has the length of splitted_speaker_overview
         emotions_output = [[] for i in range(len(splitted_speaker_overview))]
 
@@ -76,8 +73,10 @@ class EmotionAnalysis:
                     end_time = end_times[i]*1000
                     speaker_audio += audio_file[start_time:end_time]
                 
-                # emotions_chunk_output.append(self.get_audeer_emotions(audio_file[start_time:end_time], sampling_rate))                   
-                # output = np.mean(emotions_chunk_output, axis=0)
+                
+                # *For debugging: Save for each block and speaker the audio segment
+                audio_snippet_path = os.path.join(EMOTIONS_DIR, "audio_snippets" + "_s" + speaker_id + "_b" + str(block_id) + ".wav")
+                speaker_audio.export(audio_snippet_path, format="wav")
                 
                 output = self.get_audeer_emotions(speaker_audio, sampling_rate)
             
@@ -88,23 +87,27 @@ class EmotionAnalysis:
                 print("Speaker ID: ", speaker_id, "Arousal: ", arousal, "Dominance: ", dominance, "Valence: ", valence)
             
                 # For each block, create a dictionary within the emotions_output list (where the key is the speaker_id and the value is a list of the emotions)
-                #emotions_output.append({speaker_id: [arousal, dominance, valence]})
                 emotions_output[block_id].append({speaker_id: [arousal, dominance, valence]})
                 
             # Reformat the emotions_output
-            emotions_output_reform = {}
-            for block in emotions_output:
-                for speaker_dict in block:
-                    speaker_id = list(speaker_dict.keys())[0]
-                    if speaker_id not in emotions_output_reform:
-                        emotions_output_reform[speaker_id] = {'arousal': [], 'dominance': [], 'valence': []}
-                    values = speaker_dict[speaker_id]
-                    emotions_output_reform[speaker_id]['arousal'].append(values[0])
-                    emotions_output_reform[speaker_id]['dominance'].append(values[1])
-                    emotions_output_reform[speaker_id]['valence'].append(values[2])
+            emotions_output_reform = self.parse_emotions_output(emotions_output)
+
                 
         return emotions_output_reform
 
+    def parse_emotions_output(self, emotions_output) -> dict:
+        emotions_output_reform = {}
+        for block in emotions_output:
+            for speaker_dict in block:
+                speaker_id = list(speaker_dict.keys())[0]
+                if speaker_id not in emotions_output_reform:
+                    emotions_output_reform[speaker_id] = {'arousal': [], 'dominance': [], 'valence': []}
+                values = speaker_dict[speaker_id]
+                emotions_output_reform[speaker_id]['arousal'].append(values[0])
+                emotions_output_reform[speaker_id]['dominance'].append(values[1])
+                emotions_output_reform[speaker_id]['valence'].append(values[2])
+                    
+        return emotions_output_reform  
 
     def get_audeer_emotions(self, speaker_audio, sampling_rate) -> None:
 
@@ -125,15 +128,11 @@ class EmotionAnalysis:
             #print(self.model(chunk, sampling_rate))
             chunk_outputs.append(self.model(chunk, sampling_rate)['logits'][0])
 
-        # TODO: calculate it in 20s snippets for a better performance
-        # TODO: weighted avg?? or not cutting here at all? because overthise a 1s snippet with high dominance influences the avg
-        # output = self.model(speaker_audio, sampling_rate)['logits'][0]
+        # TODO: cutting the last chunk if it is shorter than the chunk_length_ms?
         
         # Calculate the average of the chunks
         output = np.mean(chunk_outputs, axis=0)
-        
-        # speaker_audio = np.array(speaker_audio.get_array_of_samples(), dtype=np.float32)
-        # output = self.model(speaker_audio, sampling_rate)['logits'][0]
+
         
         return output
 
