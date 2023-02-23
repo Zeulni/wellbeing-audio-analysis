@@ -33,6 +33,10 @@ def write_results_to_csv(emotions_output, com_pattern_output, video_name) -> str
     # Store the pandas dataframe to a csv file
     filename = video_name + "_audio_analysis_results.csv"
     csv_path = str(VIDEOS_DIR / video_name / filename)
+    
+    # df.to_csv(csv_path, index=False)
+    # Also save the Speaker ID as a column
+    df.reset_index(inplace=True)
     df.to_csv(csv_path, index=False)
     
     return csv_path
