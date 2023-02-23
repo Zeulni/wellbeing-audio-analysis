@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 from src.audio.utils.constants import VIDEOS_DIR
 
@@ -69,4 +70,30 @@ def visualize_individual_speaking_shares(speaking_duration):
     ax.set_ylabel("Speaking Duration in Seconds")
     ax.set_title("Speaking Duration per Speaker")
 
+    plt.show()
+    
+def visualize_emotions(emotions_output, unit_of_analysis):
+
+    # Compute the range of the y-axis
+    values = [value for data in emotions_output.values() for value in data.values()]
+    y_min = np.min(values)
+    y_max = np.max(values)
+
+    # Create subplots for each speaker
+    fig, axs = plt.subplots(len(emotions_output), 1, figsize=(10, 2*len(emotions_output)))
+    for i, (speaker_id, data) in enumerate(emotions_output.items()):
+        axs[i].plot(data['arousal'], marker='o', label='arousal')
+        axs[i].plot(data['dominance'], marker='o', label='dominance')
+        axs[i].plot(data['valence'], marker='o', label='valence')
+        axs[i].set_title(f'Speaker {speaker_id}')
+        axs[i].legend()
+        axs[i].set_ylim(y_min, y_max)
+
+    # Set the x label for the bottom subplot
+    axs[-1].set_xlabel('Unit of Analysis (1 unit = ' + str(unit_of_analysis) + 's)')
+
+    # Adjust spacing between subplots
+    plt.tight_layout()
+
+    # Show the plot
     plt.show()

@@ -1,4 +1,4 @@
-from src.audio.utils.rttm_file_analysis_tools import write_results_to_csv, visualize_pattern, visualize_individual_speaking_shares
+from src.audio.utils.analysis_tools import write_results_to_csv, visualize_pattern, visualize_individual_speaking_shares
 
 from src.audio.com_pattern.turn_taking import TurnTaking
 from src.audio.com_pattern.speaking_duration import SpeakingDuration

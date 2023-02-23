@@ -11,6 +11,8 @@ from src.audio.ASD.utils.asd_pipeline_tools import get_video_path
 from src.audio.ASD.utils.asd_pipeline_tools import get_frames_per_second
 from src.audio.ASD.utils.asd_pipeline_tools import get_num_total_frames
 
+from src.audio.utils.analysis_tools import visualize_emotions
+
 from src.audio.utils.constants import VIDEOS_DIR
 
 class Runner:
@@ -38,7 +40,7 @@ class Runner:
         # Initialize the parts of the pipelines
         self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.audio_file_path)
         self.com_pattern_analysis = ComPatternAnalysis(self.video_name, self.unit_of_analysis)
-        self.emotion_analysis = EmotionAnalysis(self.audio_file_path)
+        self.emotion_analysis = EmotionAnalysis(self.audio_file_path, self.unit_of_analysis)
 
     def run(self):
         
@@ -46,10 +48,10 @@ class Runner:
         if 1 in self.run_pipeline_parts:
             self.asd_pipeline.run()
 
-        # TODO: make it more generell -> provide list of features what to calculate
         # Calculate communication patterns based on the output of the ASD pipeline (rttm file) - if selected in config file
         if 2 in self.run_pipeline_parts:
             # Get the speaker overview and other data from the rttm file
+            # TODO: if possible sort splitted_speaker_overview based on ID
             splitted_speaker_overview = self.rttm_file_preparation.read_rttm_file()
             # Based on the unit of analysis and the length of the video, create a list with the length of each block
             block_length = self.rttm_file_preparation.get_block_length()
@@ -58,5 +60,6 @@ class Runner:
             # self.com_pattern_analysis.run(splitted_speaker_overview, block_length, num_speakers)
 
             emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
-            
-            print("Emotions output: ", emotions_output)
+        
+            # TODO: Write results to csv (then get visualization from csv file -> independent of pipeline)
+            visualize_emotions(emotions_output, self.unit_of_analysis)
