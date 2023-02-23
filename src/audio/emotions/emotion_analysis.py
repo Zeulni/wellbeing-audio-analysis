@@ -13,7 +13,9 @@ from src.audio.utils.constants import EMOTIONS_DIR
 # TODO: add audinterface to requirements.txt???
 
 class EmotionAnalysis:
-    def __init__(self) -> None:
+    def __init__(self, audio_file_path) -> None:
+        
+        self.audio_file_path = audio_file_path
         
         model_name = 'model'
         self.model_root = os.path.join(EMOTIONS_DIR, model_name)   
@@ -26,6 +28,8 @@ class EmotionAnalysis:
             self.device = 'cuda'
         else:
             self.device = 'cpu'
+            
+        self.model = audonnx.load(self.model_root, device=self.device)
         
     def download_model(self):
         # * The entire download and extraction process
@@ -45,9 +49,7 @@ class EmotionAnalysis:
         if not os.path.exists(self.model_root):
             audeer.extract_archive(dst_path, self.model_root, verbose=True)       
 
-    def run(self) -> None:
-    
-        model = audonnx.load(self.model_root, device=self.device)
+    def run(self, splitted_speaker_overview) -> None:
         
         audio_file = os.path.join(EMOTIONS_DIR, 'test_long.wav')
         
@@ -66,7 +68,7 @@ class EmotionAnalysis:
             end = (i + 1) * chunk_length_ms
             chunk = sound[start:end]
             chunk = np.array(chunk.get_array_of_samples(), dtype=np.float32)
-            print(model(chunk, sampling_rate))
+            print(self.model(chunk, sampling_rate))
 
     
    #  samplerate = sound.frame_rate

@@ -88,8 +88,8 @@ def extract_video(pyavi_path, video_path, duration, n_data_loader_thread, start,
 
     return extracted_video_path
 
-def extract_audio_from_video(pyavi_path, video_path, n_data_loader_thread) -> str:
-    audioFilePath = os.path.join(pyavi_path, 'audio.wav')
+def extract_audio_from_video(audio_storage_folder, video_path, n_data_loader_thread) -> str:
+    audioFilePath = os.path.join(audio_storage_folder, 'audio.wav')
     command = ("ffmpeg -y -i %s -qscale:a 0 -ac 1 -vn -threads %d -ar 16000 %s -loglevel panic" % \
         (video_path, n_data_loader_thread, audioFilePath))
     subprocess.call(command, shell=True, stdout=None)   

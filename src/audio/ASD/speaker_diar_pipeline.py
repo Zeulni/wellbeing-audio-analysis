@@ -15,10 +15,7 @@ import time
 from src.audio.ASD.utils.asd_pipeline_tools import get_device
 from src.audio.ASD.utils.asd_pipeline_tools import download_model
 from src.audio.ASD.utils.asd_pipeline_tools import get_video_path
-from src.audio.ASD.utils.asd_pipeline_tools import get_frames_per_second
 from src.audio.ASD.utils.asd_pipeline_tools import extract_video
-from src.audio.ASD.utils.asd_pipeline_tools import get_num_total_frames
-from src.audio.ASD.utils.asd_pipeline_tools import extract_audio_from_video
 from src.audio.ASD.utils.asd_pipeline_tools import safe_pickle_file
 from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
 from src.audio.ASD.utils.asd_pipeline_tools import visualization
@@ -32,7 +29,7 @@ from src.audio.ASD.speaker_diarization import SpeakerDiarization
 from src.audio.utils.constants import ASD_DIR
 
 class ASDSpeakerDirPipeline:
-	def __init__(self, args, num_frames_per_sec, total_frames):
+	def __init__(self, args, num_frames_per_sec, total_frames, audio_file_path):
 		self.video_name = args.get("VIDEO_NAME","001")
 		self.pretrain_model = args.get("PRETRAIN_ASD_MODEL","pretrain_TalkSet.model")
 		self.pretrain_model = os.path.join(ASD_DIR, self.pretrain_model)
@@ -61,6 +58,7 @@ class ASDSpeakerDirPipeline:
 		# Download the pretrained model if not exist
 		download_model(self.pretrain_model)
 	
+		self.audio_file_path = audio_file_path
 		self.video_path, self.save_path = get_video_path(self.video_name)
 
 		# Initialization
@@ -175,13 +173,6 @@ class ASDSpeakerDirPipeline:
 		# Checkpoint ASD (Assumption: If pickle files in pywork folder exist, ASD is done and all the other files exist (to re-run ASD delete pickle files))
 		pipeline_done = self._ASDSpeakerDirPipeline__check_pipeline_done()
 		if pipeline_done == False:
-	
-			# Extract audio from video
-
-			start_time = time.perf_counter()
-			audio_file_path = extract_audio_from_video(self.pyavi_path, self.video_path, self.n_data_loader_thread)
-			end_time = time.perf_counter()
-			print(f"--- Audio extraction done in {end_time - start_time:0.4f} seconds")
   
 			# Face detection (check for checkpoint first)
 			start_time = time.perf_counter()
@@ -215,7 +206,7 @@ class ASDSpeakerDirPipeline:
 			start_time = time.perf_counter()
 			asd_done = self._ASDSpeakerDirPipeline__check_asd_done()
 			if asd_done == False:
-				self.scores = self.asd_network.talknet_network(all_tracks, audio_file_path)
+				self.scores = self.asd_network.talknet_network(all_tracks, self.audio_file_path)
 				safe_pickle_file(self.file_path_scores, self.scores, "Scores extracted and saved in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- ASD done in {end_time - start_time:0.4f} seconds")
