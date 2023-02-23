@@ -5,7 +5,7 @@ RUN_PIPELINE_PARTS: [2]
 # -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
 # Name of the input file to be processed (.mp4 or .avi)
-VIDEO_NAME: "001"
+VIDEO_NAME: "team_13_day_1_1_fr_sk_2_laggy_a_v"
 
 # Path for the pretrained TalkNet model
 PRETRAINED_ASD_MODEL: "pretrain_TalkSet.model"
@@ -53,4 +53,4 @@ INCLUDE_VISUALIZATION: False
 # -- PART 2: THE FOLLOWING CONFIGS ARE ALL USED FOR Analysing the audio files
 
 # This is the amount of seconds in which the audio is split and analyzed (300s means in chunks of 5 min)
-UNIT_OF_ANALYSIS: 60
+UNIT_OF_ANALYSIS: 180
