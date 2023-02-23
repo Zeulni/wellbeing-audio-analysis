@@ -4,13 +4,13 @@ import numpy as np
 
 from src.audio.utils.constants import VIDEOS_DIR
 
-def write_results_to_csv(emotions_output, com_pattern_output, csv_path) -> str:
+def write_results_to_csv(emotions_output, com_pattern_output, csv_path, video_name) -> str:
 
     data_emotions_output = []
     for speaker_id, values in emotions_output.items():
         for key, val in values.items():
             for i, v in enumerate(val):
-                col_name = f"{key}_{i+1}"
+                col_name = f"{key}_{i+1}_{video_name}"
                 data_emotions_output.append([speaker_id, col_name, v])
 
     df_emotions_output = pd.DataFrame(data_emotions_output, columns=["Speaker ID", "Emotion", "Value"])
@@ -20,7 +20,7 @@ def write_results_to_csv(emotions_output, com_pattern_output, csv_path) -> str:
     for speaker_id, values in com_pattern_output.items():
         for key, val in values.items():
             for i, v in enumerate(val):
-                col_name = f"{key}_{i+1}"
+                col_name = f"{key}_{i+1}_{video_name}"
                 data_com_pattern_output.append([speaker_id, col_name, v])
 
     df_com_pattern_output = pd.DataFrame(data_com_pattern_output, columns=["Speaker ID", "ComPattern", "Value"])

@@ -65,7 +65,7 @@ class Runner:
 
             emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
         
-            write_results_to_csv(emotions_output, com_pattern_output, self.csv_path)
+            write_results_to_csv(emotions_output, com_pattern_output, self.csv_path, self.video_name)
             
         # TODO: Write results to csv (then get visualization from csv file -> independent of pipeline, move if out of step 2)
         visualize_emotions(self.csv_path, self.unit_of_analysis, self.video_name)

@@ -1,6 +1,6 @@
 # Decide which parts of the pipeline you want to run (only part 1 (ASD with rttm file output), only part 2 (input is rttm file and output the analysis, csv file), or both)
 # [1, 2] means run both parts
-RUN_PIPELINE_PARTS: []
+RUN_PIPELINE_PARTS: [2]
 
 # -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
