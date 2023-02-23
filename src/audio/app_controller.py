@@ -11,7 +11,7 @@ from src.audio.ASD.utils.asd_pipeline_tools import get_video_path
 from src.audio.ASD.utils.asd_pipeline_tools import get_frames_per_second
 from src.audio.ASD.utils.asd_pipeline_tools import get_num_total_frames
 
-from src.audio.utils.analysis_tools import visualize_emotions, write_results_to_csv
+from src.audio.utils.analysis_tools import visualize_emotions, write_results_to_csv, visualize_emotions_new
 
 from src.audio.utils.constants import VIDEOS_DIR
 
@@ -66,5 +66,6 @@ class Runner:
             
             # TODO: Write results to csv (then get visualization from csv file -> independent of pipeline, move if out of step 2)
             visualize_emotions(emotions_output, self.unit_of_analysis, self.video_name)
+            visualize_emotions_new(csv_path, self.unit_of_analysis, self.video_name)
             
      

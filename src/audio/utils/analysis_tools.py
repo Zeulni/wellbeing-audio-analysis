@@ -98,9 +98,14 @@ def visualize_emotions(emotions_output, unit_of_analysis, video_name):
     # Create subplots for each speaker
     fig, axs = plt.subplots(len(emotions_output), 1, figsize=(10, 2*len(emotions_output)))
     for i, (speaker_id, data) in enumerate(emotions_output.items()):
-        axs[i].plot(data['arousal'], marker='o', label='arousal')
-        axs[i].plot(data['dominance'], marker='o', label='dominance')
-        axs[i].plot(data['valence'], marker='o', label='valence')
+        
+        arousal_data = data['arousal']
+        dominance_data = data['dominance']
+        valence_data = data['valence']
+        
+        axs[i].plot(arousal_data, marker='o', label='arousal')
+        axs[i].plot(dominance_data, marker='o', label='dominance')
+        axs[i].plot(valence_data, marker='o', label='valence')
         axs[i].set_title(f'Speaker {speaker_id}')
         axs[i].legend()
         axs[i].set_ylim(y_min, y_max)
@@ -117,3 +122,52 @@ def visualize_emotions(emotions_output, unit_of_analysis, video_name):
 
     # Show the plot
     plt.show()
+    
+    
+def visualize_emotions_new(csv_path, unit_of_analysis, video_name):
+    
+    # Read in the CSV file
+    df = pd.read_csv(csv_path)
+    
+    # Only keep the emotion columns (if it starts with dominance,...) + the speaker ID
+    emotions_df = df[[col for col in df.columns if col.startswith('dominance') or col.startswith('arousal') or col.startswith('valence') or col == 'Speaker ID']]
+
+    # Extract the columns containing arousal, dominance, and valence
+    arousal_cols = [col for col in emotions_df.columns if 'arousal' in col]
+    dominance_cols = [col for col in emotions_df.columns if 'dominance' in col]
+    valence_cols = [col for col in emotions_df.columns if 'valence' in col]
+
+    # # Compute the range of the y-axis
+    intermediate_df = df[[col for col in df.columns if col.startswith('dominance') or col.startswith('arousal') or col.startswith('valence')]]
+    values = intermediate_df.values.flatten()
+    y_min = np.min(values)
+    y_max = np.max(values)
+
+    # Create subplots for each speaker
+    fig, axs = plt.subplots(emotions_df.shape[0], 1, figsize=(10, 2*emotions_df.shape[0]))
+    for i, speaker_id in enumerate(list(df["Speaker ID"])):
+        
+        arousal_data = emotions_df.loc[emotions_df["Speaker ID"] == speaker_id, arousal_cols].values.tolist()[0]
+        dominance_data = emotions_df.loc[emotions_df["Speaker ID"] == speaker_id, dominance_cols].values.tolist()[0]
+        valence_data = emotions_df.loc[emotions_df["Speaker ID"] == speaker_id, valence_cols].values.tolist()[0]       
+        
+        axs[i].plot(arousal_data, marker='o', label='arousal')
+        axs[i].plot(dominance_data, marker='o', label='dominance')
+        axs[i].plot(valence_data, marker='o', label='valence')
+        axs[i].set_title(f'Speaker {speaker_id}')
+        axs[i].legend()
+        axs[i].set_ylim(y_min, y_max)
+        
+    # Add a heading to the plot
+    fig.suptitle('Audio analysis results of ' + video_name)
+
+    # Set the x label for the bottom subplot
+    axs[-1].set_xlabel('Unit of Analysis (1 unit = ' + str(unit_of_analysis) + 's)')
+
+    # Adjust spacing between subplots
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+    
+    print("stop")
