@@ -2,7 +2,6 @@ import os
 import audeer
 import audonnx
 import numpy as np
-import audinterface
 import torch
 import math
 
@@ -51,46 +50,45 @@ class EmotionAnalysis:
 
     def run(self, splitted_speaker_overview) -> None:
         
-        audio_file = os.path.join(EMOTIONS_DIR, 'test_long.wav')
+        # sound = AudioSegment.from_wav(self.audio_file_path)
+        # sampling_rate = sound.frame_rate
         
-        sound = AudioSegment.from_wav(audio_file)
-        sampling_rate = sound.frame_rate
+        # # Set the chunk length in milliseconds (20 seconds) , 20, 22, 24, 35 for 2 min
+        # chunk_length_ms = 20000
+
+        # # Calculate the number of chunks needed
+        # num_chunks = math.ceil(len(sound) / chunk_length_ms)
+
+        # # Split the audio file into chunks
+        # for i in range(num_chunks):
+        #     start = i * chunk_length_ms
+        #     end = (i + 1) * chunk_length_ms
+        #     chunk = sound[start:end]
+        #     chunk = np.array(chunk.get_array_of_samples(), dtype=np.float32)
+        #     print(self.model(chunk, sampling_rate))
         
-        # Set the chunk length in milliseconds (20 seconds) , 20, 22, 24, 35 for 2 min
-        chunk_length_ms = 20000
+        audio_file = AudioSegment.from_wav(self.audio_file_path)
+        sampling_rate = audio_file.frame_rate
+        
+        # For each block in splitted_speaker_overview, extract the audio based on the speaking segmetns and run the model
+        for block in splitted_speaker_overview:
+            
+            # Initialize a variable to hold the concatenated audio segments
+            # concatenated_audio = AudioSegment.empty()
 
-        # Calculate the number of chunks needed
-        num_chunks = math.ceil(len(sound) / chunk_length_ms)
+            # Loop through each speaker and append their audio segments to the concatenated_audio variable
+            for speaker in block:
+                speaker_id = speaker[0]
+                start_times = speaker[1]
+                end_times = speaker[2]
+                speaker_audio = AudioSegment.empty()
+                for i in range(len(start_times)):
+                    start_time = start_times[i]*1000
+                    end_time = end_times[i]*1000
+                    speaker_audio += audio_file[start_time:end_time]
+                
+                # concatenated_audio += speaker_audio
+                speaker_audio = np.array(speaker_audio.get_array_of_samples(), dtype=np.float32)
+                output = self.model(speaker_audio, sampling_rate)
 
-        # Split the audio file into chunks
-        for i in range(num_chunks):
-            start = i * chunk_length_ms
-            end = (i + 1) * chunk_length_ms
-            chunk = sound[start:end]
-            chunk = np.array(chunk.get_array_of_samples(), dtype=np.float32)
-            print(self.model(chunk, sampling_rate))
-
-    
-   #  samplerate = sound.frame_rate
-    
-    
-    # Cut the the sound file into 20 second chunks and run the model on each chunk
-
-
-    # print(model(trans_segment, sampling_rate))
-    
-    # interface = audinterface.Feature(
-    # model.labels('logits'),
-    # process_func=model,
-    # process_func_args={
-    #     'outputs': 'logits',
-    # },
-    # sampling_rate=sampling_rate,
-    # resample=True,    
-    # verbose=True,
-    # )
-    
-    # # TODO: Files have to be in smaller chunks (RAM or memory overflow) 20 min for 4 min audio -> 5x on CPU
-    
-    # TODO: 20 sec video ging verhältnismäßig schnell!! alles einfach kleiner machen?
-    # print(interface.process_signal(trans_segment, sampling_rate))
+                print("Speaker ID: ", speaker_id, "Emotion: ", output['logits'])
