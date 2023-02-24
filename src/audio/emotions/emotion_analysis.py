@@ -9,8 +9,6 @@ from pydub import AudioSegment
 
 from src.audio.utils.constants import EMOTIONS_DIR
 
-# TODO: add audinterface to requirements.txt???
-
 class EmotionAnalysis:
     def __init__(self, audio_file_path, unit_of_analysis) -> None:
         
@@ -112,6 +110,7 @@ class EmotionAnalysis:
     def get_audeer_emotions(self, speaker_audio, sampling_rate) -> None:
 
         # It is max 5 min, because the model performs faster for shorter snippets (could be changed if using GPU for analysis)
+        # TODO: maybe adapt in the future
         chunk_length_ms = min(self.unit_of_analysis*1000, 300000)
 
         # Calculate the number of chunks needed

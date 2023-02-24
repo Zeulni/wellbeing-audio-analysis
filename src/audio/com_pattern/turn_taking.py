@@ -25,32 +25,58 @@ class TurnTaking:
         return number_turns
         
     # Calculate based on the number_turns dict the share in number of turns of each speaker
-    def calculate_number_turns_share_team(self, number_turns) -> dict:
+    def calculate_norm_num_turns_relative(self, number_turns) -> dict:
         
         # Calculate the total number of turns
         total_number_turns = sum(number_turns["number_turns"])
         
+        # If there are no turns at all, set it to 1 to avoid division by zero (results will be 0 anyway)
+        if total_number_turns == 0:
+            total_number_turns = 1
+        
         # Initialize the com pattern dictionaries
-        number_turns_share = {}
+        norm_num_turns_relative = {}
         
         # Calculate the share in number of turns of each speaker
-        number_turns_share["speaker"] = []
-        number_turns_share["ind_number_turns_share_team"] = []
+        norm_num_turns_relative["speaker"] = []
+        norm_num_turns_relative["norm_num_turns_relative"] = []
         
         for speaker in number_turns["speaker"]:
-            number_turns_share["speaker"].append(speaker)
+            norm_num_turns_relative["speaker"].append(speaker)
             share = (number_turns["number_turns"][number_turns["speaker"].index(speaker)] / total_number_turns)*100
             share = round(share, 1)
-            number_turns_share["ind_number_turns_share_team"].append(share)
+            norm_num_turns_relative["norm_num_turns_relative"].append(share)
             
         # Now dividing it by the average share of each speaker to normalize it
-        mean_share = statistics.mean(number_turns_share["ind_number_turns_share_team"])
+        mean_share = statistics.mean(norm_num_turns_relative["norm_num_turns_relative"])
+        
+        # If there are no turns at all, set it to 1 to avoid division by zero (results will be 0 anyway)
+        if mean_share == 0:
+            mean_share = 1        
+
         # Go through each speaker and divide the share by the mean share
-        for speaker in number_turns_share["speaker"]:
-            number_turns_share["ind_number_turns_share_team"][number_turns_share["speaker"].index(speaker)] = \
-                round(number_turns_share["ind_number_turns_share_team"][number_turns_share["speaker"].index(speaker)] / mean_share,2)
+        for speaker in norm_num_turns_relative["speaker"]:
+            norm_num_turns_relative["norm_num_turns_relative"][norm_num_turns_relative["speaker"].index(speaker)] = \
+                round(norm_num_turns_relative["norm_num_turns_relative"][norm_num_turns_relative["speaker"].index(speaker)] / mean_share,2)
             
-        return number_turns_share
+        return norm_num_turns_relative
+        
+    # Calculate the number of turns per minute (for each speaker)
+    def calculate_norm_num_turns_absolute(self, number_turns, block_length) -> dict:
+        # Calculates the speaking duration of each speaker and saves it in a list 
+        
+        norm_num_turns_absolute = {}
+        
+        # Calculate the share in speaking time of each speaker
+        norm_num_turns_absolute["speaker"] = []
+        norm_num_turns_absolute["norm_num_turns_absolute"] = []
+        
+        for speaker in number_turns["speaker"]:
+            norm_num_turns_absolute["speaker"].append(speaker)
+            share = round((number_turns["number_turns"][number_turns["speaker"].index(speaker)] / block_length)*60,3)
+            norm_num_turns_absolute["norm_num_turns_absolute"].append(share)
+            
+        return norm_num_turns_absolute        
         
     # Calculating the equality based on the number of turns  
     def calculate_number_turns_equality(self, number_turns, block_id) -> float:

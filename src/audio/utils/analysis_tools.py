@@ -96,14 +96,23 @@ def visualize_emotions(csv_path, unit_of_analysis, video_name):
     # Show the plot
     plt.show()
     
-def visualize_com_pattern(csv_path, unit_of_analysis, video_name) -> None:
+def visualize_com_pattern(csv_path, unit_of_analysis, video_name, columns) -> None:
+    # Columns are the names of the columns to be shown in the plot
+    
+    # If columns is not a list with 3 elements (each a string), raise an error
+    if not isinstance(columns, list) or len(columns) != 3:
+        raise ValueError(f"Columns should be a list with 3 elements (each a string).")
+    
+    
+    
+
+    emotions_df = df[[col for col in df.columns if col.startswith(columns[0]) or col.startswith('norm_speak_duration_relative') or col.startswith('norm_num_overlaps_relative') or col == 'Speaker ID']]
+
+    
     # Read in the CSV file
     df = pd.read_csv(csv_path)
-    
-    # Only keep the emotion columns (if it starts with dominance,...) + the speaker ID 
-    emotions_df = df[[col for col in df.columns if col.startswith('ind_speaking_share_team') or col.startswith('ind_number_turns_share_team') or col == 'Speaker ID']]
 
-    # Extract the columns containing arousal, dominance, and valence
+    # Extract the corresponding columns
     number_turns_cols = [col for col in emotions_df.columns if 'ind_number_turns_share_team' in col]
     speaking_duration_cols = [col for col in emotions_df.columns if 'ind_speaking_share_team' in col]
 

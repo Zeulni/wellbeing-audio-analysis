@@ -67,8 +67,9 @@ class Runner:
         
             write_results_to_csv(emotions_output, com_pattern_output, self.csv_path, self.video_name)
             
-        # TODO: Write results to csv (then get visualization from csv file -> independent of pipeline, move if out of step 2)
         visualize_emotions(self.csv_path, self.unit_of_analysis, self.video_name)
         visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name)
             
-     
+        # Model inference here (training somewhere else)
+        # when training the model, dann scaling ALL the values to the same range? 
+        # that scaling has then also to be used for the inference
