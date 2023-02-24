@@ -9,6 +9,9 @@ class RTTMFilePreparation:
         self.unit_of_analysis = unit_of_analysis
         self.length_video = length_video
         
+        # TODO: Testing
+        # self.length_video = 100
+        
         self.num_speakers = None
         
     def get(self, attribute):
@@ -76,6 +79,10 @@ class RTTMFilePreparation:
         self.speaker_overview.sort(key=lambda x: x[0])
         
         self.user_input_handling()
+        
+        # TODO: Testing
+        # self.speaker_overview = [['0', [0, 90], [10, 100]], ['1', [5], [15]], ['2', [50], [80]], ['3', [75], [95]]]
+        
         
         self.block_speaker_overview = self.split_speaker_overview()
         

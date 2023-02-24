@@ -52,25 +52,26 @@ class Runner:
         if 1 in self.run_pipeline_parts:
             self.asd_pipeline.run()
 
-        # Calculate communication patterns based on the output of the ASD pipeline (rttm file) - if selected in config file
+        # Calculate communication patterns and emotions based on the rttm and audio file
         if 2 in self.run_pipeline_parts:
             # Get the speaker overview and other data from the rttm file
             splitted_speaker_overview = self.rttm_file_preparation.read_rttm_file()
             # Based on the unit of analysis and the length of the video, create a list with the length of each block
             block_length = self.rttm_file_preparation.get_block_length()
+            
             num_speakers = self.rttm_file_preparation.get("num_speakers")            
     
             # TODO: check at the end of all values make sense (adapt "speaker_duration" for testing)
             com_pattern_output = self.com_pattern_analysis.run(splitted_speaker_overview, block_length, num_speakers)
-
             emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
-        
             write_results_to_csv(emotions_output, com_pattern_output, self.csv_path, self.video_name)
             
-        visualize_emotions(self.csv_path, self.unit_of_analysis, self.video_name)
-        visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_turns_relative', 'norm_speak_duration_relative', 'norm_num_overlaps_relative'])
-        visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_turns_absolute', 'norm_speak_duration_absolute', 'norm_num_overlaps_absolute'])
-            
+        # Visualize the results
+        if 3 in self.run_pipeline_parts:    
+            visualize_emotions(self.csv_path, self.unit_of_analysis, self.video_name)
+            visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_turns_relative', 'norm_speak_duration_relative', 'norm_num_overlaps_relative'])
+            visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_turns_absolute', 'norm_speak_duration_absolute', 'norm_num_overlaps_absolute'])
+                
         # Model inference here (training somewhere else)
         # when training the model, dann scaling ALL the values to the same range? 
         # that scaling has then also to be used for the inference

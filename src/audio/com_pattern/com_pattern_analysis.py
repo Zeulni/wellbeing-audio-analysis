@@ -25,7 +25,6 @@ class ComPatternAnalysis:
         
         # For each unit of analysis (block) perform the following calculations
         for block_id, speaker_overview in enumerate(splitted_speaker_overview):
-            # TODO: go over the comments for each function (turns,...) and check if they are still correct
             
             # * absolute = x per minute (for each speaker), e.g. 2.5 overlaps per minute
             # * relative = x in relation to team members (1 is avg., lower means under average, higher means above average)

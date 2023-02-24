@@ -1,6 +1,9 @@
 # Decide which parts of the pipeline you want to run (only part 1 (ASD with rttm file output), only part 2 (input is rttm file and output the analysis, csv file), or both)
-# [1, 2] means run both parts
-RUN_PIPELINE_PARTS: [2]
+# 1: ASD and Speaker Diarization (input: video, output rttm file)
+# 2: Communication Pattern and Emotion Analysis (input: rttm file, output: csv file)
+# 3: Visualize the results (input: csv file, output: plots)
+# [1,2,3] means run all parts
+RUN_PIPELINE_PARTS: [2,3]
 
 # -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
