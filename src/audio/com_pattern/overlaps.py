@@ -1,5 +1,3 @@
-import statistics
-
 class Overlaps:
     def __init__(self) -> None:
         pass
@@ -7,7 +5,7 @@ class Overlaps:
     def get(self, attribute):
         return getattr(self, attribute)
         
-    def calculate_number_overlaps(self, speaker_overview, block_length, block_id, num_speakers) -> float:
+    def calculate_number_overlaps(self, speaker_overview) -> float:
 
         num_speakers = len(speaker_overview)
         
@@ -41,56 +39,3 @@ class Overlaps:
             num_overlaps["num_overlaps"].append(num_overlaps_list[speaker_overview.index(speaker)])
         
         return num_overlaps
-    
-    # Calculate the number of overlaps per minute (for each speaker)
-    def calculate_norm_num_overlaps_absolute(self, num_overlaps, block_length) -> dict:
-        # Calculates the speaking duration of each speaker and saves it in a list 
-        
-        norm_num_overlaps_absolute = {}
-        
-        # Calculate the share in speaking time of each speaker
-        norm_num_overlaps_absolute["speaker"] = []
-        norm_num_overlaps_absolute["norm_num_overlaps_absolute"] = []
-        
-        for speaker in num_overlaps["speaker"]:
-            norm_num_overlaps_absolute["speaker"].append(speaker)
-            share = round((num_overlaps["num_overlaps"][num_overlaps["speaker"].index(speaker)] / block_length)*60,3)
-            norm_num_overlaps_absolute["norm_num_overlaps_absolute"].append(share)
-            
-        return norm_num_overlaps_absolute
-    
-    # Calculates based on the speaking_duration dict the share in speaking time of each speaker    
-    def calculate_norm_num_overlaps_relative(self, num_overlaps) -> dict:
-        
-        norm_num_overlaps_relative = {}
-        
-        # Calculate the total speaking duration
-        total_num_overlaps = sum(num_overlaps["num_overlaps"])
-        
-        # If there are no overlaps at all, set it to 1 to avoid division by zero (results will be 0 anyway)
-        if total_num_overlaps == 0:
-            total_num_overlaps = 1
-        
-        # Calculate the share in speaking time of each speaker
-        norm_num_overlaps_relative["speaker"] = []
-        norm_num_overlaps_relative["norm_num_overlaps_relative"] = []
-        
-        for speaker in num_overlaps["speaker"]:
-            norm_num_overlaps_relative["speaker"].append(speaker)
-            share = (num_overlaps["num_overlaps"][num_overlaps["speaker"].index(speaker)] / total_num_overlaps)*100
-            share = round(share, 1)
-            norm_num_overlaps_relative["norm_num_overlaps_relative"].append(share)
-            
-        # Now dividing it by the average share of each speaker to normalize it
-        mean_share = statistics.mean(norm_num_overlaps_relative["norm_num_overlaps_relative"])
-        
-        # If there are no overlaps at all, set it to 1 to avoid division by zero (results will be 0 anyway)
-        if mean_share == 0:
-            mean_share = 1
-
-        # Go through each speaker and divide the share by the mean share
-        for speaker in norm_num_overlaps_relative["speaker"]:
-            norm_num_overlaps_relative["norm_num_overlaps_relative"][norm_num_overlaps_relative["speaker"].index(speaker)] = \
-             round(norm_num_overlaps_relative["norm_num_overlaps_relative"][norm_num_overlaps_relative["speaker"].index(speaker)] / mean_share, 2)
-            
-        return norm_num_overlaps_relative

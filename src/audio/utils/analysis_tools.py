@@ -96,41 +96,44 @@ def visualize_emotions(csv_path, unit_of_analysis, video_name):
     # Show the plot
     plt.show()
     
-def visualize_com_pattern(csv_path, unit_of_analysis, video_name, columns) -> None:
+def visualize_com_pattern(csv_path, unit_of_analysis, video_name, plotted_features) -> None:
     # Columns are the names of the columns to be shown in the plot
     
+    # Read in the CSV file
+    df = pd.read_csv(csv_path)
+    
     # If columns is not a list with 3 elements (each a string), raise an error
-    if not isinstance(columns, list) or len(columns) != 3:
-        raise ValueError(f"Columns should be a list with 3 elements (each a string).")
+    if not isinstance(plotted_features, list) or len(plotted_features) != 3:
+        raise ValueError(f"plotted_features should be a list with 3 elements (each a string).")
     
-    
-    
-
-    emotions_df = df[[col for col in df.columns if col.startswith(columns[0]) or col.startswith('norm_speak_duration_relative') or col.startswith('norm_num_overlaps_relative') or col == 'Speaker ID']]
+    com_pattern_df = df[[col for col in df.columns if col.startswith(plotted_features[0]) or col.startswith(plotted_features[1]) or col.startswith(plotted_features[2]) or col == 'Speaker ID']]
 
     
     # Read in the CSV file
     df = pd.read_csv(csv_path)
 
     # Extract the corresponding columns
-    number_turns_cols = [col for col in emotions_df.columns if 'ind_number_turns_share_team' in col]
-    speaking_duration_cols = [col for col in emotions_df.columns if 'ind_speaking_share_team' in col]
+    col_1 = [col for col in com_pattern_df.columns if plotted_features[0] in col]
+    col_2 = [col for col in com_pattern_df.columns if plotted_features[1] in col]
+    col_3 = [col for col in com_pattern_df.columns if plotted_features[2] in col]
 
     # # Compute the range of the y-axis
-    intermediate_df = df[[col for col in df.columns if col.startswith('ind_speaking_share_team') or col.startswith('ind_number_turns_share_team')]]
+    intermediate_df = df[[col for col in df.columns if col.startswith(plotted_features[0]) or col.startswith(plotted_features[1]) or col.startswith(plotted_features[2])]]
     values = intermediate_df.values.flatten()
     y_min = np.min(values)
     y_max = np.max(values)
 
     # Create subplots for each speaker
-    fig, axs = plt.subplots(emotions_df.shape[0], 1, figsize=(10, 2*emotions_df.shape[0]))
+    fig, axs = plt.subplots(com_pattern_df.shape[0], 1, figsize=(10, 2*com_pattern_df.shape[0]))
     for i, speaker_id in enumerate(list(df["Speaker ID"])):
         
-        number_turns_data = emotions_df.loc[emotions_df["Speaker ID"] == speaker_id, number_turns_cols].values.tolist()[0]
-        speaking_duration_data = emotions_df.loc[emotions_df["Speaker ID"] == speaker_id, speaking_duration_cols].values.tolist()[0]
+        col_1_data = com_pattern_df.loc[com_pattern_df["Speaker ID"] == speaker_id, col_1].values.tolist()[0]
+        col_2_data = com_pattern_df.loc[com_pattern_df["Speaker ID"] == speaker_id, col_2].values.tolist()[0]
+        col_3_data = com_pattern_df.loc[com_pattern_df["Speaker ID"] == speaker_id, col_3].values.tolist()[0]
         
-        axs[i].plot(number_turns_data, marker='o', label='ind. number turns shares (team)')
-        axs[i].plot(speaking_duration_data, marker='o', label='ind. speaking shares (team)')
+        axs[i].plot(col_1_data, marker='o', label=plotted_features[0])
+        axs[i].plot(col_2_data, marker='o', label=plotted_features[1])
+        axs[i].plot(col_3_data, marker='o', label=plotted_features[2])
         axs[i].set_title(f'Speaker {speaker_id}')
         axs[i].legend()
         axs[i].set_ylim(y_min, y_max)

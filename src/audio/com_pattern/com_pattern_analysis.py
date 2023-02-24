@@ -1,3 +1,5 @@
+import statistics
+
 from src.audio.utils.analysis_tools import write_results_to_csv, visualize_individual_speaking_shares
 
 from src.audio.com_pattern.turn_taking import TurnTaking
@@ -23,32 +25,27 @@ class ComPatternAnalysis:
         
         # For each unit of analysis (block) perform the following calculations
         for block_id, speaker_overview in enumerate(splitted_speaker_overview):
-            
-            # TODO: Rename "unit" to "norm_speaking duration" for example and rename "team" to "team_share"?
-            # TODO: further diff: absolute and relative
-            # TODO: norm_overlaps_absolute, norm_overlaps_relative
-            # TODO: show all relatives and all absolutes in one graph
-            # TODO: go over the comments for each function (turns,...) and check if they are still correct
             # TODO: generalize relative and absolute functions (-> everywhere the same!)
+            # TODO: go over the comments for each function (turns,...) and check if they are still correct
             
             # * absolute = x per minute (for each speaker), e.g. 2.5 overlaps per minute
             # * relative = x in relation to team members (1 is avg., lower means under average, higher means above average)
             
             # Turn Taking features
             number_turns = self.turn_taking.calculate_number_turns(speaker_overview)
-            norm_num_turns_absolute = self.turn_taking.calculate_norm_num_turns_absolute(number_turns, block_length[block_id])
-            norm_num_turns_relative = self.turn_taking.calculate_norm_num_turns_relative(number_turns)
+            norm_num_turns_absolute = self.calc_norm_absolute_features(block_length[block_id], number_turns, "number_turns", "norm_num_turns_absolute")           
+            norm_num_turns_relative = self.calc_norm_relative_features(number_turns, "number_turns", "norm_num_turns_relative")
         
             # Speaking Durations features
             speaking_duration = self.speaking_duration.calculate_speaking_duration(speaker_overview)
-            norm_speak_duration_absolute = self.speaking_duration.calculate_norm_speak_duration_absolute(speaking_duration, block_length[block_id])
-            norm_speak_duration_relative = self.speaking_duration.calculate_norm_speak_duration_relative(speaking_duration)
+            norm_speak_duration_absolute = self.calc_norm_absolute_features(block_length[block_id], speaking_duration, "speaking_duration", "norm_speak_duration_absolute")
+            norm_speak_duration_relative = self.calc_norm_relative_features(speaking_duration, "speaking_duration", "norm_speak_duration_relative")
         
             # Overlap features
             # * defined as: how often did I fall into a word of someone else (he/she is starting, then I have an overlap afterwards)
-            num_overlaps = self.overlaps.calculate_number_overlaps(speaker_overview, block_length[block_id], block_id, num_speakers)
-            norm_num_overlaps_absolute = self.overlaps.calculate_norm_num_overlaps_absolute(num_overlaps, block_length[block_id])
-            norm_num_overlaps_relative = self.overlaps.calculate_norm_num_overlaps_relative(num_overlaps)
+            num_overlaps = self.overlaps.calculate_number_overlaps(speaker_overview)
+            norm_num_overlaps_absolute = self.calc_norm_absolute_features(block_length[block_id], num_overlaps, "num_overlaps", "norm_num_overlaps_absolute")
+            norm_num_overlaps_relative = self.calc_norm_relative_features(num_overlaps, "num_overlaps", "norm_num_overlaps_relative")
             
             print("\n")
             
@@ -92,3 +89,48 @@ class ComPatternAnalysis:
                 com_pattern_output_reform[speaker_id]['norm_num_overlaps_relative'].append(values[5])
                     
         return com_pattern_output_reform  
+    
+    # Calculate x per minute (for each speaker)
+    def calc_norm_absolute_features(self, block_length: int, from_feature_dict: dict, from_feature: str, to_feature: str) -> dict:
+        norm_absolute_feature= {}
+        
+        norm_absolute_feature["speaker"] = []
+        norm_absolute_feature[to_feature] = []
+        
+        for speaker in from_feature_dict["speaker"]:
+            norm_absolute_feature["speaker"].append(speaker)
+            share = round((from_feature_dict[from_feature][from_feature_dict["speaker"].index(speaker)] / block_length)*60,3)
+            norm_absolute_feature[to_feature].append(share)
+            
+        return norm_absolute_feature
+    
+    
+    def calc_norm_relative_features(self, from_feature_dict: dict, from_feature: str, to_feature: str) -> dict:
+        
+        # Calculate the total value (e.g. total speaking duration over all speakers)
+        total_sum_feature = sum(from_feature_dict[from_feature])
+        
+        # If there are no features at all, set it to 1 to avoid division by zero (results will be 0 anyway)
+        if total_sum_feature == 0:
+            total_sum_feature = 1
+            
+        norm_relative_feature = {}
+        norm_relative_feature["speaker"] = []
+        norm_relative_feature[to_feature] = []
+        
+        for speaker in from_feature_dict["speaker"]:
+            norm_relative_feature["speaker"].append(speaker)
+            share = round((from_feature_dict[from_feature][from_feature_dict["speaker"].index(speaker)] / total_sum_feature)*100,3)
+            norm_relative_feature[to_feature].append(share)
+            
+        mean_share = statistics.mean(norm_relative_feature[to_feature])
+        
+        if mean_share == 0:
+            mean_share = 1
+            
+        # Go trough the list entry again and divide by the mean share
+        for speaker in norm_relative_feature["speaker"]:
+            norm_relative_feature[to_feature][norm_relative_feature["speaker"].index(speaker)] = \
+                round(norm_relative_feature[to_feature][norm_relative_feature["speaker"].index(speaker)] / mean_share,3)
+                
+        return norm_relative_feature

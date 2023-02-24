@@ -60,7 +60,7 @@ class Runner:
             block_length = self.rttm_file_preparation.get_block_length()
             num_speakers = self.rttm_file_preparation.get("num_speakers")            
     
-            # TODO: Nomalize com features (e.g. by time or max amount of turns)
+            # TODO: check at the end of all values make sense (adapt "speaker_duration" for testing)
             com_pattern_output = self.com_pattern_analysis.run(splitted_speaker_overview, block_length, num_speakers)
 
             emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
@@ -68,7 +68,8 @@ class Runner:
             write_results_to_csv(emotions_output, com_pattern_output, self.csv_path, self.video_name)
             
         visualize_emotions(self.csv_path, self.unit_of_analysis, self.video_name)
-        visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name)
+        visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_turns_relative', 'norm_speak_duration_relative', 'norm_num_overlaps_relative'])
+        visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_turns_absolute', 'norm_speak_duration_absolute', 'norm_num_overlaps_absolute'])
             
         # Model inference here (training somewhere else)
         # when training the model, dann scaling ALL the values to the same range? 
