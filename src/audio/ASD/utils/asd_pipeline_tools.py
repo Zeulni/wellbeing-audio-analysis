@@ -98,7 +98,7 @@ def extract_audio_from_video(audio_storage_folder, video_path, n_data_loader_thr
     
     return audioFilePath
 
-def visualization(tracks, scores, total_frames, video_path, pyavi_path, num_frames_per_sec, n_data_loader_thread) -> None:
+def visualization(tracks, scores, total_frames, video_path, pyavi_path, num_frames_per_sec, n_data_loader_thread, audio_file_path) -> None:
     # CPU: visulize the result for video format
     all_faces = [[] for i in range(total_frames)]
     
@@ -141,7 +141,7 @@ def visualization(tracks, scores, total_frames, video_path, pyavi_path, num_fram
     write_to_terminal("Visualizatin finished - now it will be saved.")
 
     command = ("ffmpeg -y -i %s -i %s -threads %d -c:v copy -c:a copy %s -loglevel panic" % \
-        (os.path.join(pyavi_path, 'video_only.avi'), os.path.join(pyavi_path, 'audio.wav'), \
+        (os.path.join(pyavi_path, 'video_only.avi'), audio_file_path, \
         n_data_loader_thread, os.path.join(pyavi_path,'video_out.avi'))) 
     output = subprocess.call(command, shell=True, stdout=None)
     

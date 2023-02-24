@@ -29,7 +29,7 @@ from src.audio.ASD.speaker_diarization import SpeakerDiarization
 from src.audio.utils.constants import ASD_DIR
 
 class ASDSpeakerDirPipeline:
-	def __init__(self, args, num_frames_per_sec, total_frames, audio_file_path):
+	def __init__(self, args, num_frames_per_sec, total_frames, audio_file_path, video_path, save_path):
 		self.video_name = args.get("VIDEO_NAME","001")
 		self.pretrain_model = args.get("PRETRAIN_ASD_MODEL","pretrain_TalkSet.model")
 		self.pretrain_model = os.path.join(ASD_DIR, self.pretrain_model)
@@ -59,7 +59,8 @@ class ASDSpeakerDirPipeline:
 		download_model(self.pretrain_model)
 	
 		self.audio_file_path = audio_file_path
-		self.video_path, self.save_path = get_video_path(self.video_name)
+		self.video_path = video_path
+		self.save_path = save_path
 
 		# Initialization
 		self.pyavi_path = os.path.join(self.save_path, 'pyavi')
@@ -215,7 +216,7 @@ class ASDSpeakerDirPipeline:
 		# Visualization, save the result as the new video	
 		if self.include_visualization == True:
 			start_time = time.perf_counter()
-			visualization(self.tracks, self.scores, self.total_frames, self.video_path, self.pyavi_path, self.num_frames_per_sec, self.n_data_loader_thread)
+			visualization(self.tracks, self.scores, self.total_frames, self.video_path, self.pyavi_path, self.num_frames_per_sec, self.n_data_loader_thread, self.audio_file_path)
 			end_time = time.perf_counter()
 			print(f"--- Visualization done in {end_time - start_time:0.4f} seconds")
   

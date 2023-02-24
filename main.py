@@ -5,7 +5,8 @@ from src.audio.app_gui import parse_arguments
 
 def main() -> None:
     args = parse_arguments()
-    runner = Runner(args)
+    video_path = '/Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001.mp4'
+    runner = Runner(args, video_path)
     runner.run()
 
 

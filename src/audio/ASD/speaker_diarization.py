@@ -138,7 +138,7 @@ class SpeakerDiarization:
     def write_rttm(self, track_speaking_segments, same_tracks):
         # Create the rttm file
         
-        file_name = self.video_name + "_" + str(self.length_video) + ".rttm"
+        file_name = self.video_name + "_" + str(self.length_video) + "s.rttm"
         
         with open(os.path.join(self.save_path, file_name), 'w') as rttmFile:
             for tidx, track in enumerate(track_speaking_segments):

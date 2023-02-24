@@ -1,4 +1,5 @@
 # Here runs the overall pipeline of the audio processing
+import os
 
 from src.audio.utils.rttm_file_preparation import RTTMFilePreparation
 from src.audio.ASD.utils.asd_pipeline_tools import extract_audio_from_video
@@ -16,7 +17,7 @@ from src.audio.utils.analysis_tools import visualize_emotions, write_results_to_
 from src.audio.utils.constants import VIDEOS_DIR
 
 class Runner:
-    def __init__(self, args):
+    def __init__(self, args, video_path = None):
         self.args = args
         self.run_pipeline_parts = args.get("RUN_PIPELINE_PARTS", [1,2])
         self.n_data_loader_thread = args.get("N_DATA_LOADER_THREAD",32)
@@ -24,8 +25,20 @@ class Runner:
         self.unit_of_analysis = args.get("UNIT_OF_ANALYSIS", 300)
         
         # Get video features
-        self.video_name = args.get("VIDEO_NAME","001")
-        self.video_path, self.save_path = get_video_path(self.video_name)
+        if video_path == None:
+            self.video_name = args.get("VIDEO_NAME","001")
+            self.video_path, self.save_path = get_video_path(self.video_name)
+        else:
+            # TODO: auslagern
+            self.video_path = video_path
+            self.video_name = os.path.splitext(os.path.basename(self.video_path))[0]
+            self.save_dir = os.path.dirname(self.video_path)
+            self.save_path = os.path.join(self.save_dir, self.video_name)
+            
+        # Save the results in this folder    
+        if not os.path.exists(self.save_path): 
+            os.makedirs(self.save_path)    
+            
         self.num_frames_per_sec = get_frames_per_second(self.video_path)
         self.total_frames = get_num_total_frames(self.video_path)
         self.length_video = int(self.total_frames / self.num_frames_per_sec)
@@ -42,7 +55,7 @@ class Runner:
         self.csv_path = str(VIDEOS_DIR / self.video_name / csv_filename)
         
         # Initialize the parts of the pipelines
-        self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.audio_file_path)
+        self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.audio_file_path, self.video_path, self.save_path)
         self.com_pattern_analysis = ComPatternAnalysis(self.video_name, self.unit_of_analysis)
         self.emotion_analysis = EmotionAnalysis(self.audio_file_path, self.unit_of_analysis)
 
