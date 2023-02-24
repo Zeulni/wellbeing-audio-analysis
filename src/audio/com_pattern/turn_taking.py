@@ -10,8 +10,8 @@ class TurnTaking:
     def get(self, attribute):
         return getattr(self, attribute)
     
+    # Calculates the number of turns (number of times each speakers starts a speaking turn)
     def calculate_number_turns(self, speaker_overview) -> dict:
-        # Calculates the number of turns (number of times each speakers starts a speaking turn) and saves it in a dict 
         
         number_turns = {}
         

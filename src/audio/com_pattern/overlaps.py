@@ -4,7 +4,8 @@ class Overlaps:
         
     def get(self, attribute):
         return getattr(self, attribute)
-        
+    
+    # defined as: how often did I fall into a word of someone else (he/she is starting, then I have an overlap afterwards)    
     def calculate_number_overlaps(self, speaker_overview) -> float:
 
         num_speakers = len(speaker_overview)

@@ -10,8 +10,8 @@ class SpeakingDuration:
     def get(self, attribute):
         return getattr(self, attribute)
     
-    def calculate_speaking_duration(self, speaker_overview) -> dict:
-        # Calculates the speaking duration of each speaker and saves it in a list 
+    # Calculates the speaking duration of each speaker (in seconds)
+    def calculate_speaking_duration(self, speaker_overview) -> dict:  
         
         speaking_duration = {}
         

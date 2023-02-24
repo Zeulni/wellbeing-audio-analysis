@@ -25,7 +25,6 @@ class ComPatternAnalysis:
         
         # For each unit of analysis (block) perform the following calculations
         for block_id, speaker_overview in enumerate(splitted_speaker_overview):
-            # TODO: generalize relative and absolute functions (-> everywhere the same!)
             # TODO: go over the comments for each function (turns,...) and check if they are still correct
             
             # * absolute = x per minute (for each speaker), e.g. 2.5 overlaps per minute
@@ -97,6 +96,7 @@ class ComPatternAnalysis:
         norm_absolute_feature["speaker"] = []
         norm_absolute_feature[to_feature] = []
         
+        # Divide by block length to get feature/sec, then multiply by 60 to get feature/min
         for speaker in from_feature_dict["speaker"]:
             norm_absolute_feature["speaker"].append(speaker)
             share = round((from_feature_dict[from_feature][from_feature_dict["speaker"].index(speaker)] / block_length)*60,3)
