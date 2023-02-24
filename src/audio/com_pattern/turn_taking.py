@@ -25,7 +25,7 @@ class TurnTaking:
         return number_turns
         
     # Calculate based on the number_turns dict the share in number of turns of each speaker
-    def calculate_number_turns_share(self, number_turns) -> dict:
+    def calculate_number_turns_share_team(self, number_turns) -> dict:
         
         # Calculate the total number of turns
         total_number_turns = sum(number_turns["number_turns"])
@@ -35,13 +35,20 @@ class TurnTaking:
         
         # Calculate the share in number of turns of each speaker
         number_turns_share["speaker"] = []
-        number_turns_share["share_number_turns"] = []
+        number_turns_share["ind_number_turns_share_team"] = []
         
         for speaker in number_turns["speaker"]:
             number_turns_share["speaker"].append(speaker)
             share = (number_turns["number_turns"][number_turns["speaker"].index(speaker)] / total_number_turns)*100
             share = round(share, 1)
-            number_turns_share["share_number_turns"].append(share)
+            number_turns_share["ind_number_turns_share_team"].append(share)
+            
+        # Now dividing it by the average share of each speaker to normalize it
+        mean_share = statistics.mean(number_turns_share["ind_number_turns_share_team"])
+        # Go through each speaker and divide the share by the mean share
+        for speaker in number_turns_share["speaker"]:
+            number_turns_share["ind_number_turns_share_team"][number_turns_share["speaker"].index(speaker)] = \
+                round(number_turns_share["ind_number_turns_share_team"][number_turns_share["speaker"].index(speaker)] / mean_share,2)
             
         return number_turns_share
         

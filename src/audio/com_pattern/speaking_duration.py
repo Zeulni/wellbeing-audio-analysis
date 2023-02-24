@@ -58,6 +58,13 @@ class SpeakingDuration:
             share = round(share, 1)
             ind_speaking_shares_team["ind_speaking_share_team"].append(share)
             
+        # Now dividing it by the average share of each speaker to normalize it
+        mean_share = statistics.mean(ind_speaking_shares_team["ind_speaking_share_team"])
+
+        # Go through each speaker and divide the share by the mean share
+        for speaker in ind_speaking_shares_team["speaker"]:
+            ind_speaking_shares_team["ind_speaking_share_team"][ind_speaking_shares_team["speaker"].index(speaker)] = round(ind_speaking_shares_team["ind_speaking_share_team"][ind_speaking_shares_team["speaker"].index(speaker)] / mean_share, 2)
+            
         return ind_speaking_shares_team
         
     # Calculating the equality based on the speaking duration   

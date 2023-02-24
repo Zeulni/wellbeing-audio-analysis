@@ -100,15 +100,15 @@ def visualize_com_pattern(csv_path, unit_of_analysis, video_name) -> None:
     # Read in the CSV file
     df = pd.read_csv(csv_path)
     
-    # Only keep the emotion columns (if it starts with dominance,...) + the speaker ID
-    emotions_df = df[[col for col in df.columns if col.startswith('ind_speaking_share_team') or col.startswith('ind_speaking_share_unit') or col == 'Speaker ID']]
+    # Only keep the emotion columns (if it starts with dominance,...) + the speaker ID 
+    emotions_df = df[[col for col in df.columns if col.startswith('ind_speaking_share_team') or col.startswith('ind_number_turns_share_team') or col == 'Speaker ID']]
 
     # Extract the columns containing arousal, dominance, and valence
-    number_turns_cols = [col for col in emotions_df.columns if 'ind_speaking_share_team' in col]
-    speaking_duration_cols = [col for col in emotions_df.columns if 'ind_speaking_share_unit' in col]
+    number_turns_cols = [col for col in emotions_df.columns if 'ind_number_turns_share_team' in col]
+    speaking_duration_cols = [col for col in emotions_df.columns if 'ind_speaking_share_team' in col]
 
     # # Compute the range of the y-axis
-    intermediate_df = df[[col for col in df.columns if col.startswith('ind_speaking_share_team') or col.startswith('ind_speaking_share_unit')]]
+    intermediate_df = df[[col for col in df.columns if col.startswith('ind_speaking_share_team') or col.startswith('ind_number_turns_share_team')]]
     values = intermediate_df.values.flatten()
     y_min = np.min(values)
     y_max = np.max(values)
@@ -120,8 +120,8 @@ def visualize_com_pattern(csv_path, unit_of_analysis, video_name) -> None:
         number_turns_data = emotions_df.loc[emotions_df["Speaker ID"] == speaker_id, number_turns_cols].values.tolist()[0]
         speaking_duration_data = emotions_df.loc[emotions_df["Speaker ID"] == speaker_id, speaking_duration_cols].values.tolist()[0]
         
-        axs[i].plot(number_turns_data, marker='o', label='ind. speaking shares (team)')
-        axs[i].plot(speaking_duration_data, marker='o', label='ind. speaking shares (unit)')
+        axs[i].plot(number_turns_data, marker='o', label='ind. number turns shares (team)')
+        axs[i].plot(speaking_duration_data, marker='o', label='ind. speaking shares (team)')
         axs[i].set_title(f'Speaker {speaker_id}')
         axs[i].legend()
         axs[i].set_ylim(y_min, y_max)

@@ -10,6 +10,8 @@ class Overlaps:
         
     def calculate_amount_overlaps(self, speaker_overview, block_length, block_id, num_speakers) -> float:
 
+        # TODO: ideal overlap feature per person: how often did I fall into a word of someone else (he/she is satrting, then I have an overlap afterwards)
+
         num_overlaps = 0
 
         # Iterate through the speaker list and compare speech segments
