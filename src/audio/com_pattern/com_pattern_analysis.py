@@ -34,7 +34,8 @@ class ComPatternAnalysis:
             ind_speaking_shares_team = self.speaking_duration.calculate_ind_speaking_share_team(speaking_duration)
         
             #overlaps
-            norm_num_overlaps = self.overlaps.calculate_amount_overlaps(speaker_overview, block_length[block_id], block_id, num_speakers)
+            # * defined as: how often did I fall into a word of someone else (he/she is starting, then I have an overlap afterwards)
+            num_overlaps = self.overlaps.calculate_amount_overlaps(speaker_overview, block_length[block_id], block_id, num_speakers)
             
             print("\n")
             
