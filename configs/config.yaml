@@ -3,7 +3,7 @@
 # 2: Communication Pattern and Emotion Analysis (input: rttm file, output: csv file)
 # 3: Visualize the results (input: csv file, output: plots)
 # [1,2,3] means run all parts
-RUN_PIPELINE_PARTS: [1,2,3]
+RUN_PIPELINE_PARTS: [1]
 
 # -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
@@ -51,7 +51,7 @@ THRESHOLD_SAME_PERSON: 1.05
 CREATE_TRACK_VIDEOS: False
 
 # If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)
-INCLUDE_VISUALIZATION: True
+INCLUDE_VISUALIZATION: False
 
 # -- PART 2: THE FOLLOWING CONFIGS ARE ALL USED FOR Analysing the audio files
 

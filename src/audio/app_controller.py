@@ -14,7 +14,7 @@ from src.audio.ASD.utils.asd_pipeline_tools import get_num_total_frames
 
 from src.audio.utils.analysis_tools import visualize_emotions, write_results_to_csv, visualize_com_pattern
 
-from src.audio.utils.constants import VIDEOS_DIR
+# from src.audio.utils.constants import VIDEOS_DIR
 
 class Runner:
     def __init__(self, args, video_path = None):
@@ -44,15 +44,15 @@ class Runner:
         self.length_video = int(self.total_frames / self.num_frames_per_sec)
         
         # RTTM File Preparation
-        self.rttm_file_preparation = RTTMFilePreparation(self.video_name, self.unit_of_analysis, self.length_video)
+        self.rttm_file_preparation = RTTMFilePreparation(self.video_name, self.unit_of_analysis, self.length_video, self.save_path)
         
         # Extract audio from video (needed for several pipeline steps)
-        audio_storage_folder = str(VIDEOS_DIR / self.video_name )
-        self.audio_file_path = extract_audio_from_video(audio_storage_folder, self.video_path, self.n_data_loader_thread)
+        self.audio_file_path = extract_audio_from_video(self.save_path, self.video_path, self.n_data_loader_thread)
 
         # Path to the csv file with all the results
         csv_filename = self.video_name + "_audio_analysis_results.csv"
-        self.csv_path = str(VIDEOS_DIR / self.video_name / csv_filename)
+        # self.csv_path = str(VIDEOS_DIR / self.video_name / csv_filename)
+        self.csv_path = os.path.join(self.save_path, csv_filename)
         
         # Initialize the parts of the pipelines
         self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.audio_file_path, self.video_path, self.save_path)

@@ -2,8 +2,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-from src.audio.utils.constants import VIDEOS_DIR
-
 def write_results_to_csv(emotions_output, com_pattern_output, csv_path, video_name) -> str:
 
     data_emotions_output = []

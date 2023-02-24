@@ -8,8 +8,6 @@ from sklearn.preprocessing import StandardScaler
 from src.audio.ASD.utils.asd_pipeline_tools import cut_track_videos
 from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
 
-from src.audio.utils.constants import VIDEOS_DIR
-
 class SpeakerDiarization:
     def __init__(self, pyavi_path, video_path, video_name, n_data_loader_thread, threshold_same_person, create_track_videos, total_frames, frames_per_second, save_path, faces_id_path, crop_scale):
         self.pyavi_path = pyavi_path 

@@ -1,13 +1,12 @@
 import glob
 import os
 
-from src.audio.utils.constants import VIDEOS_DIR
-
 class RTTMFilePreparation:
-    def __init__(self, video_name, unit_of_analysis, length_video) -> None:
+    def __init__(self, video_name, unit_of_analysis, length_video, save_path) -> None:
         self.video_name = video_name
         self.unit_of_analysis = unit_of_analysis
         self.length_video = length_video
+        self.save_path = save_path
         
         # TODO: Testing
         # self.length_video = 100
@@ -19,7 +18,7 @@ class RTTMFilePreparation:
     
     def get_rttm_path(self) -> str:
         
-        rttm_folder_path = str(VIDEOS_DIR / self.video_name)
+        rttm_folder_path = self.save_path
         rttm_file = glob.glob(os.path.join(rttm_folder_path, "*.rttm"))
         
         if not rttm_file:
