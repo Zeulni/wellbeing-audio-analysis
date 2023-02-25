@@ -45,6 +45,9 @@ class FaceDetector:
         # Remove all the entrys in the dets list that are 1
         dets = [x for x in dets if x != []]
         
+        # Remove all the entrys in the dets list that are None (no face detected)
+        dets = [x for x in dets if x != None]
+        
         # Interpolate the face location for the frames without face detection
         # interpolated_dets = self.interpolate_face_location(dets)
             
