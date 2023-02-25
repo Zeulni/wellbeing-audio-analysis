@@ -29,8 +29,8 @@ from src.audio.ASD.speaker_diarization import SpeakerDiarization
 from src.audio.utils.constants import ASD_DIR
 
 class ASDSpeakerDirPipeline:
-	def __init__(self, args, num_frames_per_sec, total_frames, audio_file_path, video_path, save_path):
-		self.video_name = args.get("VIDEO_NAME","001")
+	def __init__(self, args, num_frames_per_sec, total_frames, audio_file_path, video_path, save_path, video_name):
+		self.video_name = video_name
 		self.pretrain_model = args.get("PRETRAIN_ASD_MODEL","pretrain_TalkSet.model")
 		self.pretrain_model = os.path.join(ASD_DIR, self.pretrain_model)
   

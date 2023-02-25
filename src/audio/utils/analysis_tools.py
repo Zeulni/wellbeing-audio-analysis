@@ -26,7 +26,7 @@ def write_results_to_csv(emotions_output, com_pattern_output, csv_path, video_na
     
     df = df_emotions_output.join(df_com_pattern_output, on="Speaker ID")
     
-    print(df)
+    # print(df)
     
     # Also save the Speaker ID as a column
     df.reset_index(inplace=True)

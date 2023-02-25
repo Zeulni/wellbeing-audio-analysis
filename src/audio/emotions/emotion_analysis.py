@@ -59,7 +59,7 @@ class EmotionAnalysis:
         # For each block in splitted_speaker_overview, extract the audio based on the speaking segmetns and run the model
         for block_id, block in enumerate(splitted_speaker_overview):
 
-            print(" -- New Block -- ")
+            # print(" -- New Block -- ")
             # Loop through each speaker and append their audio segments to the concatenated_audio variable
             for speaker in block:
                 speaker_id = speaker[0]
@@ -82,7 +82,7 @@ class EmotionAnalysis:
                 arousal = output[0]
                 dominance = output[1]
                 valence = output[2]
-                print("Speaker ID: ", speaker_id, "Arousal: ", arousal, "Dominance: ", dominance, "Valence: ", valence)
+                # print("Speaker ID: ", speaker_id, "Arousal: ", arousal, "Dominance: ", dominance, "Valence: ", valence)
             
                 # For each block, create a dictionary within the emotions_output list (where the key is the speaker_id and the value is a list of the emotions)
                 emotions_output[block_id].append({speaker_id: [arousal, dominance, valence]})

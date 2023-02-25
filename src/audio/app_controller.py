@@ -47,7 +47,7 @@ class Runner:
         self.rttm_file_preparation = RTTMFilePreparation(self.video_name, self.unit_of_analysis, self.length_video, self.save_path)
         
         # Extract audio from video (needed for several pipeline steps)
-        self.audio_file_path = extract_audio_from_video(self.save_path, self.video_path, self.n_data_loader_thread)
+        self.audio_file_path = extract_audio_from_video(self.save_path, self.video_path, self.n_data_loader_thread, self.video_name)
 
         # Path to the csv file with all the results
         csv_filename = self.video_name + "_audio_analysis_results.csv"
@@ -55,7 +55,7 @@ class Runner:
         self.csv_path = os.path.join(self.save_path, csv_filename)
         
         # Initialize the parts of the pipelines
-        self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.audio_file_path, self.video_path, self.save_path)
+        self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.audio_file_path, self.video_path, self.save_path, self.video_name)
         self.com_pattern_analysis = ComPatternAnalysis(self.video_name, self.unit_of_analysis)
         self.emotion_analysis = EmotionAnalysis(self.audio_file_path, self.unit_of_analysis)
 
