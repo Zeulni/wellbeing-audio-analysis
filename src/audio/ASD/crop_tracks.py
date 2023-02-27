@@ -46,7 +46,7 @@ class CropTracks:
         cs = self.crop_size
 
         # Create an empty array for the faces (num_tracks, num_frames, 112, 112)
-        all_faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.float32)
+        all_faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.uint8)
 
         # Define transformation
         transform = transforms.Compose([
@@ -199,7 +199,7 @@ class CropTracks:
             chunk_faces[:, chunk_start//self.frames_face_tracking:chunk_end//self.frames_face_tracking, :, :] = int_all_faces
 
             # Clear the memory by resetting the `all_faces` array
-            all_faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.float32)
+            all_faces = torch.zeros((len(tracks), num_frames, 112, 112), dtype=torch.uint8)
         
         # Close the video
         vIn.release()

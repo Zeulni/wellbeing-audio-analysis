@@ -51,7 +51,7 @@ THRESHOLD_SAME_PERSON: 1.05
 CREATE_TRACK_VIDEOS: False
 
 # If enabled, it will create a video where you can see the speaking person highlighted (e.g. used for debugging)
-INCLUDE_VISUALIZATION: False
+INCLUDE_VISUALIZATION: True
 
 # -- PART 2: THE FOLLOWING CONFIGS ARE ALL USED FOR Analysing the audio files
 
