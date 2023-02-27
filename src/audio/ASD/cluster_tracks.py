@@ -27,21 +27,23 @@ class ClusterTracks:
         # model.prepare(ctx_id=-1, det_size=(224, 224))
         # buffalo_l https://drive.google.com/file/d/1qXsQJ8ZT42_xSmWIYy85IcidpiZudOCB/view?usp=sharing
         
-        # TODO: downloading in manually necessary
+        # Downloading smaller model manually if want to use it (but worse performance)
         # buffalo_sc https://drive.google.com/file/d/19I-MZdctYKmVf3nu5Da3HS6KH5LBfdzG/view?usp=sharing
         
-        # TODO: adding insightface to requirements.txt
-        model = FaceAnalysis("buffalo_l")
+        model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         model.prepare(ctx_id=0, det_size=(224, 224))
-        
-        # TODO: providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
         
         # * Calculate the embeddings
         # Create a numpy array to store the embeddings
         # embeddings = np.zeros((len(tracks),512))
         embeddings = {}
         
-        for track_id in sorted(os.listdir(faces_id_path)):
+        sorted_files = sorted(os.listdir(faces_id_path))
+        # Filter the files to only include the jpg files
+        sorted_files = [file for file in sorted_files if file.endswith('.jpg')]
+        
+        for track_id in sorted_files:
+            # Check if the image is a jpg file
             img = cv2.imread(os.path.join(faces_id_path, track_id))
             face = model.get(img)
             embedding = face[0].normed_embedding
@@ -54,21 +56,10 @@ class ClusterTracks:
         # Reduce the dimensionality of the embedding vector using PCA
         pca = PCA(n_components=2)
         embedding_2d = pca.fit_transform(embeddings_list)
-        # Create a scatter plot of the embedding vector
-        # fig, ax = plt.subplots(figsize=(8, 8))
-        # ax.scatter(embedding_2d[:, 0], embedding_2d[:, 1])
-        # ax.set_title('Face Embedding')
-        # plt.show()
-        
-        # Create a embeddings_list_2d with the 2d embeddings (the keys are the same as for the embeddings_list)
-        # embeddings_list_2d = {}
-        # for i, track_id in enumerate(os.listdir(faces_id_path)):
-        #     embeddings_list_2d[track_id] = embedding_2d[i]
-
         
         # Plot the 2d embeddings list (with the track_id as labels)
         fig, ax = plt.subplots(figsize=(8, 8))
-        for i, track_id in enumerate(sorted(os.listdir(faces_id_path))):
+        for i, track_id in enumerate(sorted_files):
             ax.scatter(embedding_2d[i, 0], embedding_2d[i, 1], label=track_id)
         ax.set_title('Face Embedding')
         plt.legend()
@@ -76,7 +67,7 @@ class ClusterTracks:
         
         embeddings_list = embedding_2d
         
-        # * Calculate the distance matrix (to know the distance between each embedding)
+        # * Calculate the distance matrix for debugging (to know the distance between each embedding)
         # Calculate the distance matrix
         track_dist = np.zeros((len(tracks), len(tracks)))
         for i in range(len(tracks)):
@@ -87,7 +78,6 @@ class ClusterTracks:
         # * Clustering
         # Perform clustering with DBSCAN
         threshold_diff_person = 0.3
-        
         dbscan = DBSCAN(eps=threshold_diff_person, min_samples=2)
         labels = dbscan.fit_predict(embeddings_list)
 

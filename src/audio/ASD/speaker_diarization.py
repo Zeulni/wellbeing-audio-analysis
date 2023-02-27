@@ -111,8 +111,8 @@ class SpeakerDiarization:
         # Store in a dict for each track the track id, the frame number of the first frame and the corresponding bounding box
         track_bboxes = [None for i in range(len(tracks))]
         for tidx, track in enumerate(tracks):
-            # Take the first frame of every track and store it
-            frame_number = 0
+            # Take the one frame of every track and store it
+            frame_number = -10
             track_bboxes[tidx] = [track['track']['frame'][frame_number] ,track['proc_track']['s'][frame_number], track['proc_track']['x'][frame_number], track['proc_track']['y'][frame_number]]
             
         # Using faces_id dict, now crop for each track the bounding box at the corresponding frame and save it as an image            
@@ -138,7 +138,16 @@ class SpeakerDiarization:
 
             
             # Save the image
-            cv2.imwrite(os.path.join(faces_id_path, str(tidx) + ".jpg"), cv2.resize(face, (224, 224)))
+            # Make a 4 digit number of out the ID (e.g. 1 -> 001)
+            track_id = str(tidx)
+            if len(track_id) == 1:
+                track_id = "000" + track_id
+            elif len(track_id) == 2:
+                track_id = "00" + track_id
+            elif len(track_id) == 3:
+                track_id = "0" + track_id
+            
+            cv2.imwrite(os.path.join(faces_id_path, track_id + ".jpg"), cv2.resize(face, (224, 224)))
         
         
     def write_rttm(self, track_speaking_segments, same_tracks):
