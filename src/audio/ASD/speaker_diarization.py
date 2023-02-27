@@ -1,9 +1,15 @@
-import numpy
+import numpy as np
 import os
 import math
+# import matplotlib as plt
+from matplotlib import pyplot as plt
 import cv2
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+from insightface.app import FaceAnalysis
+#import insightface
 
 from src.audio.ASD.utils.asd_pipeline_tools import cut_track_videos
 from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
@@ -35,7 +41,7 @@ class SpeakerDiarization:
             # *Go through each frame in the selected track
             for fidx, frame in enumerate(track['track']['frame'].tolist()):
                 s = score[max(fidx - 2, 0): min(fidx + 3, len(score) - 1)] # average smoothing
-                s = numpy.mean(s)
+                s = np.mean(s)
                 # *Store for each frame the bounding box and score (for each of the detected faces/tracks over time)
                 all_faces[frame].append({'track':tidx, 'score':float(s),'s':track['proc_track']['s'][fidx], 'x':track['proc_track']['x'][fidx], 'y':track['proc_track']['y'][fidx]})
 
@@ -88,6 +94,12 @@ class SpeakerDiarization:
         # - I make the assumption people do not change the place during one video I get as input 
         #   (-> if bounding boxes are close by and do not speak at the same time, then they are from the same person)
         # 	To correct for that, I would have to leverage face verification
+        
+        # Store one image per track in a folder
+        self.store_face_ids(self.faces_id_path, tracks)
+        
+        # Calculate tracks that belong together based on face embeddings
+        same_tracks_new = self.cluster_tracks_face_embedding(track_speaking_faces, self.faces_id_path, tracks)
 
         # Calculate tracks that belong together 
         same_tracks = self.cluster_tracks(tracks, all_faces, track_speaking_faces)
@@ -95,9 +107,111 @@ class SpeakerDiarization:
         # Calculate an rttm file based on trackSpeakingSegments (merge the speakers for the same tracks into one speaker)
         self.write_rttm(track_speaking_segments, same_tracks)   
         
-        self.store_face_ids(self.faces_id_path, tracks)
         
         return
+    
+    def cluster_tracks_face_embedding(self, track_speaking_faces, faces_id_path, tracks):
+        # Model will automatically be downloaded if not present
+        
+        # Only download the model once, then load the model
+        # model_name = 'buffalo_l'
+        # model_file = f'{model_name}-0000.params'
+        # model_url = f'https://github.com/deepinsight/insightface/models/{model_name}/{model_file}'
+
+        # insightface.utils.download(model_url, model_file)
+        
+        # model = insightface.model_zoo.get_model(model_file)
+        # model.prepare(ctx_id=-1, det_size=(224, 224))
+        # buffalo_l https://drive.google.com/file/d/1qXsQJ8ZT42_xSmWIYy85IcidpiZudOCB/view?usp=sharing
+        
+        # TODO: downloading in manually necessary
+        # buffalo_sc https://drive.google.com/file/d/19I-MZdctYKmVf3nu5Da3HS6KH5LBfdzG/view?usp=sharing
+        
+        # TODO: adding insightface to requirements.txt
+        model = FaceAnalysis("buffalo_sc")
+        model.prepare(ctx_id=0, det_size=(224, 224))
+        
+        # embedding_dict = {}
+        
+        # * Calculate the embeddings
+        # Create a numpy array to store the embeddings
+        # embeddings = np.zeros((len(tracks),512))
+        embeddings = {}
+        
+        for i, track_id in enumerate(os.listdir(faces_id_path)):
+            img = cv2.imread(os.path.join(faces_id_path, track_id))
+            face = model.get(img)
+            embedding = face[0].normed_embedding
+            print(embedding)
+            embeddings[track_id] = embedding
+            # embeddings[i] = embedding
+
+
+        # * Plotting    
+        # Reduce the dimensionality of the embedding vector using PCA
+        pca = PCA(n_components=2)
+        #re_embeddings = embeddings.reshape(1, -1)
+        embeddings_list = list(embeddings.values())
+        embedding_2d = pca.fit_transform(embeddings_list)
+        # Create a scatter plot of the embedding vector
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax.scatter(embedding_2d[:, 0], embedding_2d[:, 1])
+        ax.set_title('Face Embedding')
+        plt.show()
+
+        # track_dist = np.zeros((len(tracks), len(tracks)))
+        # for i in range(len(tracks)):
+        #     for j in range(len(tracks)):
+        #         track_dist[i,j] = math.sqrt((x_transformed[i,0] - x_transformed[j,0])**2 + (x_transformed[i,1] - x_transformed[j,1])**2)
+        
+        # * Calculate the distance matrix (to know the distance between each embedding)
+        # Calculate the distance matrix
+        track_dist = np.zeros((len(tracks), len(tracks)))
+        for i in range(len(tracks)):
+            for j in range(len(tracks)):
+                track_dist[i,j] = np.linalg.norm(embeddings_list[i] - embeddings_list[j])
+        
+        # * Clustering
+        # Perform clustering with DBSCAN
+        dbscan = DBSCAN(eps=1.0, min_samples=2)
+        labels = dbscan.fit_predict(embeddings_list)
+
+        # Print the indices of each cluster (if the label is -1, then print it as a cluster with only one index)
+        unique_labels = np.unique(labels)
+        for label in unique_labels:
+            if label == -1:
+                print("Outlier:")
+                outlier_indices = np.where(labels == label)[0]
+                for i in outlier_indices:
+                    if track_speaking_faces[i] != []:
+                        print(f"\t\t{i}")
+            else:
+                print(f"Cluster {label}:")
+                cluster_indices = np.where(labels == label)[0]
+                for i in cluster_indices:
+                    if track_speaking_faces[i] != []:
+                        print(f"\t\t{i}")
+        
+            
+
+        # Store the indices of the tracks that belong to the same cluster
+        clusters = []
+        for i in range(0, labels.max() + 1):
+            clusters.append(np.where(labels == i)[0])
+
+                
+        # Create a copy of the clusters list where only the indices of the tracks that are speaking are stored (the have at least one element in the track_speaking_faces list)
+        speaking_clusters = []
+        for i in range(len(clusters)):
+            speaking_clusters.append([])
+            for j in range(len(clusters[i])):
+                if len(track_speaking_faces[clusters[i][j]]) > 0:
+                    speaking_clusters[i].append(clusters[i][j])
+                    
+        # If one cluster has only one track, then it is not a cluster, so delete it
+        speaking_clusters = [x for x in speaking_clusters if len(x) > 1]
+                    
+        return speaking_clusters
     
     def store_face_ids(self, faces_id_path, tracks) -> None:
         # Store in a dict for each track the track id, the frame number of the first frame and the corresponding bounding box
@@ -123,7 +237,7 @@ class SpeakerDiarization:
             cs  = self.crop_scale
             bs  = s   # Detection box size
             bsi = int(bs * (1 + 2 * cs))  # Pad videos by this amount 
-            frame = numpy.pad(frame, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
+            frame = np.pad(frame, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
             my  = y + bsi  # BBox center Y
             mx  = x + bsi  # BBox center X
             face = frame[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
@@ -166,10 +280,10 @@ class SpeakerDiarization:
         # Calculate the average x and y value for each track
         track_avg_x = [[] for i in range(len(tracks))]
         for tidx, track in enumerate(track_list_x):
-            track_avg_x[tidx] = numpy.mean(track)
+            track_avg_x[tidx] = np.mean(track)
         track_avg_y = [[] for i in range(len(tracks))]
         for tidx, track in enumerate(track_list_y):
-            track_avg_y[tidx] = numpy.mean(track)    
+            track_avg_y[tidx] = np.mean(track)    
 
         
         dbscan = DBSCAN(eps= self.threshold_same_person, min_samples=2)
@@ -187,7 +301,7 @@ class SpeakerDiarization:
         x_transformed = scaler.transform(x)
         
         # Calculate the pairwise distances between the scaled data points
-        track_dist = numpy.zeros((len(tracks), len(tracks)))
+        track_dist = np.zeros((len(tracks), len(tracks)))
         for i in range(len(tracks)):
             for j in range(len(tracks)):
                 track_dist[i,j] = math.sqrt((x_transformed[i,0] - x_transformed[j,0])**2 + (x_transformed[i,1] - x_transformed[j,1])**2)
@@ -202,17 +316,17 @@ class SpeakerDiarization:
         labels = dbscan.fit_predict(x_transformed)
         
         # Print the indices of each cluster (if the label is -1, then print it as a cluster with only one index)
-        unique_labels = numpy.unique(labels)
+        unique_labels = np.unique(labels)
         for label in unique_labels:
             if label == -1:
                 print("Outlier:")
-                outlier_indices = numpy.where(labels == label)[0]
+                outlier_indices = np.where(labels == label)[0]
                 for i in outlier_indices:
                     if track_speaking_faces[i] != []:
                         print(f"\t\t{i}")
             else:
                 print(f"Cluster {label}:")
-                cluster_indices = numpy.where(labels == label)[0]
+                cluster_indices = np.where(labels == label)[0]
                 for i in cluster_indices:
                     if track_speaking_faces[i] != []:
                         print(f"\t\t{i}")
@@ -222,7 +336,7 @@ class SpeakerDiarization:
         # Store the indices of the tracks that belong to the same cluster
         clusters = []
         for i in range(0, labels.max() + 1):
-            clusters.append(numpy.where(labels == i)[0])
+            clusters.append(np.where(labels == i)[0])
 
                 
         # Create a copy of the clusters list where only the indices of the tracks that are speaking are stored (the have at least one element in the track_speaking_faces list)
