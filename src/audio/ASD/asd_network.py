@@ -37,7 +37,7 @@ class ASDNetwork():
         self.s = s
         
         self.number_tracks = len(all_tracks)
-        
+
         if self.device.type == 'cuda':            
             # Show a progress bar using tqdm (based on the function above)
             # *Multiprocessing for GPU did not work on Colab
@@ -67,16 +67,15 @@ class ASDNetwork():
         samplerate = segment.frame_rate
         trans_segment = numpy.array(segment.get_array_of_samples(), dtype=numpy.int16)
         
-        # TODO: Audio Squeezing - Reverting depending on outcome
+        # Audio Preparation (squeezing + stretching)
         length_segment = len(trans_segment)
         
         # Shorten the length of the audio segment by factor self.frames_face_tracking
         trans_segment = trans_segment[::self.frames_face_tracking]
         
-        # TODO:
+        # Stretch it again to fill in the intermediate values with the same value
         trans_segment = numpy.repeat(trans_segment, self.frames_face_tracking)
         
-        # TODO:
         # Cut the audio segment to the same length as before (length_segment)
         trans_segment = trans_segment[:length_segment]
     
@@ -92,9 +91,6 @@ class ASDNetwork():
         
         # Convert faces directly to a torch tensor, and put it on the GPU
         track_data = torch.tensor(faces[tidx]).to(self.device)
-        
-        # # Change it to float32
-        # track_data = track_data.astype(numpy.float32)
 
         # Change to float32
         track_data = track_data.to(torch.float32).to(self.device)
@@ -107,18 +103,13 @@ class ASDNetwork():
         duration_set = {1,1,1,2,2,2,3,3,4,5,6} # Use this line can get more reliable result
         
         segment, samplerate = self.extract_audio(self.audio_file_path, track)
-        
-
         audio_feature = python_speech_features.mfcc(segment, samplerate, numcep = 13, winlen = 0.025, winstep = 0.010)
 
         # Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
         # * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
-        video_feature = self.get_video_feature(tidx)
-        
-        
+        video_feature = self.get_video_feature(tidx)         
         # Remove all frames that have the value 0 (as they are not used)
-        video_feature = video_feature[video_feature.sum(axis=(1,2)) != 0].to(self.device)
-        
+        video_feature = video_feature[video_feature.sum(axis=(1,2)) != 0].to(self.device)      
         # Strech the video feature by factor self.frames_face_tracking
         video_feature = video_feature.repeat_interleave(self.frames_face_tracking, dim=0)
         video_feature = video_feature[:self.total_frames]
@@ -143,17 +134,6 @@ class ASDNetwork():
                     scores.extend(score)
             track_scores.append(scores)
         track_scores = numpy.round((numpy.mean(numpy.array(track_scores), axis = 0)), 1).astype(float)
-
-        # TODO: Squeezing reverted
-        # # To compensate for the skipping of frames, repeat the score for each frame (so it has the same length again)
-        # track_scores = numpy.repeat(track_scores, self.frames_face_tracking)
-        
-
-        # # To make sure the length is not longer than the video, crop it (if its the same length, just cut 3 frames off to be on the safe side)
-        # if track_scores.shape[0] > track['bbox'].shape[0]:
-        #     track_scores = track_scores[:track['bbox'].shape[0]]
-        # elif (track_scores.shape[0] - track['bbox'].shape[0]) >= -3:
-        #     track_scores = track_scores[:-3]
             
         return track_scores
     

@@ -3,7 +3,7 @@
 # 2: Communication Pattern and Emotion Analysis (input: rttm file, output: csv file)
 # 3: Visualize the results (input: csv file, output: plots)
 # [1,2,3] means run all parts
-RUN_PIPELINE_PARTS: [1,2]
+RUN_PIPELINE_PARTS: [1]
 
 # -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
@@ -30,10 +30,6 @@ MIN_FACE_SIZE: 1
 
 # Scale bounding box
 CROP_SCALE: 0.40
-
-# To not overload the RAM when loading a larger video, we have to do it in chunks (and only store the cunks in RAM)
-# 10000 frames ~ 1GB RAM (~6 min video at 25 fps)
-CROP_CHUNK_SIZE: 1000
 
 # To speed up the face tracking, we only track the face in every x frames
 FRAMES_FACE_TRACKING: 2
