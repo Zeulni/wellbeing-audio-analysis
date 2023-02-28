@@ -30,6 +30,8 @@
 
 ## How To Use
 
+Used Python version: 3.8.10
+
 To clone and run this application, you'll need [Git](https://git-scm.com) and ....  From your command line:
 
 ```bash

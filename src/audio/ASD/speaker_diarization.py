@@ -96,10 +96,10 @@ class SpeakerDiarization:
         # 	To correct for that, I would have to leverage face verification
         
         # Calculate tracks that belong together based on face embeddings
-        same_tracks = self.cluster_tracks.cluster_tracks_face_embedding(track_speaking_faces, tracks)
+        same_tracks, cluster_overview = self.cluster_tracks.cluster_tracks_face_embedding(track_speaking_faces, tracks)
         
         # Store one image per track in a folder
-        self.store_face_ids(self.faces_id_path, tracks, same_tracks)
+        self.store_face_ids(self.faces_id_path, tracks, cluster_overview)
 
         # Old clustering based on assumption, that people do not change the place during one video
         # same_tracks = self.cluster_tracks.cluster_tracks(tracks, all_faces, track_speaking_faces)
@@ -109,7 +109,7 @@ class SpeakerDiarization:
         
         return
     
-    def store_face_ids(self, faces_id_path, tracks, same_tracks) -> None:
+    def store_face_ids(self, faces_id_path, tracks, cluster_overview) -> None:
         # Store in a dict for each track the track id, the frame number of the first frame and the corresponding bounding box
         track_bboxes = [None for i in range(len(tracks))]
         for tidx, track in enumerate(tracks):
@@ -117,8 +117,8 @@ class SpeakerDiarization:
             frame_number = -10
             track_bboxes[tidx] = [track['track']['frame'][frame_number] ,track['proc_track']['s'][frame_number], track['proc_track']['x'][frame_number], track['proc_track']['y'][frame_number]]
             
-        # From the list same_tracks, extract from every list it contains the first element and store it in a list
-        cluster_ids = [x[0] for x in same_tracks]    
+        # From the list cluster_overview, extract from every list it contains the first element and store it in a list
+        cluster_ids = [x[0] for x in cluster_overview]    
             
         # Using faces_id dict, now crop for each track the bounding box at the corresponding frame and save it as an image            
         for tidx, track_bbox in enumerate(track_bboxes):

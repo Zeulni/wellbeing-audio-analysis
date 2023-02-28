@@ -92,15 +92,15 @@ class ClusterTracks:
         # buffalo_sc https://drive.google.com/file/d/19I-MZdctYKmVf3nu5Da3HS6KH5LBfdzG/view?usp=sharing
         # TODO: only temporary solution (I just clear the console, although it throws an error)
         # Check if a file naming "model.pkl" exists in the folder faces_id_path (if yes, then load the pkl file), otherwise initialize the model        
-        model_path = ASD_DIR / "model" / 'model.pkl'
+        # model_path = ASD_DIR / "model" / 'model.pkl'
         
-        if os.path.isfile(model_path):
-            model = pickle.load(open(model_path, 'rb'))
-        else:
-            model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
-            model.prepare(ctx_id=0, det_size=(224, 224))
-            pickle.dump(model, open(model_path, 'wb'))
-        # model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        # if os.path.isfile(model_path):
+        #     model = pickle.load(open(model_path, 'rb'))
+        # else:
+        #     model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        #     model.prepare(ctx_id=0, det_size=(224, 224))
+        #     pickle.dump(model, open(model_path, 'wb'))
+        model = FaceAnalysis("buffalo_sc", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         
         
         model.prepare(ctx_id=0, det_size=(224, 224))
@@ -176,9 +176,9 @@ class ClusterTracks:
         dbscan = DBSCAN(eps=(1-self.threshold_same_person), min_samples=2, metric='cosine')
         labels = dbscan.fit_predict(embeddings_list)
 
-        speaking_clusters = self.parse_clusters(labels, track_speaking_faces)
+        speaking_clusters, cluster_overview = self.parse_clusters(labels, track_speaking_faces)
                     
-        return speaking_clusters
+        return speaking_clusters, cluster_overview
     
     # Holds the assumption that people do not change place
     def cluster_tracks(self, tracks, faces, track_speaking_faces):
@@ -228,9 +228,9 @@ class ClusterTracks:
         # perform clustering
         labels = dbscan.fit_predict(x_transformed)
         
-        speaking_clusters = self.parse_clusters(labels, track_speaking_faces)
+        speaking_clusters, cluster_overview = self.parse_clusters(labels, track_speaking_faces)
 
-        return speaking_clusters
+        return speaking_clusters, cluster_overview
     
     def parse_clusters(self, labels, track_speaking_faces):
         # Print the indices of each cluster (if the label is -1, then print it as a cluster with only one index)
@@ -255,7 +255,7 @@ class ClusterTracks:
             clusters.append(np.where(labels == i)[0])
 
                 
-        # Create a copy of the clusters list where only the indices of the tracks that are speaking are stored (the have at least one element in the track_speaking_faces list)
+        # Create a copy of the clusters list where only the indices of the tracks that are speaking are stored (that have at least one element in the track_speaking_faces list)
         speaking_clusters = []
         for i in range(len(clusters)):
             speaking_clusters.append([])
@@ -266,4 +266,20 @@ class ClusterTracks:
         # If one cluster has only one track, then it is not a cluster, so delete it
         speaking_clusters = [x for x in speaking_clusters if len(x) > 1]
         
-        return speaking_clusters
+        cluster_overview = []
+        for i in range(0, labels.max() + 1):
+            cluster_overview.append(np.where(labels == i)[0])
+        # add the the indices where the label is "-1" to the cluster overview (append one new entry for each outlier)
+        outlier_indices = np.where(labels == -1)[0]
+        for i in outlier_indices:
+            cluster_overview.append([i])
+            
+        speaking_cluster_overview = []
+        for i in range(len(cluster_overview)):
+            speaking_cluster_overview.append([])
+            for j in range(len(cluster_overview[i])):
+                if len(track_speaking_faces[cluster_overview[i][j]]) > 0:
+                    speaking_cluster_overview[i].append(cluster_overview[i][j])
+
+        
+        return speaking_clusters, speaking_cluster_overview
