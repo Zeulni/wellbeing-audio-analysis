@@ -93,15 +93,15 @@ class ClusterTracks:
         # TODO: only temporary solution (I just clear the console, although it throws an error)
         # Check if a file naming "model.pkl" exists in the folder faces_id_path (if yes, then load the pkl file), otherwise initialize the model        
         # model_path = ASD_DIR / "model" / 'model.pkl'
+        model_folder = ASD_DIR / "model"
         
         # if os.path.isfile(model_path):
         #     model = pickle.load(open(model_path, 'rb'))
         # else:
-        #     model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        #     model = FaceAnalysis("buffalo_l", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         #     model.prepare(ctx_id=0, det_size=(224, 224))
         #     pickle.dump(model, open(model_path, 'wb'))
-        model_path = ASD_DIR / "model"
-        model = FaceAnalysis("buffalo_l", root=model_path, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        model = FaceAnalysis("buffalo_sc", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         
         
         model.prepare(ctx_id=0, det_size=(224, 224))

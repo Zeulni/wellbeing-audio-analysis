@@ -8,15 +8,15 @@ if __name__ == '__main__':
     # main(video_path)
 
     # Define the path to the top-level directory
-    team = 'team_002'
+    team = 'team_001'
     team_folder = str(VIDEOS_DIR / team)
 
     # Loop over the subdirectories (i.e., the day folders)
-    for day_folder in os.listdir(team_folder):
+    for day_folder in sorted(os.listdir(team_folder)):
         day_path = os.path.join(team_folder, day_folder)
         if os.path.isdir(day_path):
             # Loop over the video files within each day folder
-            for video_file in os.listdir(day_path):
+            for video_file in sorted(os.listdir(day_path)):
                 # Check that the file is an MP4
                 if video_file.endswith('.mp4'):
                     # Construct the full path to the video file
