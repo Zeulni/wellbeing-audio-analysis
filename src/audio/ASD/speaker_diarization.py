@@ -28,7 +28,7 @@ class SpeakerDiarization:
         
         self.length_video = int(self.total_frames / self.frames_per_second)
         
-        self.cluster_tracks = ClusterTracks(self.tracks_faces_clustering_path, self.video_path, self.crop_scale)
+        self.cluster_tracks = ClusterTracks(self.tracks_faces_clustering_path, self.video_path, self.crop_scale, self.threshold_same_person)
     
     def run(self, tracks, scores):
         

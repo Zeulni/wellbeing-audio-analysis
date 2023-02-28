@@ -1,4 +1,5 @@
 import os
+import sys
 import cv2
 import numpy as np
 import math
@@ -10,20 +11,16 @@ from sklearn.decomposition import PCA
 
 from insightface.app import FaceAnalysis
 
+from src.audio.utils.constants import ASD_DIR
+
 class ClusterTracks:
-    def __init__(self, tracks_faces_clustering_path, video_path, crop_scale) -> None:
+    def __init__(self, tracks_faces_clustering_path, video_path, crop_scale, threshold_same_person) -> None:
         self.tracks_faces_clustering_path = tracks_faces_clustering_path
         self.video_path = video_path
         self.crop_scale = crop_scale
+        self.threshold_same_person = threshold_same_person
     
-    def store_face_verification_track_images(self, tracks) -> None:
-        # Store in a dict for each track the track id, the frame number of the first frame and the corresponding bounding box
-        # track_bboxes = [None for i in range(len(tracks))]
-        # for tidx, track in enumerate(tracks):
-        #     # Take the one frame of every track and store it
-        #     frame_number = -10
-        #     track_bboxes[tidx] = [track['track']['frame'][frame_number] ,track['proc_track']['s'][frame_number], track['proc_track']['x'][frame_number], track['proc_track']['y'][frame_number]]
-         
+    def store_face_verification_track_images(self, tracks) -> None:         
         # Instead of getting just one frame per track, get 5 random frames per track
         track_bboxes = []
         for tidx, track in enumerate(tracks):
@@ -40,7 +37,6 @@ class ClusterTracks:
             for frame_number in frame_numbers:
                 track_bboxes[tidx].append([track['track']['frame'][frame_number] ,track['proc_track']['s'][frame_number], track['proc_track']['x'][frame_number], track['proc_track']['y'][frame_number]])
          
-            
         # Using faces_id dict, now crop for each track the bounding box at the corresponding frame and save it as an image            
         for tidx, track_bbox in enumerate(track_bboxes):
             
@@ -67,7 +63,6 @@ class ClusterTracks:
                 cap.release()
                 
                 # Using the bbox from the faces_id dict to crop the image
-                
                 s = frame_number[1]
                 x = frame_number[2]
                 y = frame_number[3]
@@ -80,10 +75,8 @@ class ClusterTracks:
                 mx  = x + bsi  # BBox center X
                 face = frame[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
 
-                
                 # Save the image
                 file_name = track_id + "_" + str(i) + ".jpg"
-                
                 cv2.imwrite(os.path.join(track_folder_path, file_name), cv2.resize(face, (224, 224)))
     
     def cluster_tracks_face_embedding(self, track_speaking_faces, tracks):
@@ -92,81 +85,88 @@ class ClusterTracks:
         
         # Model will automatically be downloaded if not present
         
-        # model = insightface.model_zoo.get_model(model_file)
-        # model.prepare(ctx_id=-1, det_size=(224, 224))
-        # buffalo_l https://drive.google.com/file/d/1qXsQJ8ZT42_xSmWIYy85IcidpiZudOCB/view?usp=sharing
-        
         # Downloading smaller model manually if want to use it (but worse performance)
         # buffalo_sc https://drive.google.com/file/d/19I-MZdctYKmVf3nu5Da3HS6KH5LBfdzG/view?usp=sharing
         
-        # Check if a file naming "model.pkl" exists in the folder faces_id_path (if yes, then load the pkl file), otherwise initialize the model
+        # Check if a file naming "model.pkl" exists in the folder faces_id_path (if yes, then load the pkl file), otherwise initialize the model        
+        # model_path = ASD_DIR / "model" / 'model.pkl'
         
-        model_path = os.path.join(self.tracks_faces_clustering_path, 'model.pkl')
+        # if os.path.isfile(model_path):
+        #     model = pickle.load(open(model_path, 'rb'))
+        # else:
+        #     model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        #     pickle.dump(model, open(model_path, 'wb'))
+        model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         
-        if os.path.isfile(model_path):
-            model = pickle.load(open(model_path, 'rb'))
-        else:
-            model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
-            pickle.dump(model, open(model_path, 'wb'))
         
         model.prepare(ctx_id=0, det_size=(224, 224))
         
-        # * Calculate the embeddings
-        # Create a numpy array to store the embeddings
-        # embeddings = np.zeros((len(tracks),512))
+        # * Calculate the embeddings (for each track the avg. embedding of x random images (e.g. 5))
+        print("Face Verification: Calculating the embeddings...")
         embeddings = {}
-        
-        # sorted_files = sorted(os.listdir(model_path))
-        # # Filter the files to only include the jpg files
-        # sorted_files = [file for file in sorted_files if file.endswith('.jpg')]
-        
-        # for track_id in sorted_files:
-        #     # Check if the image is a jpg file
-        #     img = cv2.imread(os.path.join(faces_id_path, track_id))
-        #     face = model.get(img)
-        #     embedding = face[0].normed_embedding
-        #     embeddings[track_id] = embedding
-        #     # embeddings[i] = embedding
         
         # Go through each of the folders in self.tracks_faces_clustering_path, and for each folder, go through each of the images in the folder and calculate the embedding
         # Then, average the embeddings of the images in the folder and store the average embedding in the embeddings dict
         sorted_files = sorted(os.listdir(self.tracks_faces_clustering_path))
         # Filter the files to only include the jpg files 
-        sorted_files = [file for file in sorted_files if file.isdigit()]
-        
+        sorted_files = [file for file in sorted_files if os.path.isdir(os.path.join(self.tracks_faces_clustering_path, file))]
+
+        for track_id in sorted_files:
+            # Go through each of the images in the folder
+            track_images = sorted(os.listdir(os.path.join(self.tracks_faces_clustering_path, track_id)))
+            track_images = [file for file in track_images if file.endswith('.jpg')]
+            
+            # Create a numpy array to store the embeddings
+            track_embeddings = np.zeros((len(track_images),512))
+            
+            for i, image in enumerate(track_images):
+                img = cv2.imread(os.path.join(self.tracks_faces_clustering_path, track_id, image))
+                face = model.get(img)
+                
+                # Only add it if the face was detected (and det score over 0.65, so a "good" shot of the face)
+                if len(face) > 0 and face[0].det_score > 0.65:
+                    embedding = face[0].normed_embedding
+                    track_embeddings[i] = embedding
+            
+            # Average the embeddings of the images in the folder and store the average embedding in the embeddings dict
+            # remove the rows with all zeros
+            track_embeddings = track_embeddings[~np.all(track_embeddings == 0, axis=1)]
+            # If there are no embeddings, then just insert zeros
+            if len(track_embeddings) == 0:
+                embeddings[track_id] = np.zeros(512)
+                # If no face recognized, then also don't use it for analysis later on
+                int_track_id = int(track_id)
+                track_speaking_faces[int_track_id] = []
+            else:  
+                embeddings[track_id] = np.mean(track_embeddings, axis=0)
+
 
         embeddings_list = list(embeddings.values())
 
         # * Plotting    
-        # Reduce the dimensionality of the embedding vector using PCA
-        pca = PCA(n_components=2)
-        embedding_2d = pca.fit_transform(embeddings_list)
+        # Reduce the dimensionality of the embedding vector using PCA (just for plotting)
+        # pca = PCA(n_components=3)
+        # embedding_2d = pca.fit_transform(embeddings_list)
         
-        # Plot the 2d embeddings list (with the track_id as labels)
-        fig, ax = plt.subplots(figsize=(8, 8))
-        for i, track_id in enumerate(sorted_files):
-            ax.scatter(embedding_2d[i, 0], embedding_2d[i, 1], label=track_id)
-        ax.set_title('Face Embedding')
-        plt.legend()
-        plt.show()
+        # Plot the 3d embeddings list (with the track_id as labels)
+        # fig = plt.figure(figsize=(8, 8))
+        # ax = fig.add_subplot(111, projection='3d')
+        # for i, track_id in enumerate(sorted_files):
+        #     ax.scatter(embedding_2d[i, 0], embedding_2d[i, 1], embedding_2d[i, 2], label=track_id)
+        # ax.set_title('Face Embedding')
+        # plt.legend()
+        # plt.show()
         
-        #embeddings_list = embedding_2d
         
         # * Calculate the distance matrix for debugging (to know the distance between each embedding)
-        # Calculate the distance matrix
-        track_dist = np.zeros((len(tracks), len(tracks)))
-        for i in range(len(tracks)):
-            for j in range(len(tracks)):
-                # TODO: calculate cosine similarity instead of euclidean distance
-                track_dist[i,j] = np.dot(embeddings_list[i], embeddings_list[j]) / (np.linalg.norm(embeddings_list[i]) * np.linalg.norm(embeddings_list[j]))
-                
-                # Euclidean distance
-                # track_dist[i,j] = np.linalg.norm(embeddings_list[i] - embeddings_list[j])
+        # track_dist = np.zeros((len(tracks), len(tracks)))
+        # for i in range(len(tracks)):
+        #     for j in range(len(tracks)):
+        #         # Calculate cosine similarity instead of euclidean distance
+        #         track_dist[i,j] = np.dot(embeddings_list[i], embeddings_list[j]) / (np.linalg.norm(embeddings_list[i]) * np.linalg.norm(embeddings_list[j]))
         
         # * Clustering
-        # Perform clustering with DBSCAN
-        threshold_diff_person = 0.3
-        dbscan = DBSCAN(eps=(1-threshold_diff_person), min_samples=2, metric='cosine')
+        dbscan = DBSCAN(eps=(1-self.threshold_same_person), min_samples=2, metric='cosine')
         labels = dbscan.fit_predict(embeddings_list)
 
         speaking_clusters = self.parse_clusters(labels, track_speaking_faces)
@@ -192,8 +192,7 @@ class ClusterTracks:
         for tidx, track in enumerate(track_list_y):
             track_avg_y[tidx] = np.mean(track)    
 
-        
-        dbscan = DBSCAN(eps= self.threshold_same_person, min_samples=2)
+        dbscan = DBSCAN(eps= 1.05, min_samples=2)
         
         # Create the datapoints for the DBSCAN algorithm
         x = []
@@ -242,8 +241,6 @@ class ClusterTracks:
                 for i in cluster_indices:
                     if track_speaking_faces[i] != []:
                         print(f"\t\t{i}")
-        
-            
 
         # Store the indices of the tracks that belong to the same cluster
         clusters = []
