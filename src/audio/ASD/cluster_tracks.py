@@ -128,7 +128,7 @@ class ClusterTracks:
                 face = model.get(img)
                 
                 # Clear the text the get function wrote via write.terminal to the console
-                self.clear_output()
+                #self.clear_output()
                 
                 # Only add it if the face was detected (and det score over 0.65, so a "good" shot of the face)
                 if len(face) > 0 and face[0].det_score > 0.65:
@@ -281,5 +281,7 @@ class ClusterTracks:
                 if len(track_speaking_faces[cluster_overview[i][j]]) > 0:
                     speaking_cluster_overview[i].append(cluster_overview[i][j])
 
+        # Remove all entrys that are empty
+        speaking_cluster_overview = [x for x in speaking_cluster_overview if x != []]
         
         return speaking_clusters, speaking_cluster_overview
