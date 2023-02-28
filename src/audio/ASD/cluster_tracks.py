@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 import math
+import pickle
 from matplotlib import pyplot as plt
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
@@ -16,13 +17,6 @@ class ClusterTracks:
     def cluster_tracks_face_embedding(self, track_speaking_faces, faces_id_path, tracks):
         # Model will automatically be downloaded if not present
         
-        # Only download the model once, then load the model
-        # model_name = 'buffalo_l'
-        # model_file = f'{model_name}-0000.params'
-        # model_url = f'https://github.com/deepinsight/insightface/models/{model_name}/{model_file}'
-
-        # insightface.utils.download(model_url, model_file)
-        
         # model = insightface.model_zoo.get_model(model_file)
         # model.prepare(ctx_id=-1, det_size=(224, 224))
         # buffalo_l https://drive.google.com/file/d/1qXsQJ8ZT42_xSmWIYy85IcidpiZudOCB/view?usp=sharing
@@ -30,7 +24,17 @@ class ClusterTracks:
         # Downloading smaller model manually if want to use it (but worse performance)
         # buffalo_sc https://drive.google.com/file/d/19I-MZdctYKmVf3nu5Da3HS6KH5LBfdzG/view?usp=sharing
         
-        model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        
+        # TODO: if it works, then change folder where it is stored
+        
+        # Check if a file naming "model.pkl" exists in the folder faces_id_path (if yes, then load the pkl file), otherwise initialize the model
+        
+        if os.path.isfile(os.path.join(faces_id_path, 'model.pkl')):
+            model = pickle.load(open(os.path.join(faces_id_path, 'model.pkl'), 'rb'))
+        else:
+            model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+            pickle.dump(model, open(os.path.join(faces_id_path, 'model.pkl'), 'wb'))
+        
         model.prepare(ctx_id=0, det_size=(224, 224))
         
         # * Calculate the embeddings
@@ -65,20 +69,23 @@ class ClusterTracks:
         plt.legend()
         plt.show()
         
-        embeddings_list = embedding_2d
+        #embeddings_list = embedding_2d
         
         # * Calculate the distance matrix for debugging (to know the distance between each embedding)
         # Calculate the distance matrix
         track_dist = np.zeros((len(tracks), len(tracks)))
         for i in range(len(tracks)):
             for j in range(len(tracks)):
+                # TODO: calculate cosine similarity instead of euclidean distance
+                track_dist[i,j] = np.dot(embeddings_list[i], embeddings_list[j]) / (np.linalg.norm(embeddings_list[i]) * np.linalg.norm(embeddings_list[j]))
+                
+                # Euclidean distance
                 # track_dist[i,j] = np.linalg.norm(embeddings_list[i] - embeddings_list[j])
-                track_dist[i,j] = math.sqrt((embeddings_list[i,0] - embeddings_list[j,0])**2 + (embeddings_list[i,1] - embeddings_list[j,1])**2)
         
         # * Clustering
         # Perform clustering with DBSCAN
         threshold_diff_person = 0.3
-        dbscan = DBSCAN(eps=threshold_diff_person, min_samples=2)
+        dbscan = DBSCAN(eps=(1-threshold_diff_person), min_samples=2, metric='cosine')
         labels = dbscan.fit_predict(embeddings_list)
 
         speaking_clusters = self.parse_clusters(labels, track_speaking_faces)
