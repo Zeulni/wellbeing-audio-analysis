@@ -122,11 +122,11 @@ class ComPatternAnalysis:
             share = round((from_feature_dict[from_feature][from_feature_dict["speaker"].index(speaker)] / total_sum_feature)*100,3)
             norm_relative_feature[to_feature].append(share)
             
-        mean_share = statistics.mean(norm_relative_feature[to_feature])
-        
         if mean_share == 0:
             mean_share = 1
             
+        mean_share = statistics.mean(norm_relative_feature[to_feature])
+        
         # Go trough the list entry again and divide by the mean share
         for speaker in norm_relative_feature["speaker"]:
             norm_relative_feature[to_feature][norm_relative_feature["speaker"].index(speaker)] = \
