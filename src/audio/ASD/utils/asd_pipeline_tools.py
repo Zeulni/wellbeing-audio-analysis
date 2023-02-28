@@ -11,9 +11,9 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.io.VideoFileClip import AudioFileClip
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 
-
 from src.audio.utils.constants import ASD_DIR
 from src.audio.utils.constants import VIDEOS_DIR
+
 
 def write_to_terminal(text, argument = "") -> None:
     sys.stderr.write(time.strftime("%Y-%m-%d %H:%M:%S ") + text + " " + argument + "\r\n")

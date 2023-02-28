@@ -29,7 +29,7 @@ from src.audio.ASD.speaker_diarization import SpeakerDiarization
 from src.audio.utils.constants import ASD_DIR
 
 class ASDSpeakerDirPipeline:
-	def __init__(self, args, num_frames_per_sec, total_frames, audio_file_path, video_path, save_path, video_name):
+	def __init__(self, args, num_frames_per_sec, total_frames, audio_file_path, video_path, save_path, video_name, logger):
 		self.video_name = video_name
 		self.pretrain_model = args.get("PRETRAIN_ASD_MODEL","pretrain_TalkSet.model")
 		self.pretrain_model = os.path.join(ASD_DIR, self.pretrain_model)
@@ -47,7 +47,7 @@ class ASDSpeakerDirPipeline:
 		self.create_track_videos = args.get("CREATE_TRACK_VIDEOS",True)
 		self.include_visualization = args.get("INCLUDE_VISUALIZATION",True)
   
-		#warnings.filterwarnings("ignore")
+		self.logger = logger
 
 		write_to_terminal("Only every xth frame will be analyzed for faster processing:", str(self.frames_face_tracking))
 

@@ -2,6 +2,7 @@
 import os
 
 from src.audio.utils.rttm_file_preparation import RTTMFilePreparation
+from src.audio.utils.logger import Logger
 from src.audio.ASD.utils.asd_pipeline_tools import extract_audio_from_video
 
 from src.audio.ASD.speaker_diar_pipeline import ASDSpeakerDirPipeline
@@ -54,10 +55,16 @@ class Runner:
         # self.csv_path = str(VIDEOS_DIR / self.video_name / csv_filename)
         self.csv_path = os.path.join(self.save_path, csv_filename)
         
+        # Initialize the logger
+        log_file_name = self.save_path + "/audio_analysis_log.txt"
+        self.logger = Logger(log_file_name)
+        
         # Initialize the parts of the pipelines
-        self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.audio_file_path, self.video_path, self.save_path, self.video_name)
+        self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.audio_file_path, 
+                                                  self.video_path, self.save_path, self.video_name, self.logger)
         self.com_pattern_analysis = ComPatternAnalysis(self.video_name, self.unit_of_analysis)
         self.emotion_analysis = EmotionAnalysis(self.audio_file_path, self.unit_of_analysis)
+        
 
     def run(self):
         
