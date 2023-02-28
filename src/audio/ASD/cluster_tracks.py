@@ -79,6 +79,9 @@ class ClusterTracks:
                 file_name = track_id + "_" + str(i) + ".jpg"
                 cv2.imwrite(os.path.join(track_folder_path, file_name), cv2.resize(face, (224, 224)))
     
+    def clear_output(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
+    
     def cluster_tracks_face_embedding(self, track_speaking_faces, tracks):
         
         self.store_face_verification_track_images(tracks)
@@ -87,16 +90,17 @@ class ClusterTracks:
         
         # Downloading smaller model manually if want to use it (but worse performance)
         # buffalo_sc https://drive.google.com/file/d/19I-MZdctYKmVf3nu5Da3HS6KH5LBfdzG/view?usp=sharing
-        
+        # TODO: only temporary solution (I just clear the console, although it throws an error)
         # Check if a file naming "model.pkl" exists in the folder faces_id_path (if yes, then load the pkl file), otherwise initialize the model        
-        # model_path = ASD_DIR / "model" / 'model.pkl'
+        model_path = ASD_DIR / "model" / 'model.pkl'
         
-        # if os.path.isfile(model_path):
-        #     model = pickle.load(open(model_path, 'rb'))
-        # else:
-        #     model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
-        #     pickle.dump(model, open(model_path, 'wb'))
-        model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        if os.path.isfile(model_path):
+            model = pickle.load(open(model_path, 'rb'))
+        else:
+            model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+            model.prepare(ctx_id=0, det_size=(224, 224))
+            pickle.dump(model, open(model_path, 'wb'))
+        # model = FaceAnalysis("buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         
         
         model.prepare(ctx_id=0, det_size=(224, 224))
@@ -122,6 +126,9 @@ class ClusterTracks:
             for i, image in enumerate(track_images):
                 img = cv2.imread(os.path.join(self.tracks_faces_clustering_path, track_id, image))
                 face = model.get(img)
+                
+                # Clear the text the get function wrote via write.terminal to the console
+                self.clear_output()
                 
                 # Only add it if the face was detected (and det score over 0.65, so a "good" shot of the face)
                 if len(face) > 0 and face[0].det_score > 0.65:
