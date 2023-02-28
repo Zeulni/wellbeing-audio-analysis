@@ -4,7 +4,7 @@ from typing import Any
 import yaml
 
 from src.audio.utils.constants import CONFIG_DIR
-from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
+from src.audio.ASD.utils.asd_pipeline_tools import ASDPipelineTools
 
 
 def parse_arguments() -> dict:
@@ -23,11 +23,13 @@ def parse_arguments() -> dict:
     )
 
     args = parser.parse_args()
+    
+    asd_pipeline_tools = ASDPipelineTools()
 
     try:
         configs: dict[str, Any] = yaml.safe_load(args.config.read_text())
-        write_to_terminal("Loaded config file into python dict!")
+        asd_pipeline_tools.write_to_terminal("Loaded config file into python dict!")
     except yaml.YAMLError as exc:
-        write_to_terminal("Error in config file!", str(exc))
+        asd_pipeline_tools.write_to_terminal("Error in config file!", str(exc))
 
     return configs

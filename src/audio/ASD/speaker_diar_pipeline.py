@@ -12,14 +12,6 @@ import time
 # Disabled scene detection for now, because cutted teamwork videos have no change in scene 
 # if you want to add it later, have a look at the original repo: https://github.com/TaoRuijie/TalkNet-ASD
 
-from src.audio.ASD.utils.asd_pipeline_tools import get_device
-from src.audio.ASD.utils.asd_pipeline_tools import download_model
-from src.audio.ASD.utils.asd_pipeline_tools import get_video_path
-from src.audio.ASD.utils.asd_pipeline_tools import extract_video
-from src.audio.ASD.utils.asd_pipeline_tools import safe_pickle_file
-from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
-from src.audio.ASD.utils.asd_pipeline_tools import visualization
-
 from src.audio.ASD.face_detection import FaceDetector
 from src.audio.ASD.face_tracking import FaceTracker
 from src.audio.ASD.asd_network import ASDNetwork
@@ -29,7 +21,7 @@ from src.audio.ASD.speaker_diarization import SpeakerDiarization
 from src.audio.utils.constants import ASD_DIR
 
 class ASDSpeakerDirPipeline:
-	def __init__(self, args, num_frames_per_sec, total_frames, audio_file_path, video_path, save_path, video_name, logger):
+	def __init__(self, args, num_frames_per_sec, total_frames, audio_file_path, video_path, save_path, video_name, asd_pipeline_tools):
 		self.video_name = video_name
 		self.pretrain_model = args.get("PRETRAIN_ASD_MODEL","pretrain_TalkSet.model")
 		self.pretrain_model = os.path.join(ASD_DIR, self.pretrain_model)
@@ -47,15 +39,15 @@ class ASDSpeakerDirPipeline:
 		self.create_track_videos = args.get("CREATE_TRACK_VIDEOS",True)
 		self.include_visualization = args.get("INCLUDE_VISUALIZATION",True)
   
-		self.logger = logger
-
-		write_to_terminal("Only every xth frame will be analyzed for faster processing:", str(self.frames_face_tracking))
+		self.asd_pipeline_tools = asd_pipeline_tools
+		self.logger = self.asd_pipeline_tools.get_logger()
+		self.asd_pipeline_tools.write_to_terminal("Only every xth frame will be analyzed for faster processing:", str(self.frames_face_tracking))
 
 		# Check whether GPU is available on cuda (NVIDIA), then mps (Macbook), otherwise use cpu
-		self.device = get_device()
+		self.device = self.asd_pipeline_tools.get_device()
 
 		# Download the pretrained model if not exist
-		download_model(self.pretrain_model)
+		self.asd_pipeline_tools.download_model(self.pretrain_model)
 	
 		self.audio_file_path = audio_file_path
 		self.video_path = video_path
@@ -76,7 +68,7 @@ class ASDSpeakerDirPipeline:
 		self.total_frames = total_frames
 		
 		# Extract the video from the start time to the duration
-		self.video_path = extract_video(self.pyavi_path, self.video_path, self.duration, self.n_data_loader_thread, self.start, self.num_frames_per_sec)	
+		self.video_path = self.asd_pipeline_tools.extract_video(self.pyavi_path, self.video_path, self.duration, self.n_data_loader_thread, self.start, self.num_frames_per_sec)	
      
 		# TODO: Check if that's nevertheless necessary based on UX
 		# if os.path.exists(save_path):
@@ -107,7 +99,7 @@ class ASDSpeakerDirPipeline:
 		self.face_tracker = FaceTracker(self.num_failed_det, self.min_track, self.min_face_size)
   
 		# Initialize the track cropper
-		self.track_cropper = CropTracks(self.video_path, self.total_frames, self.frames_face_tracking, self.crop_scale)
+		self.track_cropper = CropTracks(self.video_path, self.total_frames, self.frames_face_tracking, self.crop_scale, self.asd_pipeline_tools)
   
 		# Initialize the ASD network
 		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec, self.frames_face_tracking, self.file_path_frames_storage, self.total_frames)
@@ -115,14 +107,14 @@ class ASDSpeakerDirPipeline:
 		# Initialize the speaker diarization
 		self.speaker_diarization = SpeakerDiarization(self.pyavi_path, self.video_path, self.video_name, self.n_data_loader_thread, self.threshold_same_person, 
                                                 	  self.create_track_videos, self.total_frames, self.num_frames_per_sec, self.save_path, self.faces_id_path, 
-                                                   self.tracks_faces_clustering_path, self.crop_scale)
+                                                   self.tracks_faces_clustering_path, self.crop_scale, self.asd_pipeline_tools)
 	
 
 	def __check_face_detection_done(self) -> bool:
 		if os.path.exists(self.file_path_faces_bbox):
 			with open(self.file_path_faces_bbox, 'rb') as f:
 				self.faces_bbox = pickle.load(f)
-				write_to_terminal("Face detection is done, faces are loaded from the pickle files.")
+				self.asd_pipeline_tools.write_to_terminal("Face detection is done, faces are loaded from the pickle files.")
 				return True
 		else:
 			self.faces_bbox = None
@@ -141,7 +133,7 @@ class ASDSpeakerDirPipeline:
 		if os.path.exists(self.file_path_scores):
 			with open(self.file_path_scores, 'rb') as f:
 				self.scores = pickle.load(f)
-				write_to_terminal("ASD is done, scores are loaded from the pickle files.")
+				self.asd_pipeline_tools.write_to_terminal("ASD is done, scores are loaded from the pickle files.")
 				return True
 		else:
 			self.scores = None
@@ -154,7 +146,7 @@ class ASDSpeakerDirPipeline:
 				self.scores = pickle.load(f)
 			with open(self.file_path_tracks, 'rb') as f:
 				self.tracks = pickle.load(f)
-			write_to_terminal("ASD is done, scores and tracks are loaded from the pickle files.")
+			self.asd_pipeline_tools.write_to_terminal("ASD is done, scores and tracks are loaded from the pickle files.")
 			return True
 		return False
 
@@ -184,18 +176,20 @@ class ASDSpeakerDirPipeline:
 			face_detection_done = self._ASDSpeakerDirPipeline__check_face_detection_done()
 			if face_detection_done == False:
 				self.faces_bbox = self.face_detector.s3fd_face_detection()
-				safe_pickle_file(self.file_path_faces_bbox, self.faces_bbox, "Faces detected and stored in", self.pywork_path)
+				self.asd_pipeline_tools.safe_pickle_file(self.file_path_faces_bbox, self.faces_bbox, "Faces detected and stored in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- Face detection done in {end_time - start_time:0.4f} seconds")
+			self.logger.log("Face detection done in " + str(int(end_time - start_time)) + " seconds")
 		
 			# Face tracking
 			start_time = time.perf_counter()
 			all_tracks = []
 			copy_faces_bbox = copy.deepcopy(self.faces_bbox)
 			all_tracks.extend(self.face_tracker.track_shot_face_tracker(copy_faces_bbox))
-			write_to_terminal("Face tracks created - detected", str(len(all_tracks)))
+			self.asd_pipeline_tools.write_to_terminal("Face tracks created - detected", str(len(all_tracks)))
 			end_time = time.perf_counter()
 			print(f"--- Face tracking done in {end_time - start_time:0.4f} seconds")
+			self.logger.log("Face tracking done in " + str(int(end_time - start_time)) + " seconds")
 
 			# Crop all the tracks from the video (are stored in CPU memory)
 			start_time = time.perf_counter()
@@ -203,26 +197,29 @@ class ASDSpeakerDirPipeline:
 			if face_cropping_done == False:
 				# self.tracks, self.faces_frames = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
 				self.tracks = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks, self.file_path_frames_storage)
-				safe_pickle_file(self.file_path_tracks, self.tracks, "Track saved in", self.pywork_path)
+				self.asd_pipeline_tools.safe_pickle_file(self.file_path_tracks, self.tracks, "Track saved in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- Track cropping done in {end_time - start_time:0.4f} seconds")
+			self.logger.log("Track cropping done in " + str(int(end_time - start_time)) + " seconds")
 
 			# Active Speaker Detection by TalkNet
 			start_time = time.perf_counter()
 			asd_done = self._ASDSpeakerDirPipeline__check_asd_done()
 			if asd_done == False:
 				self.scores = self.asd_network.talknet_network(all_tracks, self.audio_file_path)
-				safe_pickle_file(self.file_path_scores, self.scores, "Scores extracted and saved in", self.pywork_path)
+				self.asd_pipeline_tools.safe_pickle_file(self.file_path_scores, self.scores, "Scores extracted and saved in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- ASD done in {end_time - start_time:0.4f} seconds")
+			self.logger.log("ASD done in " + str(int(end_time - start_time)) + " seconds")
 		
 
 		# Visualization, save the result as the new video	
 		if self.include_visualization == True:
 			start_time = time.perf_counter()
-			visualization(self.tracks, self.scores, self.total_frames, self.video_path, self.pyavi_path, self.num_frames_per_sec, self.n_data_loader_thread, self.audio_file_path)
+			self.asd_pipeline_tools.visualization(self.tracks, self.scores, self.total_frames, self.video_path, self.pyavi_path, self.num_frames_per_sec, self.n_data_loader_thread, self.audio_file_path)
 			end_time = time.perf_counter()
 			print(f"--- Visualization done in {end_time - start_time:0.4f} seconds")
+			self.logger.log("Visualization done in " + str(int(end_time - start_time)) + " seconds")
   
 		# Speaker diarization
 		self.speaker_diarization.run(self.tracks, self.scores)

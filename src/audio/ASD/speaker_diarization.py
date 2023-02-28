@@ -7,12 +7,10 @@ import cv2
 #import insightface
 
 from src.audio.ASD.cluster_tracks import ClusterTracks
-from src.audio.ASD.utils.asd_pipeline_tools import cut_track_videos
-from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
 
 class SpeakerDiarization:
     def __init__(self, pyavi_path, video_path, video_name, n_data_loader_thread, threshold_same_person, create_track_videos, 
-                 total_frames, frames_per_second, save_path, faces_id_path, tracks_faces_clustering_path, crop_scale):
+                 total_frames, frames_per_second, save_path, faces_id_path, tracks_faces_clustering_path, crop_scale, asd_pipeline_tools):
         self.pyavi_path = pyavi_path 
         self.video_path = video_path
         self.video_name = video_name
@@ -26,13 +24,16 @@ class SpeakerDiarization:
         self.tracks_faces_clustering_path = tracks_faces_clustering_path
         self.crop_scale = crop_scale
         
+        self.asd_pipeline_tools = asd_pipeline_tools
+        self.logger = self.asd_pipeline_tools.get_logger()
+        
         self.length_video = int(self.total_frames / self.frames_per_second)
         
         self.cluster_tracks = ClusterTracks(self.tracks_faces_clustering_path, self.video_path, self.crop_scale, self.threshold_same_person)
     
     def run(self, tracks, scores):
         
-        write_to_terminal("Speaker diarization started")
+        self.asd_pipeline_tools.write_to_terminal("Speaker diarization started")
         all_faces = [[] for i in range(self.total_frames)]
         
         # *Pick one track (e.g. one of the 7 as in in the sample)
@@ -87,7 +88,7 @@ class SpeakerDiarization:
 
 
         if self.create_track_videos:
-            cut_track_videos(track_speaking_segments, self.pyavi_path, self.video_path, self.n_data_loader_thread)   
+            self.asd_pipeline_tools.cut_track_videos(track_speaking_segments, self.pyavi_path, self.video_path, self.n_data_loader_thread)   
 
         # Sidenote: 
         # - x and y values are flipped (in contrast to normal convention)
@@ -97,6 +98,8 @@ class SpeakerDiarization:
         
         # Calculate tracks that belong together based on face embeddings
         same_tracks, cluster_overview = self.cluster_tracks.cluster_tracks_face_embedding(track_speaking_faces, tracks)
+        
+        self.logger.log("Cluster overview: " + str(cluster_overview))
         
         # Store one image per track in a folder
         self.store_face_ids(self.faces_id_path, tracks, cluster_overview)

@@ -4,14 +4,13 @@ from scipy import signal
 import torchvision.transforms as transforms
 import torch
 
-from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
-
 class CropTracks:
-    def __init__(self, video_path, total_frames, frames_face_tracking, crop_scale):
+    def __init__(self, video_path, total_frames, frames_face_tracking, crop_scale, asd_pipeline_tools):
         self.video_path = video_path
         self.total_frames = total_frames
         self.frames_face_tracking = frames_face_tracking
         self.crop_size = crop_scale
+        self.asd_pipeline_tools = asd_pipeline_tools
     
     def crop_tracks_from_videos_parallel(self, tracks, file_path_frames_storage) -> tuple:
 
@@ -106,6 +105,6 @@ class CropTracks:
         for i in range(len(tracks)):
             proc_tracks.append({'track':tracks[i], 'proc_track':dets[i]})
             
-        write_to_terminal("Finished cropping the faces from the videos -- saved them to: " + output_file + "")
+        self.asd_pipeline_tools.write_to_terminal("Finished cropping the faces from the videos -- saved them to: " + output_file + "")
 
         return proc_tracks
