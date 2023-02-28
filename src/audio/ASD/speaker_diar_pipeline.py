@@ -65,6 +65,7 @@ class ASDSpeakerDirPipeline:
 		self.pyavi_path = os.path.join(self.save_path, 'pyavi')
 		self.pywork_path = os.path.join(self.save_path, 'pywork')
 		self.faces_id_path = os.path.join(self.save_path, 'faces_id')
+		self.tracks_faces_clustering_path = os.path.join(self.save_path, 'tracks_faces_clustering')
   
 		self.file_path_frames_storage = os.path.join(self.pywork_path,  "faces_frames.npz")
 		self.file_path_faces_bbox = os.path.join(self.pywork_path,  "faces_bbox.pickle")
@@ -90,6 +91,9 @@ class ASDSpeakerDirPipeline:
 		if not os.path.exists(self.faces_id_path): # Here are the found faces and their IDs stored
 			os.makedirs(self.faces_id_path) 
    
+		if not os.path.exists(self.tracks_faces_clustering_path):
+			os.makedirs(self.tracks_faces_clustering_path)
+   
 		# The pickle files
 		self.faces_bbox = None
 		self.tracks = None
@@ -110,7 +114,8 @@ class ASDSpeakerDirPipeline:
   
 		# Initialize the speaker diarization
 		self.speaker_diarization = SpeakerDiarization(self.pyavi_path, self.video_path, self.video_name, self.n_data_loader_thread, self.threshold_same_person, 
-                                                	  self.create_track_videos, self.total_frames, self.num_frames_per_sec, self.save_path, self.faces_id_path, self.crop_scale)
+                                                	  self.create_track_videos, self.total_frames, self.num_frames_per_sec, self.save_path, self.faces_id_path, 
+                                                   self.tracks_faces_clustering_path, self.crop_scale)
 	
 
 	def __check_face_detection_done(self) -> bool:

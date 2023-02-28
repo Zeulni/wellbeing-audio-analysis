@@ -11,7 +11,8 @@ from src.audio.ASD.utils.asd_pipeline_tools import cut_track_videos
 from src.audio.ASD.utils.asd_pipeline_tools import write_to_terminal
 
 class SpeakerDiarization:
-    def __init__(self, pyavi_path, video_path, video_name, n_data_loader_thread, threshold_same_person, create_track_videos, total_frames, frames_per_second, save_path, faces_id_path, crop_scale):
+    def __init__(self, pyavi_path, video_path, video_name, n_data_loader_thread, threshold_same_person, create_track_videos, 
+                 total_frames, frames_per_second, save_path, faces_id_path, tracks_faces_clustering_path, crop_scale):
         self.pyavi_path = pyavi_path 
         self.video_path = video_path
         self.video_name = video_name
@@ -22,11 +23,12 @@ class SpeakerDiarization:
         self.frames_per_second = frames_per_second
         self.save_path = save_path
         self.faces_id_path = faces_id_path
+        self.tracks_faces_clustering_path = tracks_faces_clustering_path
         self.crop_scale = crop_scale
         
         self.length_video = int(self.total_frames / self.frames_per_second)
         
-        self.cluster_tracks = ClusterTracks()
+        self.cluster_tracks = ClusterTracks(self.tracks_faces_clustering_path, self.video_path, self.crop_scale)
     
     def run(self, tracks, scores):
         
@@ -97,7 +99,7 @@ class SpeakerDiarization:
         self.store_face_ids(self.faces_id_path, tracks)
         
         # Calculate tracks that belong together based on face embeddings
-        same_tracks = self.cluster_tracks.cluster_tracks_face_embedding(track_speaking_faces, self.faces_id_path, tracks)
+        same_tracks = self.cluster_tracks.cluster_tracks_face_embedding(track_speaking_faces, tracks)
 
         # Old clustering based on assumption, that people do not change the place during one video
         # same_tracks = self.cluster_tracks.cluster_tracks(tracks, all_faces, track_speaking_faces)
@@ -137,17 +139,8 @@ class SpeakerDiarization:
             face = frame[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
 
             
-            # Save the image
-            # Make a 4 digit number of out the ID (e.g. 1 -> 001)
-            track_id = str(tidx)
-            if len(track_id) == 1:
-                track_id = "000" + track_id
-            elif len(track_id) == 2:
-                track_id = "00" + track_id
-            elif len(track_id) == 3:
-                track_id = "0" + track_id
-            
-            cv2.imwrite(os.path.join(faces_id_path, track_id + ".jpg"), cv2.resize(face, (224, 224)))
+            # Save the image            
+            cv2.imwrite(os.path.join(faces_id_path, str(tidx) + ".jpg"), cv2.resize(face, (224, 224)))
         
         
     def write_rttm(self, track_speaking_segments, same_tracks):
