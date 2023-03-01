@@ -10,7 +10,8 @@ from src.audio.ASD.cluster_tracks import ClusterTracks
 
 class SpeakerDiarization:
     def __init__(self, pyavi_path, video_path, video_name, n_data_loader_thread, threshold_same_person, create_track_videos, 
-                 total_frames, frames_per_second, save_path, faces_id_path, tracks_faces_clustering_path, crop_scale, asd_pipeline_tools):
+                 total_frames, frames_per_second, save_path, faces_id_path, tracks_faces_clustering_path, crop_scale, 
+                 asd_pipeline_tools, n_embeddings):
         self.pyavi_path = pyavi_path 
         self.video_path = video_path
         self.video_name = video_name
@@ -23,13 +24,14 @@ class SpeakerDiarization:
         self.faces_id_path = faces_id_path
         self.tracks_faces_clustering_path = tracks_faces_clustering_path
         self.crop_scale = crop_scale
+        self.n_embeddings = n_embeddings
         
         self.asd_pipeline_tools = asd_pipeline_tools
         self.logger = self.asd_pipeline_tools.get_logger()
         
         self.length_video = int(self.total_frames / self.frames_per_second)
         
-        self.cluster_tracks = ClusterTracks(self.tracks_faces_clustering_path, self.video_path, self.crop_scale, self.threshold_same_person)
+        self.cluster_tracks = ClusterTracks(self.tracks_faces_clustering_path, self.video_path, self.crop_scale, self.threshold_same_person, self.n_embeddings)
     
     def run(self, tracks, scores):
         

@@ -38,6 +38,7 @@ class ASDSpeakerDirPipeline:
 		self.threshold_same_person = args.get("THRESHOLD_SAME_PERSON",1.05)
 		self.create_track_videos = args.get("CREATE_TRACK_VIDEOS",True)
 		self.include_visualization = args.get("INCLUDE_VISUALIZATION",True)
+		self.n_embeddings = args.get("N_EMBEDDINGS",10)
   
 		self.asd_pipeline_tools = asd_pipeline_tools
 		self.logger = self.asd_pipeline_tools.get_logger()
@@ -107,7 +108,7 @@ class ASDSpeakerDirPipeline:
 		# Initialize the speaker diarization
 		self.speaker_diarization = SpeakerDiarization(self.pyavi_path, self.video_path, self.video_name, self.n_data_loader_thread, self.threshold_same_person, 
                                                 	  self.create_track_videos, self.total_frames, self.num_frames_per_sec, self.save_path, self.faces_id_path, 
-                                                   self.tracks_faces_clustering_path, self.crop_scale, self.asd_pipeline_tools)
+                                                   self.tracks_faces_clustering_path, self.crop_scale, self.asd_pipeline_tools, self.n_embeddings)
 	
 
 	def __check_face_detection_done(self) -> bool:

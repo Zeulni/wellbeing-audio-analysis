@@ -40,6 +40,9 @@ START: 0
 # The duration of the video, when set as 0, will extract the whole video
 DURATION: 0
 
+# Number of calculated embeddings per person to match the faces of the same person (the more the better, but also more storage necessary)
+N_EMBEDDINGS: 10
+
 # If two face tracks (see folder faces_id) belong together
 THRESHOLD_SAME_PERSON: 0.27
 

@@ -14,11 +14,12 @@ from insightface.app import FaceAnalysis
 from src.audio.utils.constants import ASD_DIR
 
 class ClusterTracks:
-    def __init__(self, tracks_faces_clustering_path, video_path, crop_scale, threshold_same_person) -> None:
+    def __init__(self, tracks_faces_clustering_path, video_path, crop_scale, threshold_same_person, n_embeddings) -> None:
         self.tracks_faces_clustering_path = tracks_faces_clustering_path
         self.video_path = video_path
         self.crop_scale = crop_scale
         self.threshold_same_person = threshold_same_person
+        self.n_embeddings = n_embeddings
     
     def store_face_verification_track_images(self, tracks) -> None:         
         # Instead of getting just one frame per track, get 5 random frames per track
@@ -26,8 +27,8 @@ class ClusterTracks:
         for tidx, track in enumerate(tracks):
             # Take the one frame of every track and store it
             
-            # Get 5 random numbers from the array track['track']['frame']
-            frame_numbers = np.random.choice(track['track']['frame'], 5, replace=False)
+            # Get n random images per track (e.g. 5)
+            frame_numbers = np.random.choice(track['track']['frame'], self.n_embeddings, replace=False)
             
             # Get the indices of the frame numbers in the track['track']['frame'] array
             frame_numbers = np.searchsorted(track['track']['frame'], frame_numbers)
@@ -101,7 +102,7 @@ class ClusterTracks:
         #     model = FaceAnalysis("buffalo_l", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         #     model.prepare(ctx_id=0, det_size=(224, 224))
         #     pickle.dump(model, open(model_path, 'wb'))
-        model = FaceAnalysis("buffalo_l", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        model = FaceAnalysis("buffalo_sc", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         
         
         model.prepare(ctx_id=0, det_size=(224, 224))
