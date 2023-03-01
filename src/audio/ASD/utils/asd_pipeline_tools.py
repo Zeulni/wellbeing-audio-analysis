@@ -111,6 +111,15 @@ class ASDPipelineTools:
         return audioFilePath
 
     def visualization(self, tracks, scores, total_frames, video_path, pyavi_path, num_frames_per_sec, n_data_loader_thread, audio_file_path) -> None:
+        
+        video_only_path = os.path.join(pyavi_path, 'video_only.avi')
+        video_out_path = os.path.join(pyavi_path, 'video_out.avi')
+        
+        # Check if videos are already created (if yes, then directly return)
+        if os.path.isfile(video_only_path) and os.path.isfile(video_out_path):
+            self.write_to_terminal("Videos already created, skip the visualization step")
+            return
+        
         # CPU: visulize the result for video format
         all_faces = [[] for i in range(total_frames)]
         
@@ -153,8 +162,8 @@ class ASDPipelineTools:
         self.write_to_terminal("Visualizatin finished - now it will be saved.")
 
         command = ("ffmpeg -y -i %s -i %s -threads %d -c:v copy -c:a copy %s -loglevel panic" % \
-            (os.path.join(pyavi_path, 'video_only.avi'), audio_file_path, \
-            n_data_loader_thread, os.path.join(pyavi_path,'video_out.avi'))) 
+            (video_only_path, audio_file_path, \
+            n_data_loader_thread, video_out_path)) 
         output = subprocess.call(command, shell=True, stdout=None)
         
         self.write_to_terminal("Visualization video saved to", os.path.join(pyavi_path,'video_out.avi'))

@@ -77,3 +77,14 @@
 2023-02-28 17:27:10,578 - INFO - Visualization done in 17 seconds
 2023-02-28 17:27:10,578 - INFO - Speaker diarization started 
 2023-02-28 17:27:11,591 - INFO - Cluster overview: [[1], [2], [3]]
+2023-03-01 09:13:40,521 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-01 09:13:40,521 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-01 09:13:40,522 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-01 09:13:41,325 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
+2023-03-01 09:13:41,325 - INFO - Videos already created, skip the visualization step 
+2023-03-01 09:13:41,326 - INFO - Visualization done in 0 seconds
+2023-03-01 09:13:41,326 - INFO - Speaker diarization started 
+2023-03-01 09:13:42,480 - INFO - Cluster overview: [[1], [2], [3]]
