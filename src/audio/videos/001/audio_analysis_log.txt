@@ -1,90 +1,34 @@
-2023-02-28 17:06:46,608 - INFO - 
+2023-03-01 14:54:14,488 - INFO - 
 
 ----- Audio analysis started for video: 001 -----
 
-2023-02-28 17:06:46,608 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-02-28 17:06:46,608 - INFO - Detected device (Cuda/CPU):  cpu
-2023-02-28 17:06:56,627 - INFO - Faces detected and stored in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-02-28 17:06:56,627 - INFO - Face detection done in 9 seconds
-2023-02-28 17:06:56,634 - INFO - Face tracks created - detected 4
-2023-02-28 17:06:56,634 - INFO - Face tracking done in 0 seconds
-2023-02-28 17:07:04,400 - INFO - Finished cropping the faces from the videos -- saved them to: /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork/faces_frames.npz 
-2023-02-28 17:07:04,400 - INFO - Track saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-02-28 17:07:04,401 - INFO - Track cropping done in 7 seconds
-2023-02-28 17:08:12,088 - INFO - Scores extracted and saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-02-28 17:08:12,088 - INFO - ASD done in 67 seconds
-2023-02-28 17:08:29,455 - INFO - Visualizatin finished - now it will be saved. 
-2023-02-28 17:08:29,567 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
-2023-02-28 17:08:29,569 - INFO - Visualization done in 17 seconds
-2023-02-28 17:08:29,569 - INFO - Speaker diarization started 
-2023-02-28 17:08:34,407 - INFO - Cluster overview: [[1], [2], [3]]
-2023-02-28 17:12:33,663 - INFO - 
+2023-03-01 14:54:14,492 - INFO - Frames per second:  25
+2023-03-01 14:54:14,495 - INFO - Total number of frames:  501
+2023-03-01 14:54:14,554 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-01 14:54:14,555 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-01 14:54:14,555 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-01 14:54:24,288 - INFO - Faces detected and stored in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-01 14:54:24,288 - INFO - Face detection done in 9 seconds
+2023-03-01 14:54:24,316 - INFO - Face tracks created - detected 4
+2023-03-01 14:54:24,316 - INFO - Face tracking done in 0 seconds
+2023-03-01 14:54:32,088 - INFO - Finished cropping the faces from the videos -- saved them to: /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork/faces_frames.npz 
+2023-03-01 14:54:32,089 - INFO - Track saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-01 14:54:32,089 - INFO - Track cropping done in 7 seconds
+2023-03-01 15:00:39,367 - INFO - 
 
 ----- Audio analysis started for video: 001 -----
 
-2023-02-28 17:12:33,664 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-02-28 17:12:33,664 - INFO - Detected device (Cuda/CPU):  cpu
-2023-02-28 17:12:34,045 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-02-28 17:12:50,686 - INFO - Visualizatin finished - now it will be saved. 
-2023-02-28 17:12:50,731 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
-2023-02-28 17:12:50,734 - INFO - Visualization done in 16 seconds
-2023-02-28 17:12:50,734 - INFO - Speaker diarization started 
-2023-02-28 17:12:59,442 - INFO - Error in audio analysis: Failed downloading url http://d1gsb2o3ihr2l5.cloudfront.net/models/lala.zip
-2023-02-28 17:13:59,302 - INFO - 
+2023-03-01 15:00:39,370 - INFO - Frames per second:  25
+2023-03-01 15:00:39,373 - INFO - Total number of frames:  501
+2023-03-01 15:00:39,444 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-01 15:00:39,444 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-01 15:00:39,444 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-01 15:00:39,857 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-01 15:00:39,857 - INFO - Face detection done in 0 seconds
+2023-03-01 15:00:39,885 - INFO - Face tracks created - detected 4
+2023-03-01 15:00:39,885 - INFO - Face tracking done in 0 seconds
+2023-03-01 15:00:39,886 - INFO - Track cropping done in 0 seconds
+2023-03-01 15:31:30,917 - INFO - 
 
 ----- Audio analysis started for video: 001 -----
 
-2023-02-28 17:13:59,302 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-02-28 17:13:59,302 - INFO - Detected device (Cuda/CPU):  cpu
-2023-02-28 17:13:59,628 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-02-28 17:14:16,293 - INFO - Visualizatin finished - now it will be saved. 
-2023-02-28 17:14:16,343 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
-2023-02-28 17:14:16,345 - INFO - Visualization done in 16 seconds
-2023-02-28 17:14:16,345 - INFO - Speaker diarization started 
-2023-02-28 17:14:17,332 - ERROR - Failed downloading url http://d1gsb2o3ihr2l5.cloudfront.net/models/lala.zip
-2023-02-28 17:19:23,324 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-02-28 17:19:23,324 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-02-28 17:19:23,324 - INFO - Detected device (Cuda/CPU):  cpu
-2023-02-28 17:19:23,740 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-02-28 17:19:40,448 - INFO - Visualizatin finished - now it will be saved. 
-2023-02-28 17:19:40,493 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
-2023-02-28 17:19:40,495 - INFO - Visualization done in 16 seconds
-2023-02-28 17:19:40,496 - INFO - Speaker diarization started 
-2023-02-28 17:19:51,953 - ERROR - Failed downloading url http://d1gsb2o3ihr2l5.cloudfront.net/models/buffalo_sc.zip
-2023-02-28 17:20:22,191 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-02-28 17:20:22,191 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-02-28 17:20:22,191 - INFO - Detected device (Cuda/CPU):  cpu
-2023-02-28 17:20:22,564 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-02-28 17:20:39,628 - INFO - Visualizatin finished - now it will be saved. 
-2023-02-28 17:20:39,673 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
-2023-02-28 17:20:39,675 - INFO - Visualization done in 17 seconds
-2023-02-28 17:20:39,675 - INFO - Speaker diarization started 
-2023-02-28 17:26:53,028 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-02-28 17:26:53,029 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-02-28 17:26:53,029 - INFO - Detected device (Cuda/CPU):  cpu
-2023-02-28 17:26:53,478 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-02-28 17:27:10,468 - INFO - Visualizatin finished - now it will be saved. 
-2023-02-28 17:27:10,576 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
-2023-02-28 17:27:10,578 - INFO - Visualization done in 17 seconds
-2023-02-28 17:27:10,578 - INFO - Speaker diarization started 
-2023-02-28 17:27:11,591 - INFO - Cluster overview: [[1], [2], [3]]
-2023-03-01 09:13:40,521 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-01 09:13:40,521 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-01 09:13:40,522 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-01 09:13:41,325 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-03-01 09:13:41,325 - INFO - Videos already created, skip the visualization step 
-2023-03-01 09:13:41,326 - INFO - Visualization done in 0 seconds
-2023-03-01 09:13:41,326 - INFO - Speaker diarization started 
-2023-03-01 09:13:42,480 - INFO - Cluster overview: [[1], [2], [3]]

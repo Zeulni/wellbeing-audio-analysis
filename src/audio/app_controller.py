@@ -37,7 +37,18 @@ class Runner:
         if not os.path.exists(self.save_path): 
             os.makedirs(self.save_path)    
             
+        # Initialize the logger
+        log_file_name = self.save_path + "/audio_analysis_log.txt"
+        self.logger = Logger(log_file_name)
+        self.asd_pipeline_tools.set_logger(self.logger)
+        self.logger.log("\n\n----- Audio analysis started for video: " + self.video_name + " -----\n")
+            
         self.num_frames_per_sec = self.asd_pipeline_tools.get_frames_per_second(self.video_path)
+        
+        # If num_frames_per_sec is not 25, then create a copy of the video with 25 fps and update the video_path, video_name, and num_frames_per_sec
+        if self.num_frames_per_sec != 25:
+            self.video_path, self.video_name, self.num_frames_per_sec = self.asd_pipeline_tools.create_video_copy_25fps(self.video_path, self.video_name, self.save_path)
+        
         self.total_frames = self.asd_pipeline_tools.get_num_total_frames(self.video_path)
         self.length_video = int(self.total_frames / self.num_frames_per_sec)
         
@@ -52,18 +63,15 @@ class Runner:
         # self.csv_path = str(VIDEOS_DIR / self.video_name / csv_filename)
         self.csv_path = os.path.join(self.save_path, csv_filename)
         
-        # Initialize the logger
-        log_file_name = self.save_path + "/audio_analysis_log.txt"
-        self.logger = Logger(log_file_name)
-        self.asd_pipeline_tools.set_logger(self.logger)
-        self.logger.log("\n\n----- Audio analysis started for video: " + self.video_name + " -----\n")
-        
         # Initialize the parts of the pipelines
         self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.audio_file_path, 
                                                   self.video_path, self.save_path, self.video_name, self.asd_pipeline_tools)
         self.com_pattern_analysis = ComPatternAnalysis(self.video_name, self.unit_of_analysis)
         self.emotion_analysis = EmotionAnalysis(self.audio_file_path, self.unit_of_analysis)
         
+    # Closing the logfile when the object is deleted
+    def __del__(self):
+        self.logger.close()
 
     def run(self):
         

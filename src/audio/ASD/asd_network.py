@@ -38,7 +38,8 @@ class ASDNetwork():
         
         self.number_tracks = len(all_tracks)
 
-        if self.device.type == 'cuda':            
+        # TODO: multiprocessing back
+        if self.device.type == 'cpu':            
             # Show a progress bar using tqdm (based on the function above)
             # *Multiprocessing for GPU did not work on Colab
             all_scores = []

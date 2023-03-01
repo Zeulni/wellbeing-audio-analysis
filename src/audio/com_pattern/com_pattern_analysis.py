@@ -45,7 +45,7 @@ class ComPatternAnalysis:
             norm_num_overlaps_absolute = self.calc_norm_absolute_features(block_length[block_id], num_overlaps, "num_overlaps", "norm_num_overlaps_absolute")
             norm_num_overlaps_relative = self.calc_norm_relative_features(num_overlaps, "num_overlaps", "norm_num_overlaps_relative")
             
-            print("\n")
+            #print("\n")
             
             # Loop through each speaker and then add the communication pattern features to the output list
             for speaker_id in number_turns["speaker"]:

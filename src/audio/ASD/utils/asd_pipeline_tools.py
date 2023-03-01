@@ -60,6 +60,22 @@ class ASDPipelineTools:
         video.release()
 
         return num_total_frames
+    
+    def create_video_copy_25fps(self, video_path: str, video_name: str, save_path: str) -> None:
+        # Load the video 
+        clip = VideoFileClip(video_path)
+        
+        new_video_name = video_name + "_25fps"
+        new_video_path = os.path.join(save_path, new_video_name)
+        
+        new_num_frames_per_sec = 25
+        new_clip = clip.set_fps(new_num_frames_per_sec)
+        
+        new_clip.write_videofile(new_video_path)
+        
+        self.write_to_terminal("A copy of the video was created with 25 fps: ", new_video_path)
+
+        return new_video_path, new_video_name, new_num_frames_per_sec
 
     def download_model(self, pretrain_model_path: str) -> None:
         path = os.path.join(ASD_DIR, pretrain_model_path)

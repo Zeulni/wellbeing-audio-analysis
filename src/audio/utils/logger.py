@@ -35,3 +35,10 @@ class Logger:
             self.logger.critical(message)
         else:
             self.logger.debug(message)
+            
+    def close(self):
+        # Remove all handlers associated with the logger object
+        handlers = self.logger.handlers[:]
+        for handler in handlers:
+            handler.close()
+            self.logger.removeHandler(handler)
