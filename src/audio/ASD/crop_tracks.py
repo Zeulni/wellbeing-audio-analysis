@@ -53,15 +53,15 @@ class CropTracks:
                 
         # To not store all the frames in memory, we read the video in chunks and store it to harddrive
         output_file = file_path_frames_storage
-        # chunk_size = self.crop_chunk_size  # number of frames to process at a time (and storing into RAM)
-            
-        length_frames = int(num_frames / self.frames_face_tracking)
-        all_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), length_frames, 112, 112), dtype=numpy.uint8)
         
         # For each id (track) in tracks, save the length of each array saved under "frame" to the variable "track_frame_overview"
         track_frame_overview = []
         for track in tracks:
-            track_frame_overview.append(len(track['frame']))
+            track_frame_overview.append(int(len(track['frame'])/self.frames_face_tracking))
+            
+        max_frames = numpy.max(track_frame_overview)
+        all_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), max_frames, 112, 112), dtype=numpy.uint8)
+        insertion_indices = [0] * len(tracks)
             
         for fidx in range(0, num_frames, self.frames_face_tracking):
             vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
@@ -90,9 +90,10 @@ class CropTracks:
                     # Apply the transformations
                     face = transform(face)
                     
-                    # Directly write to the chunk_faces array
-                    if fidx//self.frames_face_tracking < length_frames:
-                        all_faces[tidx, fidx//self.frames_face_tracking, :, :] = face[0, :, :]
+                    # Directly write to the all_faces array at the next available insertion index for this track
+                    if insertion_indices[tidx] < max_frames:
+                        all_faces[tidx, insertion_indices[tidx], :, :] = face[0, :, :]
+                        insertion_indices[tidx] += 1
         
         # Close the video
         vIn.release()

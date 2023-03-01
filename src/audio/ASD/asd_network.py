@@ -94,7 +94,6 @@ class ASDNetwork():
 
         # Change to float32
         track_data = track_data.to(torch.float32).to(self.device)
-
        
         return track_data
     
