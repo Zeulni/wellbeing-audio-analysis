@@ -1,34 +1,13 @@
-2023-03-01 14:54:14,488 - INFO - 
+2023-03-01 16:18:46,426 - INFO - 
 
 ----- Audio analysis started for video: 001 -----
 
-2023-03-01 14:54:14,492 - INFO - Frames per second:  25
-2023-03-01 14:54:14,495 - INFO - Total number of frames:  501
-2023-03-01 14:54:14,554 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-01 14:54:14,555 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-01 14:54:14,555 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-01 14:54:24,288 - INFO - Faces detected and stored in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-01 14:54:24,288 - INFO - Face detection done in 9 seconds
-2023-03-01 14:54:24,316 - INFO - Face tracks created - detected 4
-2023-03-01 14:54:24,316 - INFO - Face tracking done in 0 seconds
-2023-03-01 14:54:32,088 - INFO - Finished cropping the faces from the videos -- saved them to: /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork/faces_frames.npz 
-2023-03-01 14:54:32,089 - INFO - Track saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-01 14:54:32,089 - INFO - Track cropping done in 7 seconds
-2023-03-01 15:00:39,367 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-01 15:00:39,370 - INFO - Frames per second:  25
-2023-03-01 15:00:39,373 - INFO - Total number of frames:  501
-2023-03-01 15:00:39,444 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-01 15:00:39,444 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-01 15:00:39,444 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-01 15:00:39,857 - INFO - Face detection is done, faces are loaded from the pickle files. 
-2023-03-01 15:00:39,857 - INFO - Face detection done in 0 seconds
-2023-03-01 15:00:39,885 - INFO - Face tracks created - detected 4
-2023-03-01 15:00:39,885 - INFO - Face tracking done in 0 seconds
-2023-03-01 15:00:39,886 - INFO - Track cropping done in 0 seconds
-2023-03-01 15:31:30,917 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
+2023-03-01 16:18:51,230 - INFO - Frames per second:  25
+2023-03-01 16:18:51,236 - INFO - Total number of frames:  501
+2023-03-01 16:18:51,324 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-01 16:18:51,325 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-01 16:18:51,325 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-01 16:19:01,205 - INFO - Faces detected and stored in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-01 16:19:01,205 - INFO - Face detection done in 9 seconds
+2023-03-01 16:19:01,233 - INFO - Face tracks created - detected 4
+2023-03-01 16:19:01,233 - INFO - Face tracking done in 0 seconds

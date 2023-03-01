@@ -58,9 +58,10 @@ class CropTracks:
         length_frames = int(num_frames / self.frames_face_tracking)
         all_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), length_frames, 112, 112), dtype=numpy.uint8)
         
-        # for chunk_start in range(0, num_frames, chunk_size):
-        #     chunk_end = min(chunk_start + chunk_size, num_frames) 
-        #     # Loop over every frame, read the frame, then loop over all the tracks per frame and if available, crop the face
+        # For each id (track) in tracks, save the length of each array saved under "frame" to the variable "track_frame_overview"
+        track_frame_overview = []
+        for track in tracks:
+            track_frame_overview.append(len(track['frame']))
             
         for fidx in range(0, num_frames, self.frames_face_tracking):
             vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)

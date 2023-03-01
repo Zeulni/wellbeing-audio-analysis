@@ -66,9 +66,15 @@ class ASDPipelineTools:
         clip = VideoFileClip(video_path)
         
         new_video_name = video_name + "_25fps"
-        new_video_path = os.path.join(save_path, new_video_name)
-        
+        new_video_path = os.path.join(save_path, new_video_name + ".mp4")
         new_num_frames_per_sec = 25
+        
+        
+        # If the new video was already created, then return
+        if os.path.isfile(new_video_path):
+            self.write_to_terminal("A copy of the video was already created with 25 fps: ", new_video_path)
+            return new_video_path, new_video_name, new_num_frames_per_sec
+
         new_clip = clip.set_fps(new_num_frames_per_sec)
         
         new_clip.write_videofile(new_video_path)
