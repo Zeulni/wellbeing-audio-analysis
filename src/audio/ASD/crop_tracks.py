@@ -62,6 +62,8 @@ class CropTracks:
         max_frames = numpy.max(track_frame_overview)
         all_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), max_frames, 112, 112), dtype=numpy.uint8)
         insertion_indices = [0] * len(tracks)
+        
+        length_frames = int(num_frames / self.frames_face_tracking)
             
         for fidx in range(0, num_frames, self.frames_face_tracking):
             vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
@@ -91,7 +93,8 @@ class CropTracks:
                     face = transform(face)
                     
                     # Directly write to the all_faces array at the next available insertion index for this track
-                    if insertion_indices[tidx] < max_frames:
+                    # if insertion_indices[tidx] < max_frames:
+                    if fidx//self.frames_face_tracking < length_frames:
                         all_faces[tidx, insertion_indices[tidx], :, :] = face[0, :, :]
                         insertion_indices[tidx] += 1
         
