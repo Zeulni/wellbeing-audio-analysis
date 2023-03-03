@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy
 from scipy import signal
@@ -12,7 +13,7 @@ class CropTracks:
         self.crop_size = crop_scale
         self.asd_pipeline_tools = asd_pipeline_tools
     
-    def crop_tracks_from_videos_parallel(self, tracks, file_path_frames_storage) -> tuple:
+    def crop_tracks_from_videos_parallel(self, tracks, folder_frames_storage) -> tuple:
 
         # Go through all the tracks and get the dets values (not through the frames yet, only dets)
         # Save for each track the dats in a list
@@ -52,7 +53,6 @@ class CropTracks:
         ])
                 
         # To not store all the frames in memory, we read the video in chunks and store it to harddrive
-        output_file = file_path_frames_storage
         
         track_frame_overview = []
         for track in tracks:
@@ -62,7 +62,8 @@ class CropTracks:
         memmaps = []
         for track_idx, track in enumerate(tracks):
             # Step 2
-            memmap_file = numpy.memmap(output_file.format(track_idx), mode="w+", shape=(track_frame_overview[track_idx], 112, 112), dtype=numpy.uint8)
+            output_file_track = os.path.join(folder_frames_storage, f"frames_track_{track_idx}.npz")
+            memmap_file = numpy.memmap(output_file_track, mode="w+", shape=(track_frame_overview[track_idx], 112, 112), dtype=numpy.uint8)
             memmaps.append(memmap_file)
 
         # Step 4 and 5
@@ -159,6 +160,6 @@ class CropTracks:
         for i in range(len(tracks)):
             proc_tracks.append({'track':tracks[i], 'proc_track':dets[i]})
             
-        self.asd_pipeline_tools.write_to_terminal("Finished cropping the faces from the videos -- saved them to: " + output_file + "")
+        self.asd_pipeline_tools.write_to_terminal("Finished cropping the faces from the videos -- saved them to: " + folder_frames_storage + "")
 
-        return proc_tracks
+        return proc_tracks, track_frame_overview

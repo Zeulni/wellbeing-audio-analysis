@@ -1,23 +1,261 @@
-2023-03-02 14:09:40,523 - INFO - 
+2023-03-03 09:15:08,346 - INFO - 
 
 ----- Audio analysis started for video: 001 -----
 
-2023-03-02 14:09:40,542 - INFO - Frames per second:  25
-2023-03-02 14:09:40,545 - INFO - Total number of frames:  501
-2023-03-02 14:09:40,624 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-02 14:09:40,625 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-02 14:09:40,625 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-02 14:09:51,275 - INFO - Faces detected and stored in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-02 14:09:51,276 - INFO - Face detection done in 10 seconds
-2023-03-02 14:09:51,303 - INFO - Face tracks created - detected 4
-2023-03-02 14:09:51,303 - INFO - Face tracking done in 0 seconds
-2023-03-02 14:10:05,792 - INFO - Finished cropping the faces from the videos -- saved them to: /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork/faces_frames.npz 
-2023-03-02 14:10:05,793 - INFO - Track saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-02 14:10:05,793 - INFO - Track cropping done in 14 seconds
-2023-03-02 14:11:18,847 - INFO - Scores extracted and saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-02 14:11:18,847 - INFO - ASD done in 73 seconds
-2023-03-02 14:11:36,545 - INFO - Visualizatin finished - now it will be saved. 
-2023-03-02 14:11:36,658 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
-2023-03-02 14:11:36,660 - INFO - Visualization done in 17 seconds
-2023-03-02 14:11:36,661 - INFO - Speaker diarization started 
-2023-03-02 14:11:38,713 - INFO - Cluster overview: [[1], [2], [3]]
+2023-03-03 09:15:08,367 - INFO - Frames per second:  25
+2023-03-03 09:15:08,370 - INFO - Total number of frames:  501
+2023-03-03 09:15:08,449 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:15:08,450 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:15:08,450 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:15:17,852 - INFO - Faces detected and stored in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-03 09:15:17,852 - INFO - Face detection done in 8 seconds
+2023-03-03 09:15:17,859 - INFO - Face tracks created - detected 4
+2023-03-03 09:15:17,859 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:15:35,818 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:15:35,822 - INFO - Frames per second:  25
+2023-03-03 09:15:35,825 - INFO - Total number of frames:  501
+2023-03-03 09:15:35,878 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:15:35,879 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:15:35,879 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:15:36,257 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:15:36,257 - INFO - Face detection done in 0 seconds
+2023-03-03 09:15:36,284 - INFO - Face tracks created - detected 4
+2023-03-03 09:15:36,284 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:15:59,136 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:15:59,140 - INFO - Frames per second:  25
+2023-03-03 09:15:59,143 - INFO - Total number of frames:  501
+2023-03-03 09:15:59,201 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:15:59,202 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:15:59,202 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:15:59,559 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:15:59,559 - INFO - Face detection done in 0 seconds
+2023-03-03 09:15:59,587 - INFO - Face tracks created - detected 4
+2023-03-03 09:15:59,587 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:20:48,659 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:20:48,662 - INFO - Frames per second:  25
+2023-03-03 09:20:48,666 - INFO - Total number of frames:  501
+2023-03-03 09:20:48,728 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:20:48,728 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:20:48,729 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:20:49,178 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:20:49,178 - INFO - Face detection done in 0 seconds
+2023-03-03 09:20:49,206 - INFO - Face tracks created - detected 4
+2023-03-03 09:20:49,206 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:27:47,677 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:27:47,681 - INFO - Frames per second:  25
+2023-03-03 09:27:47,683 - INFO - Total number of frames:  501
+2023-03-03 09:27:47,744 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:27:47,745 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:27:47,745 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:27:48,221 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:27:48,221 - INFO - Face detection done in 0 seconds
+2023-03-03 09:27:48,249 - INFO - Face tracks created - detected 4
+2023-03-03 09:27:48,250 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:27:56,905 - ERROR - local variable 'tidx' referenced before assignment
+2023-03-03 09:28:13,226 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:28:13,230 - INFO - Frames per second:  25
+2023-03-03 09:28:13,233 - INFO - Total number of frames:  501
+2023-03-03 09:28:13,305 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:28:13,305 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:28:13,305 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:28:13,758 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:28:13,758 - INFO - Face detection done in 0 seconds
+2023-03-03 09:28:13,786 - INFO - Face tracks created - detected 4
+2023-03-03 09:28:13,786 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:29:32,950 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:29:32,954 - INFO - Frames per second:  25
+2023-03-03 09:29:32,957 - INFO - Total number of frames:  501
+2023-03-03 09:29:33,028 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:29:33,028 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:29:33,029 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:29:33,542 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:29:33,542 - INFO - Face detection done in 0 seconds
+2023-03-03 09:29:33,571 - INFO - Face tracks created - detected 4
+2023-03-03 09:29:33,571 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:30:02,272 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:30:02,276 - INFO - Frames per second:  25
+2023-03-03 09:30:02,279 - INFO - Total number of frames:  501
+2023-03-03 09:30:02,349 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:30:02,350 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:30:02,350 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:30:02,808 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:30:02,809 - INFO - Face detection done in 0 seconds
+2023-03-03 09:30:02,836 - INFO - Face tracks created - detected 4
+2023-03-03 09:30:02,836 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:30:15,823 - INFO - Finished cropping the faces from the videos -- saved them to: /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork 
+2023-03-03 09:30:17,191 - INFO - Track saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-03 09:30:26,771 - INFO - Track cropping done in 16 seconds
+2023-03-03 09:30:44,927 - ERROR - [Errno 2] No such file or directory: '/Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork/frames_track_0.npy'
+2023-03-03 09:30:53,739 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:30:53,743 - INFO - Frames per second:  25
+2023-03-03 09:30:53,746 - INFO - Total number of frames:  501
+2023-03-03 09:30:53,821 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:30:53,822 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:30:53,822 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:30:54,195 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:30:54,195 - INFO - Face detection done in 0 seconds
+2023-03-03 09:30:54,223 - INFO - Face tracks created - detected 4
+2023-03-03 09:30:54,223 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:32:33,185 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:32:33,189 - INFO - Frames per second:  25
+2023-03-03 09:32:33,192 - INFO - Total number of frames:  501
+2023-03-03 09:32:33,246 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:32:33,246 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:32:33,246 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:32:33,544 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:32:33,545 - INFO - Face detection done in 0 seconds
+2023-03-03 09:32:33,572 - INFO - Face tracks created - detected 4
+2023-03-03 09:32:33,573 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:32:33,574 - INFO - Track cropping done in 0 seconds
+2023-03-03 09:33:29,115 - ERROR - mmap length is greater than file size
+2023-03-03 09:39:15,352 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:39:15,356 - INFO - Frames per second:  25
+2023-03-03 09:39:15,359 - INFO - Total number of frames:  501
+2023-03-03 09:39:15,431 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:39:15,431 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:39:15,432 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:39:15,785 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:39:15,786 - INFO - Face detection done in 0 seconds
+2023-03-03 09:39:15,814 - INFO - Face tracks created - detected 4
+2023-03-03 09:39:15,814 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:39:15,816 - INFO - Track cropping done in 0 seconds
+2023-03-03 09:39:15,816 - ERROR - local variable 'track_frame_overview' referenced before assignment
+2023-03-03 09:44:17,633 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:44:17,637 - INFO - Frames per second:  25
+2023-03-03 09:44:17,640 - INFO - Total number of frames:  501
+2023-03-03 09:44:17,695 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:44:17,695 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:44:17,695 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:44:18,009 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:44:18,009 - INFO - Face detection done in 0 seconds
+2023-03-03 09:44:18,036 - INFO - Face tracks created - detected 4
+2023-03-03 09:44:18,036 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:44:30,372 - INFO - Finished cropping the faces from the videos -- saved them to: /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork 
+2023-03-03 09:44:34,641 - INFO - Track saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-03 09:44:35,247 - INFO - Track frame overview saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-03 09:44:41,895 - INFO - Track cropping done in 22 seconds
+2023-03-03 09:44:55,410 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:44:55,414 - INFO - Frames per second:  25
+2023-03-03 09:44:55,417 - INFO - Total number of frames:  501
+2023-03-03 09:44:55,475 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:44:55,476 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:44:55,476 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:44:55,796 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:44:55,797 - INFO - Face detection done in 0 seconds
+2023-03-03 09:44:55,824 - INFO - Face tracks created - detected 4
+2023-03-03 09:44:55,824 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:45:31,970 - INFO - Face cropping is done, tracks are loaded from the pickle files. 
+2023-03-03 09:46:01,671 - INFO - Track cropping done in 64 seconds
+2023-03-03 09:49:08,443 - INFO - Scores extracted and saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-03 09:49:08,444 - INFO - ASD done in 183 seconds
+2023-03-03 09:49:26,973 - INFO - Visualizatin finished - now it will be saved. 
+2023-03-03 09:49:27,086 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
+2023-03-03 09:49:27,089 - INFO - Visualization done in 18 seconds
+2023-03-03 09:49:27,090 - INFO - Speaker diarization started 
+2023-03-03 09:49:29,137 - INFO - Cluster overview: [[2], [1]]
+2023-03-03 09:50:53,735 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:50:53,738 - INFO - Frames per second:  25
+2023-03-03 09:50:53,741 - INFO - Total number of frames:  501
+2023-03-03 09:50:53,801 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:50:53,802 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:50:53,802 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:50:54,232 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:50:54,232 - INFO - Face detection done in 0 seconds
+2023-03-03 09:50:54,259 - INFO - Face tracks created - detected 4
+2023-03-03 09:50:54,259 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:50:59,082 - INFO - Face cropping is done, tracks are loaded from the pickle files. 
+2023-03-03 09:50:59,083 - INFO - Track cropping done in 4 seconds
+2023-03-03 09:51:05,363 - ERROR - calculate_scores_mp() missing 1 required positional argument: 'track_frame_overview'
+2023-03-03 09:54:53,332 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:54:53,336 - INFO - Frames per second:  25
+2023-03-03 09:54:53,340 - INFO - Total number of frames:  501
+2023-03-03 09:54:53,399 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:54:53,400 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:54:53,400 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:54:53,786 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:54:53,786 - INFO - Face detection done in 0 seconds
+2023-03-03 09:54:53,814 - INFO - Face tracks created - detected 4
+2023-03-03 09:54:53,814 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:54:53,815 - INFO - Face cropping is done, tracks are loaded from the pickle files. 
+2023-03-03 09:54:53,815 - INFO - Track cropping done in 0 seconds
+2023-03-03 09:55:00,753 - ERROR - not enough values to unpack (expected 3, got 2)
+2023-03-03 09:55:33,570 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:55:33,573 - INFO - Frames per second:  25
+2023-03-03 09:55:33,576 - INFO - Total number of frames:  501
+2023-03-03 09:55:33,638 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:55:33,638 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:55:33,639 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:55:33,967 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:55:33,967 - INFO - Face detection done in 0 seconds
+2023-03-03 09:55:33,994 - INFO - Face tracks created - detected 4
+2023-03-03 09:55:33,994 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:55:33,995 - INFO - Face cropping is done, tracks are loaded from the pickle files. 
+2023-03-03 09:55:33,995 - INFO - Track cropping done in 0 seconds
+2023-03-03 09:56:46,726 - ERROR - not enough values to unpack (expected 3, got 2)
+2023-03-03 09:57:12,432 - INFO - 
+
+----- Audio analysis started for video: 001 -----
+
+2023-03-03 09:57:12,436 - INFO - Frames per second:  25
+2023-03-03 09:57:12,439 - INFO - Total number of frames:  501
+2023-03-03 09:57:12,497 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-03 09:57:12,498 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-03 09:57:12,498 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-03 09:57:12,875 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-03 09:57:12,875 - INFO - Face detection done in 0 seconds
+2023-03-03 09:57:12,902 - INFO - Face tracks created - detected 4
+2023-03-03 09:57:12,902 - INFO - Face tracking done in 0 seconds
+2023-03-03 09:57:12,903 - INFO - Face cropping is done, tracks are loaded from the pickle files. 
+2023-03-03 09:57:12,903 - INFO - Track cropping done in 0 seconds
+2023-03-03 09:58:38,123 - INFO - Scores extracted and saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-03 09:58:38,124 - INFO - ASD done in 85 seconds
+2023-03-03 09:58:54,819 - INFO - Visualizatin finished - now it will be saved. 
+2023-03-03 09:58:54,931 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
+2023-03-03 09:58:54,933 - INFO - Visualization done in 16 seconds
+2023-03-03 09:58:54,933 - INFO - Speaker diarization started 
+2023-03-03 09:58:56,956 - INFO - Cluster overview: [[1], [2]]

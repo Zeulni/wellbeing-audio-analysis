@@ -1,4 +1,6 @@
+import os
 import sys
+import itertools
 import tqdm
 import python_speech_features
 import torch
@@ -11,7 +13,7 @@ from src.audio.ASD.talkNet import talkNet
 
 
 class ASDNetwork():
-    def __init__(self, device, pretrain_model, num_frames_per_sec, frames_face_tracking, file_path_frames_storage, total_frames) -> None:
+    def __init__(self, device, pretrain_model, num_frames_per_sec, frames_face_tracking, folder_frames_storage, total_frames) -> None:
         self.device = device
         self.pretrain_model = pretrain_model
         self.num_frames_per_sec = num_frames_per_sec
@@ -23,9 +25,9 @@ class ASDNetwork():
         self.s = None 
         self.number_tracks = None
         
-        self.file_path_frames_storage = file_path_frames_storage
+        self.folder_frames_storage = folder_frames_storage
         
-    def talknet_network(self, all_tracks, audio_file_path) -> list:
+    def talknet_network(self, all_tracks, audio_file_path, track_frame_overview) -> list:
         # GPU: active speaker detection by pretrained TalkNet
         s = talkNet(device=self.device).to(self.device)
         s.loadParameters(self.pretrain_model)
@@ -43,20 +45,23 @@ class ASDNetwork():
             # *Multiprocessing for GPU did not work on Colab
             all_scores = []
             for tidx, track in enumerate(tqdm.tqdm(all_tracks)):
-                track_scores = self.calculate_scores(tidx, track)
+                track_scores = self.calculate_scores(tidx, track, track_frame_overview)
                 all_scores.append(track_scores)        
         else:     
             # Using the "spawn" method to create a pool of worker processes and show progress with tqdm
             mp.freeze_support()
             with mp.get_context("spawn").Pool(processes=mp.cpu_count()) as pool:
                 # Map the calculate_scores_mp function to the list of tracks
-                all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks)))
+                # all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks)))
+                # add track_frame_overview to the pool.imap function
+                all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, zip(enumerate(all_tracks), itertools.repeat(track_frame_overview))), total=len(all_tracks)))
             
         return all_scores
     
-    def calculate_scores_mp(self, tidx_track):
-        tidx, track = tidx_track
-        return self.calculate_scores(tidx, track)
+    def calculate_scores_mp(self, args):
+        track_idx_track, track_frame_overview = args
+        track_idx, track = track_idx_track
+        return self.calculate_scores(track_idx, track, track_frame_overview)
     
     def extract_audio(self, audio_file, track) -> tuple:
         audio_start  = (track['frame'][0]) / self.num_frames_per_sec
@@ -82,11 +87,26 @@ class ASDNetwork():
 
         return trans_segment, samplerate
     
-    def get_video_feature(self, tidx) -> numpy.ndarray:
+    # def get_video_feature(self, tidx) -> numpy.ndarray:
+         
+    #     # Load the faces array from self.file_path_frames_storage using memmap, then extract only the relevant track into the memory
+    #     length_frames = int(self.total_frames / self.frames_face_tracking)
+    #     faces = numpy.memmap(self.file_path_frames_storage, mode="r+", shape=(self.number_tracks, length_frames, 112, 112), dtype=numpy.uint8)
+    #     # track_data = faces[tidx]
+        
+    #     # Convert faces directly to a torch tensor, and put it on the GPU
+    #     track_data = torch.tensor(faces[tidx]).to(self.device)
+
+    #     # Change to float32
+    #     track_data = track_data.to(torch.float32).to(self.device)
+       
+    #     return track_data
+    
+    def get_video_feature(self, tidx, track_frame_overview) -> numpy.ndarray:
         
         # Load the faces array for the relevant track using memmap
-        length_frames = int(self.total_frames / self.frames_face_tracking)
-        file_path = os.path.join(self.directory_frames_storage, f"track_{tidx}.npy")
+        length_frames = track_frame_overview[tidx]
+        file_path = os.path.join(self.folder_frames_storage, f"frames_track_{tidx}.npz")
         faces = numpy.memmap(file_path, mode="r", shape=(length_frames, 112, 112), dtype=numpy.uint8)
 
         # Convert faces directly to a torch tensor, and put it on the GPU
@@ -97,7 +117,7 @@ class ASDNetwork():
 
         return track_data
     
-    def calculate_scores(self, tidx, track) -> list:
+    def calculate_scores(self, tidx, track, track_frame_overview) -> list:
         # duration_set = {1,2,4,6} # To make the result more reliable
         duration_set = {1,1,1,2,2,2,3,3,4,5,6} # Use this line can get more reliable result
         
@@ -106,7 +126,7 @@ class ASDNetwork():
 
         # Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
         # * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
-        video_feature = self.get_video_feature(tidx)         
+        video_feature = self.get_video_feature(tidx, track_frame_overview)         
         # Remove all frames that have the value 0 (as they are not used)
         video_feature = video_feature[video_feature.sum(axis=(1,2)) != 0].to(self.device)      
         # Strech the video feature by factor self.frames_face_tracking
