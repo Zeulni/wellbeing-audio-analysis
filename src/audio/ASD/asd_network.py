@@ -83,18 +83,18 @@ class ASDNetwork():
         return trans_segment, samplerate
     
     def get_video_feature(self, tidx) -> numpy.ndarray:
-         
-        # Load the faces array from self.file_path_frames_storage using memmap, then extract only the relevant track into the memory
-        length_frames = int(self.total_frames / self.frames_face_tracking)
-        faces = numpy.memmap(self.file_path_frames_storage, mode="r+", shape=(self.number_tracks, length_frames, 112, 112), dtype=numpy.uint8)
-        # track_data = faces[tidx]
         
+        # Load the faces array for the relevant track using memmap
+        length_frames = int(self.total_frames / self.frames_face_tracking)
+        file_path = os.path.join(self.directory_frames_storage, f"track_{tidx}.npy")
+        faces = numpy.memmap(file_path, mode="r", shape=(length_frames, 112, 112), dtype=numpy.uint8)
+
         # Convert faces directly to a torch tensor, and put it on the GPU
-        track_data = torch.tensor(faces[tidx]).to(self.device)
+        track_data = torch.tensor(faces).to(self.device)
 
         # Change to float32
         track_data = track_data.to(torch.float32).to(self.device)
-       
+
         return track_data
     
     def calculate_scores(self, tidx, track) -> list:
