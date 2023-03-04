@@ -102,7 +102,7 @@ class ClusterTracks:
         #     model = FaceAnalysis("buffalo_l", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         #     model.prepare(ctx_id=0, det_size=(224, 224))
         #     pickle.dump(model, open(model_path, 'wb'))
-        model = FaceAnalysis("buffalo_sc", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        model = FaceAnalysis("buffalo_l", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         
         
         model.prepare(ctx_id=0, det_size=(224, 224))
