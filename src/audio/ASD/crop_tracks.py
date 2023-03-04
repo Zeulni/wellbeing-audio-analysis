@@ -92,12 +92,25 @@ class CropTracks:
 
                     # Apply the transformations
                     face = transform(face)
-
-                    # Directly write to the memmap for the track and frame
-                    if fidx//self.frames_face_tracking < track_frame_overview[tidx]:
+                   
+                    # Don't try to insert last frame, otherwise it will be out of bounds
+                    # TODO: disadvantage: if one entire frame is really dark, it will be skipped
+                    # TODO: rather change to counting indices?
+                    if 0 in memmaps[tidx][..., 0, 0]:
                         # Find the next available position to insert the face
                         next_pos = numpy.where(memmaps[tidx][..., 0, 0] == 0)[0][0]
-                        memmaps[tidx][next_pos, :, :] = face[0, :, :]
+
+                        # Loop until a row full of zeros is found
+                        while not numpy.all(memmaps[tidx][next_pos, :, :] == 0):
+                            next_pos += 1
+                            if next_pos >= memmaps[tidx].shape[0]:
+                                # No available position found
+                                break
+
+                        if next_pos < memmaps[tidx].shape[0]:
+                            # Insert the values of face into memmaps at next_pos
+                            memmaps[tidx][next_pos, :, :] = face[0, :, :]
+
         
         # Close the video
         vIn.release()

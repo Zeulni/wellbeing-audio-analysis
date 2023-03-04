@@ -280,6 +280,7 @@ class ClusterTracks:
         for i in range(len(cluster_overview)):
             speaking_cluster_overview.append([])
             for j in range(len(cluster_overview[i])):
+                # If the track is speaking, then add it to the speaking cluster overview (only people who spoke)
                 if len(track_speaking_faces[cluster_overview[i][j]]) > 0:
                     speaking_cluster_overview[i].append(cluster_overview[i][j])
 

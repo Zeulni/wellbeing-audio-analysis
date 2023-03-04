@@ -128,10 +128,10 @@ class ASDNetwork():
         # * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
         video_feature = self.get_video_feature(tidx, track_frame_overview)         
         # Remove all frames that have the value 0 (as they are not used)
-        video_feature = video_feature[video_feature.sum(axis=(1,2)) != 0].to(self.device)      
+        # video_feature = video_feature[video_feature.sum(axis=(1,2)) != 0].to(self.device)      
         # Strech the video feature by factor self.frames_face_tracking
         video_feature = video_feature.repeat_interleave(self.frames_face_tracking, dim=0)
-        video_feature = video_feature[:self.total_frames]
+        video_feature = video_feature[:self.total_frames]     
 
         length = min((audio_feature.shape[0] - audio_feature.shape[0] % 4) / 100, video_feature.shape[0])
         audio_feature = audio_feature[:int(round(length * 100)),:]
