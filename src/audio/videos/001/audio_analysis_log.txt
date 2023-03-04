@@ -1,223 +1,38 @@
-2023-03-03 17:12:22,148 - INFO - 
+2023-03-04 18:03:24,346 - INFO - 
 
 ----- Audio analysis started for video: 001 -----
 
-2023-03-03 17:12:22,168 - INFO - Frames per second:  25
-2023-03-03 17:12:22,171 - INFO - Total number of frames:  501
-2023-03-03 17:12:22,252 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 17:12:22,253 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 17:12:22,253 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 17:12:31,999 - INFO - Faces detected and stored in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-03 17:12:31,999 - INFO - Face detection done in 9 seconds
-2023-03-03 17:12:32,027 - INFO - Face tracks created - detected 4
-2023-03-03 17:12:32,027 - INFO - Face tracking done in 0 seconds
-2023-03-03 17:12:52,080 - INFO - Finished cropping the faces from the videos -- saved them to: /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork 
-2023-03-03 17:12:52,083 - INFO - Track saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-03 17:12:52,084 - INFO - Track frame overview saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-03 17:12:52,085 - INFO - Track cropping done in 20 seconds
-2023-03-03 17:16:30,862 - INFO - Scores extracted and saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-03 17:16:30,863 - INFO - ASD done in 218 seconds
-2023-03-03 17:16:48,661 - INFO - Visualizatin finished - now it will be saved. 
-2023-03-03 17:16:48,773 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
-2023-03-03 17:16:48,776 - INFO - Visualization done in 17 seconds
-2023-03-03 17:16:48,776 - INFO - Speaker diarization started 
-2023-03-03 17:17:17,472 - INFO - 
+2023-03-04 18:03:24,363 - INFO - Frames per second:  25
+2023-03-04 18:03:24,366 - INFO - Total number of frames:  501
+2023-03-04 18:03:24,444 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-04 18:03:24,444 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-04 18:03:24,445 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-04 18:03:34,194 - INFO - Faces detected and stored in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-04 18:03:34,194 - INFO - Face detection done in 9 seconds
+2023-03-04 18:03:34,221 - INFO - Face tracks created - detected 4
+2023-03-04 18:03:34,221 - INFO - Face tracking done in 0 seconds
+2023-03-04 18:03:40,917 - ERROR - index 96 is out of bounds for axis 0 with size 96
+2023-03-04 18:04:54,213 - INFO - 
 
 ----- Audio analysis started for video: 001 -----
 
-2023-03-03 17:17:17,476 - INFO - Frames per second:  25
-2023-03-03 17:17:17,479 - INFO - Total number of frames:  501
-2023-03-03 17:17:17,540 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 17:17:17,540 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 17:17:17,540 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 17:17:17,920 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-03-03 17:17:17,920 - INFO - Videos already created, skip the visualization step 
-2023-03-03 17:17:17,920 - INFO - Visualization done in 0 seconds
-2023-03-03 17:17:17,920 - INFO - Speaker diarization started 
-2023-03-03 17:18:18,752 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 17:18:18,755 - INFO - Frames per second:  25
-2023-03-03 17:18:18,758 - INFO - Total number of frames:  501
-2023-03-03 17:18:18,818 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 17:18:18,819 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 17:18:18,819 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 17:18:19,136 - INFO - Face detection is done, faces are loaded from the pickle files. 
-2023-03-03 17:18:19,137 - INFO - Face detection done in 0 seconds
-2023-03-03 17:18:19,165 - INFO - Face tracks created - detected 4
-2023-03-03 17:18:19,165 - INFO - Face tracking done in 0 seconds
-2023-03-03 17:18:19,166 - INFO - Face cropping is done, tracks are loaded from the pickle files. 
-2023-03-03 17:18:19,166 - INFO - Track cropping done in 0 seconds
-2023-03-03 17:21:56,891 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 17:21:56,895 - INFO - Frames per second:  25
-2023-03-03 17:21:56,898 - INFO - Total number of frames:  501
-2023-03-03 17:21:56,969 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 17:21:56,970 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 17:21:56,970 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 17:21:57,487 - INFO - Face detection is done, faces are loaded from the pickle files. 
-2023-03-03 17:21:57,487 - INFO - Face detection done in 0 seconds
-2023-03-03 17:21:57,515 - INFO - Face tracks created - detected 4
-2023-03-03 17:21:57,515 - INFO - Face tracking done in 0 seconds
-2023-03-03 17:27:02,692 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 17:27:02,695 - INFO - Frames per second:  25
-2023-03-03 17:27:02,698 - INFO - Total number of frames:  501
-2023-03-03 17:27:02,770 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 17:27:02,770 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 17:27:02,770 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 17:27:03,195 - INFO - Face detection is done, faces are loaded from the pickle files. 
-2023-03-03 17:27:03,196 - INFO - Face detection done in 0 seconds
-2023-03-03 17:27:03,223 - INFO - Face tracks created - detected 4
-2023-03-03 17:27:03,223 - INFO - Face tracking done in 0 seconds
-2023-03-03 17:27:18,923 - ERROR - index 0 is out of bounds for axis 0 with size 0
-2023-03-03 17:32:14,301 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 17:32:14,305 - INFO - Frames per second:  25
-2023-03-03 17:32:14,307 - INFO - Total number of frames:  501
-2023-03-03 17:32:14,378 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 17:32:14,378 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 17:32:14,379 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 17:32:14,822 - INFO - Face detection is done, faces are loaded from the pickle files. 
-2023-03-03 17:32:14,822 - INFO - Face detection done in 0 seconds
-2023-03-03 17:32:14,850 - INFO - Face tracks created - detected 4
-2023-03-03 17:32:14,850 - INFO - Face tracking done in 0 seconds
-2023-03-03 17:32:42,807 - INFO - Finished cropping the faces from the videos -- saved them to: /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork 
-2023-03-03 17:32:42,811 - INFO - Track saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-03 17:32:42,811 - INFO - Track frame overview saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-03 17:32:42,812 - INFO - Track cropping done in 27 seconds
-2023-03-03 17:34:12,441 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 17:34:12,445 - INFO - Frames per second:  25
-2023-03-03 17:34:12,448 - INFO - Total number of frames:  501
-2023-03-03 17:34:12,519 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 17:34:12,520 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 17:34:12,520 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 17:34:12,934 - INFO - Face detection is done, faces are loaded from the pickle files. 
-2023-03-03 17:34:12,934 - INFO - Face detection done in 0 seconds
-2023-03-03 17:34:12,961 - INFO - Face tracks created - detected 4
-2023-03-03 17:34:12,962 - INFO - Face tracking done in 0 seconds
-2023-03-03 17:34:12,963 - INFO - Face cropping is done, tracks are loaded from the pickle files. 
-2023-03-03 17:34:12,963 - INFO - Track cropping done in 0 seconds
-2023-03-03 17:35:30,303 - INFO - Scores extracted and saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-03 17:35:30,303 - INFO - ASD done in 77 seconds
-2023-03-03 17:35:48,785 - INFO - Videos already created, skip the visualization step 
-2023-03-03 17:35:48,786 - INFO - Visualization done in 0 seconds
-2023-03-03 17:35:48,786 - INFO - Speaker diarization started 
-2023-03-03 18:00:26,068 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 18:00:26,088 - INFO - Frames per second:  25
-2023-03-03 18:00:26,091 - INFO - Total number of frames:  501
-2023-03-03 18:00:26,173 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 18:00:26,174 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 18:00:26,174 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 18:00:26,724 - INFO - Face detection is done, faces are loaded from the pickle files. 
-2023-03-03 18:00:26,724 - INFO - Face detection done in 0 seconds
-2023-03-03 18:00:26,751 - INFO - Face tracks created - detected 4
-2023-03-03 18:00:26,751 - INFO - Face tracking done in 0 seconds
-2023-03-03 18:01:32,349 - INFO - Finished cropping the faces from the videos -- saved them to: /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork 
-2023-03-03 18:01:32,351 - INFO - Track saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-03 18:01:32,352 - INFO - Track frame overview saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-03 18:01:32,352 - INFO - Track cropping done in 65 seconds
-2023-03-03 18:02:45,847 - INFO - Scores extracted and saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
-2023-03-03 18:02:45,847 - INFO - ASD done in 73 seconds
-2023-03-03 18:02:45,847 - INFO - Videos already created, skip the visualization step 
-2023-03-03 18:02:45,848 - INFO - Visualization done in 0 seconds
-2023-03-03 18:02:45,848 - INFO - Speaker diarization started 
-2023-03-03 18:03:06,364 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 18:03:06,367 - INFO - Frames per second:  25
-2023-03-03 18:03:06,370 - INFO - Total number of frames:  501
-2023-03-03 18:03:06,442 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 18:03:06,443 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 18:03:06,443 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 18:03:06,824 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-03-03 18:03:06,824 - INFO - Videos already created, skip the visualization step 
-2023-03-03 18:03:06,824 - INFO - Visualization done in 0 seconds
-2023-03-03 18:03:06,824 - INFO - Speaker diarization started 
-2023-03-03 18:03:08,810 - INFO - Cluster overview: [[1], [2], [3]]
-2023-03-03 18:06:26,513 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 18:06:26,517 - INFO - Frames per second:  25
-2023-03-03 18:06:26,520 - INFO - Total number of frames:  501
-2023-03-03 18:06:26,574 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 18:06:26,575 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 18:06:26,575 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 18:06:26,972 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-03-03 18:06:26,972 - INFO - Videos already created, skip the visualization step 
-2023-03-03 18:06:26,972 - INFO - Visualization done in 0 seconds
-2023-03-03 18:08:14,880 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 18:08:14,883 - INFO - Frames per second:  25
-2023-03-03 18:08:14,886 - INFO - Total number of frames:  501
-2023-03-03 18:08:14,957 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 18:08:14,957 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 18:08:14,957 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 18:08:15,390 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-03-03 18:08:15,391 - INFO - Videos already created, skip the visualization step 
-2023-03-03 18:08:15,391 - INFO - Visualization done in 0 seconds
-2023-03-03 18:08:19,627 - INFO - Speaker diarization started 
-2023-03-03 18:11:41,198 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 18:11:41,202 - INFO - Frames per second:  25
-2023-03-03 18:11:41,205 - INFO - Total number of frames:  501
-2023-03-03 18:11:41,274 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 18:11:41,275 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 18:11:41,275 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 18:11:41,728 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-03-03 18:22:29,901 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 18:22:29,905 - INFO - Frames per second:  25
-2023-03-03 18:22:29,908 - INFO - Total number of frames:  501
-2023-03-03 18:22:29,982 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 18:22:29,982 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 18:22:29,983 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 18:22:30,513 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-03-03 18:22:30,513 - INFO - Videos already created, skip the visualization step 
-2023-03-03 18:22:30,513 - INFO - Visualization done in 0 seconds
-2023-03-03 18:22:30,513 - INFO - Speaker diarization started 
-2023-03-03 18:22:49,923 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 18:22:49,927 - INFO - Frames per second:  25
-2023-03-03 18:22:49,929 - INFO - Total number of frames:  501
-2023-03-03 18:22:50,003 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 18:22:50,004 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 18:22:50,004 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 18:22:50,406 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-03-03 18:26:04,001 - INFO - 
-
------ Audio analysis started for video: 001 -----
-
-2023-03-03 18:26:04,005 - INFO - Frames per second:  25
-2023-03-03 18:26:04,008 - INFO - Total number of frames:  501
-2023-03-03 18:26:04,077 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
-2023-03-03 18:26:04,078 - INFO - Only every xth frame will be analyzed for faster processing: 2
-2023-03-03 18:26:04,078 - INFO - Detected device (Cuda/CPU):  cpu
-2023-03-03 18:26:04,499 - INFO - ASD is done, scores and tracks are loaded from the pickle files. 
-2023-03-03 18:50:25,035 - INFO - Visualizatin finished - now it will be saved. 
-2023-03-03 18:50:25,161 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
-2023-03-03 18:50:25,162 - INFO - Visualization done in 1460 seconds
-2023-03-03 18:50:25,162 - INFO - Speaker diarization started 
+2023-03-04 18:04:54,216 - INFO - Frames per second:  25
+2023-03-04 18:04:54,219 - INFO - Total number of frames:  501
+2023-03-04 18:04:54,292 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/001.wav
+2023-03-04 18:04:54,293 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-04 18:04:54,293 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-04 18:04:55,206 - INFO - Face detection is done, faces are loaded from the pickle files. 
+2023-03-04 18:04:55,207 - INFO - Face detection done in 0 seconds
+2023-03-04 18:04:55,236 - INFO - Face tracks created - detected 4
+2023-03-04 18:04:55,236 - INFO - Face tracking done in 0 seconds
+2023-03-04 18:05:14,723 - INFO - Finished cropping the faces from the videos -- saved them to: /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork 
+2023-03-04 18:05:14,726 - INFO - Track saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-04 18:05:14,726 - INFO - Track frame overview saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-04 18:05:14,726 - INFO - Track cropping done in 19 seconds
+2023-03-04 18:06:25,142 - INFO - Scores extracted and saved in /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pywork
+2023-03-04 18:06:25,142 - INFO - ASD done in 70 seconds
+2023-03-04 18:07:03,782 - INFO - Visualizatin finished - now it will be saved. 
+2023-03-04 18:07:03,895 - INFO - Visualization video saved to /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/001/pyavi/video_out.avi
+2023-03-04 18:07:03,897 - INFO - Visualization done in 38 seconds
+2023-03-04 18:07:03,898 - INFO - Speaker diarization started 
+2023-03-04 18:07:11,818 - INFO - Cluster overview (only tracks that speak at least at one frame): [[1, 2, 3]]

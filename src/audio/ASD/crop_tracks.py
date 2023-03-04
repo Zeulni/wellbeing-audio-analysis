@@ -65,6 +65,8 @@ class CropTracks:
             output_file_track = os.path.join(folder_frames_storage, f"frames_track_{track_idx}.npz")
             memmap_file = numpy.memmap(output_file_track, mode="w+", shape=(track_frame_overview[track_idx], 112, 112), dtype=numpy.uint8)
             memmaps.append(memmap_file)
+            
+        insertion_indices = [0] * len(tracks)
 
         # Step 4 and 5
         for fidx in range(0, num_frames, self.frames_face_tracking):
@@ -92,24 +94,11 @@ class CropTracks:
 
                     # Apply the transformations
                     face = transform(face)
-                   
-                    # Don't try to insert last frame, otherwise it will be out of bounds
-                    # TODO: disadvantage: if one entire frame is really dark, it will be skipped
-                    # TODO: rather change to counting indices?
-                    if 0 in memmaps[tidx][..., 0, 0]:
-                        # Find the next available position to insert the face
-                        next_pos = numpy.where(memmaps[tidx][..., 0, 0] == 0)[0][0]
-
-                        # Loop until a row full of zeros is found
-                        while not numpy.all(memmaps[tidx][next_pos, :, :] == 0):
-                            next_pos += 1
-                            if next_pos >= memmaps[tidx].shape[0]:
-                                # No available position found
-                                break
-
-                        if next_pos < memmaps[tidx].shape[0]:
-                            # Insert the values of face into memmaps at next_pos
-                            memmaps[tidx][next_pos, :, :] = face[0, :, :]
+                    
+                    # Dont try to insert last frame, otherwise it will be out of bounds
+                    if insertion_indices[tidx] < memmaps[tidx].shape[0]:
+                        memmaps[tidx][insertion_indices[tidx], :, :] = face[0, :, :]
+                        insertion_indices[tidx] += 1
 
         
         # Close the video
