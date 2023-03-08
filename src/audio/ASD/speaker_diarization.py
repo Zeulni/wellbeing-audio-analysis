@@ -101,7 +101,7 @@ class SpeakerDiarization:
         # Calculate tracks that belong together based on face embeddings
         same_tracks, cluster_overview = self.cluster_tracks.cluster_tracks_face_embedding(track_speaking_faces, tracks)
         
-        self.logger.log("Cluster overview: " + str(cluster_overview))
+        self.logger.log("Cluster overview (only tracks that speak at least at one frame): " + str(cluster_overview))
         
         # Store one image per track in a folder
         self.store_face_ids(self.faces_id_path, tracks, cluster_overview)

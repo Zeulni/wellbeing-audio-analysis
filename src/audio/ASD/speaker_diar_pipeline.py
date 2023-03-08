@@ -60,10 +60,10 @@ class ASDSpeakerDirPipeline:
 		self.faces_id_path = os.path.join(self.save_path, 'faces_id')
 		self.tracks_faces_clustering_path = os.path.join(self.save_path, 'tracks_faces_clustering')
   
-		self.file_path_frames_storage = os.path.join(self.pywork_path,  "faces_frames.npz")
 		self.file_path_faces_bbox = os.path.join(self.pywork_path,  "faces_bbox.pickle")
 		self.file_path_scores = os.path.join(self.pywork_path,  "scores.pickle")
 		self.file_path_tracks = os.path.join(self.pywork_path,  "tracks.pickle")
+		self.file_path_track_frame_overview = os.path.join(self.pywork_path,  "track_frame_overview.pickle")
 	
 		self.num_frames_per_sec = num_frames_per_sec
 		self.total_frames = total_frames
@@ -92,6 +92,7 @@ class ASDSpeakerDirPipeline:
 		self.tracks = None
 		self.faces_frames= None
 		self.score = None
+		self.track_frame_overview = None
    
 		# Initialize the face detector
 		self.face_detector = FaceDetector(self.device, self.video_path, self.frames_face_tracking, self.face_det_scale, self.pywork_path, self.total_frames)
@@ -103,7 +104,7 @@ class ASDSpeakerDirPipeline:
 		self.track_cropper = CropTracks(self.video_path, self.total_frames, self.frames_face_tracking, self.crop_scale, self.asd_pipeline_tools)
   
 		# Initialize the ASD network
-		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec, self.frames_face_tracking, self.file_path_frames_storage, self.total_frames)
+		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec, self.frames_face_tracking, self.pywork_path, self.total_frames)
   
 		# Initialize the speaker diarization
 		self.speaker_diarization = SpeakerDiarization(self.pyavi_path, self.video_path, self.video_name, self.n_data_loader_thread, self.threshold_same_person, 
@@ -122,9 +123,13 @@ class ASDSpeakerDirPipeline:
 			return False
 
 	def __check_face_cropping_done(self) -> bool:
-		if os.path.exists(self.file_path_tracks) and os.path.exists(os.path.join(self.pywork_path, 'faces_frames.npz')):
+		# Only check here for the tracks file, not for every single npz file
+		if os.path.exists(self.file_path_tracks) and os.path.exists(self.file_path_track_frame_overview):
 			with open(self.file_path_tracks, 'rb') as f:
 				self.tracks = pickle.load(f)
+			with open(self.file_path_track_frame_overview, 'rb') as f:
+				self.track_frame_overview = pickle.load(f)
+			self.asd_pipeline_tools.write_to_terminal("Face cropping is done, tracks are loaded from the pickle files.")
 			return True
 		else:
 			self.tracks = None
@@ -197,8 +202,10 @@ class ASDSpeakerDirPipeline:
 			face_cropping_done = self._ASDSpeakerDirPipeline__check_face_cropping_done()
 			if face_cropping_done == False:
 				# self.tracks, self.faces_frames = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks)
-				self.tracks = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks, self.file_path_frames_storage)
+				self.tracks, self.track_frame_overview = self.track_cropper.crop_tracks_from_videos_parallel(all_tracks, self.pywork_path)
 				self.asd_pipeline_tools.safe_pickle_file(self.file_path_tracks, self.tracks, "Track saved in", self.pywork_path)
+                # Save track_frame_overview as a pickle file
+				self.asd_pipeline_tools.safe_pickle_file(self.file_path_track_frame_overview, self.track_frame_overview, "Track frame overview saved in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- Track cropping done in {end_time - start_time:0.4f} seconds")
 			self.logger.log("Track cropping done in " + str(int(end_time - start_time)) + " seconds")
@@ -207,7 +214,7 @@ class ASDSpeakerDirPipeline:
 			start_time = time.perf_counter()
 			asd_done = self._ASDSpeakerDirPipeline__check_asd_done()
 			if asd_done == False:
-				self.scores = self.asd_network.talknet_network(all_tracks, self.audio_file_path)
+				self.scores = self.asd_network.talknet_network(all_tracks, self.audio_file_path, self.track_frame_overview)
 				self.asd_pipeline_tools.safe_pickle_file(self.file_path_scores, self.scores, "Scores extracted and saved in", self.pywork_path)
 			end_time = time.perf_counter()
 			print(f"--- ASD done in {end_time - start_time:0.4f} seconds")

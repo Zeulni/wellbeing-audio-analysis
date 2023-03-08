@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy
 from scipy import signal
@@ -12,7 +13,7 @@ class CropTracks:
         self.crop_size = crop_scale
         self.asd_pipeline_tools = asd_pipeline_tools
     
-    def crop_tracks_from_videos_parallel(self, tracks, file_path_frames_storage) -> tuple:
+    def crop_tracks_from_videos_parallel(self, tracks, folder_frames_storage) -> tuple:
 
         # Go through all the tracks and get the dets values (not through the frames yet, only dets)
         # Save for each track the dats in a list
@@ -52,19 +53,22 @@ class CropTracks:
         ])
                 
         # To not store all the frames in memory, we read the video in chunks and store it to harddrive
-        output_file = file_path_frames_storage
         
-        # For each id (track) in tracks, save the length of each array saved under "frame" to the variable "track_frame_overview"
         track_frame_overview = []
         for track in tracks:
-            track_frame_overview.append(int(len(track['frame'])/self.frames_face_tracking))
-            
-        max_frames = numpy.max(track_frame_overview)
-        all_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), max_frames, 112, 112), dtype=numpy.uint8)
-        insertion_indices = [0] * len(tracks)
+            track_frame_overview.append(int(len(track['frame'])/self.frames_face_tracking))        
         
-        length_frames = int(num_frames / self.frames_face_tracking)
+        # Step 1
+        memmaps = []
+        for track_idx, track in enumerate(tracks):
+            # Step 2
+            output_file_track = os.path.join(folder_frames_storage, f"frames_track_{track_idx}.npz")
+            memmap_file = numpy.memmap(output_file_track, mode="w+", shape=(track_frame_overview[track_idx], 112, 112), dtype=numpy.uint8)
+            memmaps.append(memmap_file)
             
+        insertion_indices = [0] * len(tracks)
+
+        # Step 4 and 5
         for fidx in range(0, num_frames, self.frames_face_tracking):
             vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
             ret, image = vIn.read()
@@ -73,11 +77,10 @@ class CropTracks:
             for tidx, track in enumerate(tracks):
                 # In the current frame, first check whether the track has a bbox for this frame (if yes, perform opererations)
                 if fidx in track['frame']:
-                    
                     # Get the index of the frame in the track
                     index = numpy.where(track['frame'] == fidx)
                     index = int(index[0][0])
-        
+
                     # Calculate the bsi and pad the image
                     bsi = int(dets[tidx]['s'][index] * (1 + 2 * cs))
                     frame_image = numpy.pad(image, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
@@ -92,24 +95,73 @@ class CropTracks:
                     # Apply the transformations
                     face = transform(face)
                     
-                    # Directly write to the all_faces array at the next available insertion index for this track
-                    # if insertion_indices[tidx] < max_frames:
-                    if fidx//self.frames_face_tracking < length_frames:
-                        all_faces[tidx, insertion_indices[tidx], :, :] = face[0, :, :]
+                    # Dont try to insert last frame, otherwise it will be out of bounds
+                    if insertion_indices[tidx] < memmaps[tidx].shape[0]:
+                        memmaps[tidx][insertion_indices[tidx], :, :] = face[0, :, :]
                         insertion_indices[tidx] += 1
+
         
         # Close the video
         vIn.release()
+
+        # Flush the data to disk and close the files
+        for memmap_file in memmaps:
+            memmap_file.flush()
+            del memmap_file
         
-        # Flush the data to disk and close the file
-        all_faces.flush()
-        del all_faces
+        # # For each id (track) in tracks, save the length of each array saved under "frame" to the variable "track_frame_overview"
+        # track_frame_overview = []
+        # for track in tracks:
+        #     track_frame_overview.append(int(len(track['frame'])/self.frames_face_tracking))
+            
+        # max_frames = numpy.max(track_frame_overview)
+        # all_faces = numpy.memmap(output_file, mode="w+", shape=(len(tracks), max_frames, 112, 112), dtype=numpy.uint8)
+        # insertion_indices = [0] * len(tracks)
+            
+        # for fidx in range(0, num_frames, self.frames_face_tracking):
+        #     vIn.set(cv2.CAP_PROP_POS_FRAMES, fidx)
+        #     ret, image = vIn.read()
+
+        #     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        #     for tidx, track in enumerate(tracks):
+        #         # In the current frame, first check whether the track has a bbox for this frame (if yes, perform opererations)
+        #         if fidx in track['frame']:
+                    
+        #             # Get the index of the frame in the track
+        #             index = numpy.where(track['frame'] == fidx)
+        #             index = int(index[0][0])
+        
+        #             # Calculate the bsi and pad the image
+        #             bsi = int(dets[tidx]['s'][index] * (1 + 2 * cs))
+        #             frame_image = numpy.pad(image, ((bsi,bsi), (bsi,bsi), (0, 0)), 'constant', constant_values=(110, 110))
+
+        #             bs  = dets[tidx]['s'][index]
+        #             my  = dets[tidx]['y'][index] + bsi
+        #             mx  = dets[tidx]['x'][index] + bsi
+
+        #             # Crop the face from the image (depending on the track choose the image)
+        #             face = frame_image[int(my-bs):int(my+bs*(1+2*cs)),int(mx-bs*(1+cs)):int(mx+bs*(1+cs))]
+
+        #             # Apply the transformations
+        #             face = transform(face)
+                    
+        #             # Directly write to the all_faces array at the next available insertion index for this track
+        #             if insertion_indices[tidx] < max_frames:
+        #                 all_faces[tidx, insertion_indices[tidx], :, :] = face[0, :, :]
+        #                 insertion_indices[tidx] += 1
+        
+        # # Close the video
+        # vIn.release()
+        
+        # # Flush the data to disk and close the file
+        # all_faces.flush()
+        # del all_faces
 
         # Create a list where each element has the format {'track':track, 'proc_track':dets}
         proc_tracks = []
         for i in range(len(tracks)):
             proc_tracks.append({'track':tracks[i], 'proc_track':dets[i]})
             
-        self.asd_pipeline_tools.write_to_terminal("Finished cropping the faces from the videos -- saved them to: " + output_file + "")
+        self.asd_pipeline_tools.write_to_terminal("Finished cropping the faces from the videos -- saved them to: " + folder_frames_storage + "")
 
-        return proc_tracks
+        return proc_tracks, track_frame_overview

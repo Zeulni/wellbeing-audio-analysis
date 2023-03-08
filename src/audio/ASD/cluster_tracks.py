@@ -102,7 +102,7 @@ class ClusterTracks:
         #     model = FaceAnalysis("buffalo_l", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         #     model.prepare(ctx_id=0, det_size=(224, 224))
         #     pickle.dump(model, open(model_path, 'wb'))
-        model = FaceAnalysis("buffalo_sc", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        model = FaceAnalysis("buffalo_l", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         
         
         model.prepare(ctx_id=0, det_size=(224, 224))
@@ -280,6 +280,7 @@ class ClusterTracks:
         for i in range(len(cluster_overview)):
             speaking_cluster_overview.append([])
             for j in range(len(cluster_overview[i])):
+                # If the track is speaking, then add it to the speaking cluster overview (only people who spoke)
                 if len(track_speaking_faces[cluster_overview[i][j]]) > 0:
                     speaking_cluster_overview[i].append(cluster_overview[i][j])
 
