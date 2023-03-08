@@ -1,0 +1,10 @@
+2023-03-08 09:38:44,395 - INFO - 
+
+----- Audio analysis started for video: clip_0_10570_12012 -----
+
+2023-03-08 09:38:44,425 - INFO - Frames per second:  25
+2023-03-08 09:38:44,437 - INFO - Total number of frames:  36050
+2023-03-08 09:38:46,053 - INFO - Extract the audio and save in  /Users/tobiaszeulner/Desktop/Master_Thesis_MIT/Teamwork-audio-analysis/src/audio/videos/clip_0_10570_12012/clip_0_10570_12012.wav
+2023-03-08 09:38:46,054 - INFO - Only every xth frame will be analyzed for faster processing: 2
+2023-03-08 09:38:46,054 - INFO - Detected device (Cuda/CPU):  cpu
+2023-03-08 09:38:46,715 - ERROR - Axis limits cannot be NaN or Inf

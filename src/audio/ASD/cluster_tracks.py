@@ -14,12 +14,13 @@ from insightface.app import FaceAnalysis
 from src.audio.utils.constants import ASD_DIR
 
 class ClusterTracks:
-    def __init__(self, tracks_faces_clustering_path, video_path, crop_scale, threshold_same_person, n_embeddings) -> None:
+    def __init__(self, tracks_faces_clustering_path, video_path, crop_scale, threshold_same_person, n_embeddings, logger) -> None:
         self.tracks_faces_clustering_path = tracks_faces_clustering_path
         self.video_path = video_path
         self.crop_scale = crop_scale
         self.threshold_same_person = threshold_same_person
         self.n_embeddings = n_embeddings
+        self.logger = logger
     
     def store_face_verification_track_images(self, tracks) -> None:         
         # Instead of getting just one frame per track, get 5 random frames per track
@@ -133,6 +134,7 @@ class ClusterTracks:
                 #self.clear_output()
                 
                 # Only add it if the face was detected (and det score over 0.65, so a "good" shot of the face)
+                # If det score is too low, I risk that I cannot assign face to the right person
                 if len(face) > 0 and face[0].det_score > 0.65:
                     embedding = face[0].normed_embedding
                     track_embeddings[i] = embedding
@@ -146,6 +148,8 @@ class ClusterTracks:
                 # If no face recognized, then also don't use it for analysis later on
                 int_track_id = int(track_id)
                 track_speaking_faces[int_track_id] = []
+                # Log which track was not assignable
+                self.logger.log("Face Verification: Track " + str(int_track_id) + " was not assignable")
             else:  
                 embeddings[track_id] = np.mean(track_embeddings, axis=0)
 

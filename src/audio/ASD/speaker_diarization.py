@@ -31,7 +31,7 @@ class SpeakerDiarization:
         
         self.length_video = int(self.total_frames / self.frames_per_second)
         
-        self.cluster_tracks = ClusterTracks(self.tracks_faces_clustering_path, self.video_path, self.crop_scale, self.threshold_same_person, self.n_embeddings)
+        self.cluster_tracks = ClusterTracks(self.tracks_faces_clustering_path, self.video_path, self.crop_scale, self.threshold_same_person, self.n_embeddings, self.logger)
     
     def run(self, tracks, scores):
         
@@ -115,6 +115,17 @@ class SpeakerDiarization:
         return
     
     def store_face_ids(self, faces_id_path, tracks, cluster_overview) -> None:
+        
+        # First delete all current files in that folder
+        for the_file in os.listdir(faces_id_path):
+            # delete file
+            file_path = os.path.join(faces_id_path, the_file)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            except Exception as e:  
+                print(e)
+        
         # Store in a dict for each track the track id, the frame number of the first frame and the corresponding bounding box
         track_bboxes = [None for i in range(len(tracks))]
         for tidx, track in enumerate(tracks):

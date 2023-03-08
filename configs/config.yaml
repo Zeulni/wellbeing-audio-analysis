@@ -3,12 +3,12 @@
 # 2: Communication Pattern and Emotion Analysis (input: rttm file, output: csv file)
 # 3: Visualize the results (input: csv file, output: plots)
 # [1,2,3] means run all parts
-RUN_PIPELINE_PARTS: [1]
+RUN_PIPELINE_PARTS: [3]
 
 # -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
 # Name of the input file to be processed (.mp4 or .avi) two_min_snippet
-VIDEO_NAME: "001"
+VIDEO_NAME: "team_13_day_1_1_fr_sk_2_laggy_a_v"
 
 # Path for the pretrained TalkNet model
 PRETRAINED_ASD_MODEL: "pretrain_TalkSet.model"
