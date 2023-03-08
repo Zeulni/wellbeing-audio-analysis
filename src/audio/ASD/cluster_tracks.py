@@ -135,7 +135,7 @@ class ClusterTracks:
                 
                 # Only add it if the face was detected (and det score over 0.65, so a "good" shot of the face)
                 # If det score is too low, I risk that I cannot assign face to the right person
-                if len(face) > 0 and face[0].det_score > 0.65:
+                if len(face) > 0 and face[0].det_score > 0.60:
                     embedding = face[0].normed_embedding
                     track_embeddings[i] = embedding
             
