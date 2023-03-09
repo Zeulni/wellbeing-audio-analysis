@@ -17,6 +17,9 @@ data/
 tests/
 exps/
 
+# Video folder (ignore everything inside)
+src/audio/videos/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
