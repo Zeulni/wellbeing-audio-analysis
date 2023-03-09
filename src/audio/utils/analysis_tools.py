@@ -32,6 +32,8 @@ def write_results_to_csv(emotions_output, com_pattern_output, csv_path, video_na
     files = sorted(os.listdir(faces_id_path))
     faces_ids = [os.path.splitext(f)[0] for f in files if f.endswith(".jpg")]
     
+    asd_pipeline_tools.write_to_terminal(f"The following IDs will be stored: {faces_ids}")
+    
     # If no image in faces_id folder, then don't store anything
     if len(faces_ids) == 0:
         asd_pipeline_tools.write_to_terminal("No faces found in the faces_id folder. No CSV file will be created.")
@@ -45,6 +47,8 @@ def write_results_to_csv(emotions_output, com_pattern_output, csv_path, video_na
     # Also save the Speaker ID as a column
     df.reset_index(inplace=True)
     df.to_csv(csv_path, index=False)
+    
+    asd_pipeline_tools.write_to_terminal(f"CSV file saved to {csv_path}")
     
     return
     
