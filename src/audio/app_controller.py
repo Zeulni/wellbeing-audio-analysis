@@ -63,9 +63,11 @@ class Runner:
         # self.csv_path = str(VIDEOS_DIR / self.video_name / csv_filename)
         self.csv_path = os.path.join(self.save_path, csv_filename)
         
+        self.faces_id_path = os.path.join(self.save_path, 'faces_id')
+        
         # Initialize the parts of the pipelines
         self.asd_pipeline = ASDSpeakerDirPipeline(self.args, self.num_frames_per_sec, self.total_frames, self.audio_file_path, 
-                                                  self.video_path, self.save_path, self.video_name, self.asd_pipeline_tools)
+                                                  self.video_path, self.save_path, self.video_name, self.asd_pipeline_tools, self.faces_id_path)
         self.com_pattern_analysis = ComPatternAnalysis(self.video_name, self.unit_of_analysis)
         self.emotion_analysis = EmotionAnalysis(self.audio_file_path, self.unit_of_analysis)
         
@@ -89,10 +91,9 @@ class Runner:
                 
                 num_speakers = self.rttm_file_preparation.get("num_speakers")            
         
-                # TODO: check at the end of all values make sense (adapt "speaker_duration" for testing)
                 com_pattern_output = self.com_pattern_analysis.run(splitted_speaker_overview, block_length, num_speakers)
                 emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
-                write_results_to_csv(emotions_output, com_pattern_output, self.csv_path, self.video_name)
+                write_results_to_csv(emotions_output, com_pattern_output, self.csv_path, self.video_name, self.faces_id_path, self.asd_pipeline_tools)
                 
             # Visualize the results
             if 3 in self.run_pipeline_parts:    

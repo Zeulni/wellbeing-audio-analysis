@@ -21,7 +21,7 @@ from src.audio.ASD.speaker_diarization import SpeakerDiarization
 from src.audio.utils.constants import ASD_DIR
 
 class ASDSpeakerDirPipeline:
-	def __init__(self, args, num_frames_per_sec, total_frames, audio_file_path, video_path, save_path, video_name, asd_pipeline_tools):
+	def __init__(self, args, num_frames_per_sec, total_frames, audio_file_path, video_path, save_path, video_name, asd_pipeline_tools, faces_id_path):
 		self.video_name = video_name
 		self.pretrain_model = args.get("PRETRAIN_ASD_MODEL","pretrain_TalkSet.model")
 		self.pretrain_model = os.path.join(ASD_DIR, self.pretrain_model)
@@ -57,7 +57,7 @@ class ASDSpeakerDirPipeline:
 		# Initialization
 		self.pyavi_path = os.path.join(self.save_path, 'pyavi')
 		self.pywork_path = os.path.join(self.save_path, 'pywork')
-		self.faces_id_path = os.path.join(self.save_path, 'faces_id')
+		self.faces_id_path = faces_id_path
 		self.tracks_faces_clustering_path = os.path.join(self.save_path, 'tracks_faces_clustering')
   
 		self.file_path_faces_bbox = os.path.join(self.pywork_path,  "faces_bbox.pickle")
