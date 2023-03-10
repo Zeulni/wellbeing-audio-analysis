@@ -18,3 +18,4 @@ PyYAML
 matplotlib
 audonnx
 insightface
+tsfresh
