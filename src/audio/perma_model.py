@@ -24,6 +24,7 @@ class PermaModel:
         # df_dominance = df[[col for col in df.columns if col.startswith('dominance')]]
         
         # TODO: make it more modular (e.g. by providing list of features in config file -> but model does only work with these features?)
+        # TODO: sample check if features are calculated correctly (e.g. with sample input data)
         overall_df = self.times_series_features.calc_statistical_features(df)
 
         print("test")

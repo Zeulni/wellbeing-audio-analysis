@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from sklearn.linear_model import LinearRegression
+
 class TimeSeriesFeatures:
     def __init__(self):
         pass
@@ -28,7 +30,7 @@ class TimeSeriesFeatures:
 
         feature_values = df[feature_cols].values
         feature_mean = np.mean(feature_values, axis=1)
-        feature_slope = feature_values[:, -1] - feature_values[:, 0]
+        feature_slope = np.apply_along_axis(self.calc_slope, axis=1, arr=feature_values)
         feature_min = np.min(feature_values, axis=1)
         feature_max = np.max(feature_values, axis=1)
         feature_std = np.std(feature_values, axis=1)
@@ -58,3 +60,20 @@ class TimeSeriesFeatures:
         new_df.set_index('Speaker ID', inplace=True)
         
         return new_df
+
+    def calc_slope(self, feature_values):
+        x = np.arange(len(feature_values))
+        slope, _ = np.polyfit(x, feature_values, 1)
+        return slope
+
+    # def calculate_slope(self, feature_values):
+    #     # Create a linear regression object
+    #     lr = LinearRegression()
+
+    #     # Fit a linear regression line to the feature values
+    #     lr.fit(feature_values[:, :-1], feature_values[:, -1])
+
+    #     # Get the slope of the fitted line
+    #     slope = lr.coef_[0]
+
+    #     return slope
