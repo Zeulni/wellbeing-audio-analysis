@@ -29,6 +29,10 @@ class TimeSeriesFeatures:
         feature_min = np.min(feature_values, axis=1)
         feature_max = np.max(feature_values, axis=1)
         feature_std = np.std(feature_values, axis=1)
+        feature_var = np.var(feature_values, axis=1)
+        feature_median = np.median(feature_values, axis=1)
+        feature_q25 = np.quantile(feature_values, 0.25, axis=1)
+        feature_q75 = np.quantile(feature_values, 0.75, axis=1)
         
         # The column names contain the statistic (e.g. mean) and the feature name (e.g. dominance)        
         new_df = pd.DataFrame({
@@ -37,7 +41,11 @@ class TimeSeriesFeatures:
             feature_name + '_slope': feature_slope,
             feature_name + '_min': feature_min,
             feature_name + '_max': feature_max,
-            feature_name + '_std': feature_std
+            feature_name + '_std': feature_std,
+            feature_name + '_var': feature_var,
+            feature_name + '_median': feature_median,
+            feature_name + '_q25': feature_q25,
+            feature_name + '_q75': feature_q75
         })  
         
         # Set the speaker ID as index
