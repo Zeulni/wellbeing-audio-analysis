@@ -92,9 +92,9 @@ class Runner:
                 num_speakers = self.rttm_file_preparation.get("num_speakers")            
         
                 com_pattern_output = self.com_pattern_analysis.run(splitted_speaker_overview, block_length, num_speakers)
-                self.asd_pipeline_tools.write_to_terminal("Communication pattern analysis finished for " + str(num_speakers) + " speakers")
+                self.asd_pipeline_tools.write_to_terminal("Communication pattern analysis finished for " + str((len(com_pattern_output))) + " speakers")
                 emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
-                self.asd_pipeline_tools.write_to_terminal("Emotion analysis finished for " + str(num_speakers) + " speakers")
+                self.asd_pipeline_tools.write_to_terminal("Emotion analysis finished for " + str(len(emotions_output)) + " speakers")
                 write_results_to_csv(emotions_output, com_pattern_output, self.csv_path, self.video_name, self.faces_id_path, self.asd_pipeline_tools)
                 
             # Visualize the results

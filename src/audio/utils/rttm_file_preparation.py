@@ -76,9 +76,9 @@ class RTTMFilePreparation:
         
         # * Can be enabled to not use the data of users that do not want to be part
         # Sort the speaker overview based on the speaker_id
-        # self.speaker_overview.sort(key=lambda x: x[0])
+        self.speaker_overview.sort(key=lambda x: x[0])
         
-        # self.user_input_handling()
+        self.user_input_handling()
         
         # TODO: Testing
         # self.speaker_overview = [['0', [0, 90], [10, 100]], ['1', [5], [15]], ['2', [50], [80]], ['3', [75], [95]]]
