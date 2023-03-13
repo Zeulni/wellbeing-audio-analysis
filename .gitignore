@@ -9,7 +9,7 @@
 *.pkl
 *.rttm
 *.npz
-*.DS_Store
+.DS_Store
 *.jpg
 *.csv
 *.onnx

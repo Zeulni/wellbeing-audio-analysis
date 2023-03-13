@@ -3,7 +3,7 @@
 # 2: Communication Pattern and Emotion Analysis (input: rttm file, output: csv file)
 # 3: Visualize the results (input: csv file, output: plots)
 # [1,2,3] means run all parts
-RUN_PIPELINE_PARTS: [2,3]
+RUN_PIPELINE_PARTS: [2]
 
 # -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 

@@ -79,9 +79,21 @@ class EmotionAnalysis:
                 output = self.get_audeer_emotions(speaker_audio, sampling_rate)
             
                 # Logits order: arousal, dominance, valence.
-                arousal = output[0]
-                dominance = output[1]
-                valence = output[2]
+                # arousal = output[0]
+                # dominance = output[1]
+                # valence = output[2]
+                
+                # Check if variable output is NaN, then set the emotions to the output
+                # Otherwise set the emotions to NaN
+                if not np.isnan(output).all():
+                    arousal = output[0]
+                    dominance = output[1]
+                    valence = output[2]
+                else:  
+                    arousal = np.nan
+                    dominance = np.nan
+                    valence = np.nan
+                
                 # print("Speaker ID: ", speaker_id, "Arousal: ", arousal, "Dominance: ", dominance, "Valence: ", valence)
             
                 # For each block, create a dictionary within the emotions_output list (where the key is the speaker_id and the value is a list of the emotions)

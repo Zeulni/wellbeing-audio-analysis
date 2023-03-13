@@ -115,6 +115,12 @@ class RTTMFilePreparation:
         
         self.block_speaker_overview = self.split_speaker_overview()
         
+        # When there is a speaker missing in one block, then add an empty list for that speaker
+        for block in self.block_speaker_overview:
+            for speaker in self.speaker_overview:
+                if speaker[0] not in [speaker[0] for speaker in block]:
+                    block.append([speaker[0], [], []])
+        
         return self.block_speaker_overview
     
     def user_input_handling(self) -> None:
