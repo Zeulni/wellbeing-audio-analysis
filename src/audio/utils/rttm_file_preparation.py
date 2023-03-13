@@ -2,11 +2,12 @@ import glob
 import os
 
 class RTTMFilePreparation:
-    def __init__(self, video_name, unit_of_analysis, length_video, save_path) -> None:
+    def __init__(self, video_name, unit_of_analysis, length_video, save_path, asd_pipeline_tools) -> None:
         self.video_name = video_name
         self.unit_of_analysis = unit_of_analysis
         self.length_video = length_video
         self.save_path = save_path
+        self.asd_pipeline_tools = asd_pipeline_tools
         
         # TODO: Testing
         # self.length_video = 100
@@ -28,7 +29,7 @@ class RTTMFilePreparation:
 
         return rttm_path
     
-    def read_rttm_file(self) -> list:
+    def read_rttm_file(self, faces_id_path) -> list:
         
         rttm_file_path = self.get_rttm_path()
         
@@ -78,7 +79,24 @@ class RTTMFilePreparation:
         # Sort the speaker overview based on the speaker_id
         self.speaker_overview.sort(key=lambda x: x[0])
         
-        self.user_input_handling()
+        # self.user_input_handling()
+        
+        # Get IDs which should be stored from the faces_id folder
+        files = sorted(os.listdir(faces_id_path))
+        faces_ids = [os.path.splitext(f)[0] for f in files if f.endswith(".jpg")]
+        
+        self.asd_pipeline_tools.write_to_terminal(f"The following IDs will be analyzed: {faces_ids}")
+        
+        # If no image in faces_id folder, then don't store anything
+        if len(faces_ids) == 0:
+            self.asd_pipeline_tools.write_to_terminal("No faces found in the faces_id folder. No data can be analyzed.")
+            raise Exception("No faces found in the faces_id folder. No data can be analyzed.")
+        
+        
+        # Only the ids stored in faces_ids are relevant, so remove the others from the dataframe (Speaker ID)
+        # df = df.loc[faces_ids]
+        # Only keep the face ids from faces_ids in self.speaker_overview
+        self.speaker_overview = [speaker for speaker in self.speaker_overview if speaker[0] in faces_ids]
         
         # TODO: Testing
         # self.speaker_overview = [['0', [0, 90], [10, 100]], ['1', [5], [15]], ['2', [50], [80]], ['3', [75], [95]]]

@@ -53,7 +53,7 @@ class Runner:
         self.length_video = int(self.total_frames / self.num_frames_per_sec)
         
         # RTTM File Preparation
-        self.rttm_file_preparation = RTTMFilePreparation(self.video_name, self.unit_of_analysis, self.length_video, self.save_path)
+        self.rttm_file_preparation = RTTMFilePreparation(self.video_name, self.unit_of_analysis, self.length_video, self.save_path, self.asd_pipeline_tools)
         
         # Extract audio from video (needed for several pipeline steps)
         self.audio_file_path = self.asd_pipeline_tools.extract_audio_from_video(self.save_path, self.video_path, self.n_data_loader_thread, self.video_name)
@@ -85,7 +85,7 @@ class Runner:
             # Calculate communication patterns and emotions based on the rttm and audio file
             if 2 in self.run_pipeline_parts:
                 # Get the speaker overview and other data from the rttm file
-                splitted_speaker_overview = self.rttm_file_preparation.read_rttm_file()
+                splitted_speaker_overview = self.rttm_file_preparation.read_rttm_file(self.faces_id_path)
                 # Based on the unit of analysis and the length of the video, create a list with the length of each block
                 block_length = self.rttm_file_preparation.get_block_length()
                 
@@ -95,7 +95,7 @@ class Runner:
                 self.asd_pipeline_tools.write_to_terminal("Communication pattern analysis finished for " + str((len(com_pattern_output))) + " speakers")
                 emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
                 self.asd_pipeline_tools.write_to_terminal("Emotion analysis finished for " + str(len(emotions_output)) + " speakers")
-                write_results_to_csv(emotions_output, com_pattern_output, self.csv_path, self.video_name, self.faces_id_path, self.asd_pipeline_tools)
+                write_results_to_csv(emotions_output, com_pattern_output, self.csv_path, self.video_name, self.asd_pipeline_tools)
                 
             # Visualize the results
             if 3 in self.run_pipeline_parts:    

@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 
-def write_results_to_csv(emotions_output, com_pattern_output, csv_path, video_name, faces_id_path, asd_pipeline_tools) -> str:
+def write_results_to_csv(emotions_output, com_pattern_output, csv_path, video_name, asd_pipeline_tools) -> str:
 
     data_emotions_output = []
     for speaker_id, values in emotions_output.items():
@@ -27,20 +27,6 @@ def write_results_to_csv(emotions_output, com_pattern_output, csv_path, video_na
     
     
     df = df_emotions_output.join(df_com_pattern_output, on="Speaker ID")
-    
-    # Get IDs which should be stored from the faces_id folder
-    files = sorted(os.listdir(faces_id_path))
-    faces_ids = [os.path.splitext(f)[0] for f in files if f.endswith(".jpg")]
-    
-    asd_pipeline_tools.write_to_terminal(f"The following IDs will be stored: {faces_ids}")
-    
-    # If no image in faces_id folder, then don't store anything
-    if len(faces_ids) == 0:
-        asd_pipeline_tools.write_to_terminal("No faces found in the faces_id folder. No CSV file will be created.")
-        return
-    
-    # Only the ids stored in faces_ids are relevant, so remove the others from the dataframe (Speaker ID)
-    df = df.loc[faces_ids]
     
     # print(df)
     
