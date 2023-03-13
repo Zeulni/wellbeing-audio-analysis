@@ -83,9 +83,15 @@ class RTTMFilePreparation:
         
         # Get IDs which should be stored from the faces_id folder
         files = sorted(os.listdir(faces_id_path))
-        faces_ids = [os.path.splitext(f)[0] for f in files if f.endswith(".jpg")]
+        faces_ids_renaming = [os.path.splitext(f)[0] for f in files if f.endswith(".jpg")]
         
-        self.asd_pipeline_tools.write_to_terminal(f"The following IDs will be analyzed: {faces_ids}")
+        # faces_ids_renaming contains the IDs + the new ID it should be renamed to. It is separated by 2 underscores (e.g. 0__1)
+        # first create a list of the IDs
+        faces_ids = [face_id.split("__")[0] for face_id in faces_ids_renaming]
+        
+        # Create a dict for the mapping from the old ID to the new ID. If there is no new ID provided, then use the old ID
+        faces_ids_renaming_dict = {face_id.split("__")[0]: face_id.split("__")[1] if len(face_id.split("__")) > 1 else face_id.split("__")[0] for face_id in faces_ids_renaming}
+        
         
         # If no image in faces_id folder, then don't store anything
         if len(faces_ids) == 0:
@@ -98,9 +104,14 @@ class RTTMFilePreparation:
         # Only keep the face ids from faces_ids in self.speaker_overview
         self.speaker_overview = [speaker for speaker in self.speaker_overview if speaker[0] in faces_ids]
         
+        # Now rename the speaker IDs
+        for speaker in self.speaker_overview:
+            speaker[0] = faces_ids_renaming_dict[speaker[0]]
+        
+        self.asd_pipeline_tools.write_to_terminal(f"The following IDs will be analyzed: {faces_ids}")
+        
         # TODO: Testing
         # self.speaker_overview = [['0', [0, 90], [10, 100]], ['1', [5], [15]], ['2', [50], [80]], ['3', [75], [95]]]
-        
         
         self.block_speaker_overview = self.split_speaker_overview()
         
