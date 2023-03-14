@@ -60,85 +60,47 @@ class PermaModel:
             
             if os.path.isdir(day_path):
                 
-                short_feature_df_team = pd.DataFrame()
-                long_feature_df_team = pd.DataFrame()
+                # short_feature_df_team = pd.DataFrame()
+                # long_feature_df_team = pd.DataFrame()
+                
+                team_day_features = pd.DataFrame()
                 
                 # Loop over the video files within each day folder (the order is important, so the time line for one day is correct)
                 folder_names = [f for f in os.listdir(day_path) if os.path.isdir(os.path.join(day_path, f))]
                 sorted_folder_names = sorted(folder_names, key=self.custom_sort)
+                
+                # Concatenate the features for each day in the right time sequence
                 for clip_folder in sorted_folder_names:
-                    # Check that the file is an MP4
                     
                     clip_folder_path = os.path.join(day_path, clip_folder)
+                    # Get the file path of a csv file in the clip_folder
+                    csv_file = glob.glob(os.path.join(clip_folder_path, "*.csv"))
+    
+                    if not csv_file:
+                        raise Exception("No csv file found for path: " + clip_folder_path)
+                    else:
+                        csv_path = csv_file[0]
+                        
+                    df = pd.read_csv(csv_path)
+                    df.set_index('Speaker ID', inplace=True)
                     
-                    if os.path.isdir(clip_folder_path):
-                        # Get the file path of a csv file in the clip_folder
-                        
-                        csv_file = glob.glob(os.path.join(clip_folder_path, "*.csv"))
-        
-                        if not csv_file:
-                            raise Exception("No csv file found for path: " + clip_folder_path)
-                        else:
-                            csv_path = csv_file[0]
-                            
-                        df = pd.read_csv(csv_path)
+                    # If team_day_features is empty, just copy the df
+                    if team_day_features.empty:
+                        team_day_features = df.copy()
+                    else:
+                        team_day_features = pd.concat([team_day_features, df], axis=1, join='outer')
 
-                        # TODO: I have to first concatenate them per day and then perform 1x per day feature extraction!
-                            
-                        # TODO: bring back long features
-                        short_feature_df, long_feature_df = self.times_series_features.calc_time_series_features(df, feature_names)
-                            
-                        short_feature_df_team = pd.concat([short_feature_df_team, short_feature_df], axis=1)
-                        long_feature_df_team = pd.concat([long_feature_df_team, long_feature_df], axis=1)
-                        
-                        # TODO: Remove this to part where features per day are calculated
-                        perma_path = VIDEOS_DIR / "perma_scores_dataset.csv"
-                        df_perma = pd.read_csv(perma_path)
-                        
-                        # One day is e.g. "2023-01-10" -> extract the 10
-                        day = int(day_folder.split("-")[2])
-                        
-                        # In short_feature_df_team, the column "Speaker ID", which is also the index, contains the alias 
-                        # Filter the df_perma for the day and the alias (stored in Speaker ID). The alias in df_perma is stored in the column "Alias"
-                        # Then do a left join on the alias, where df_perma is the left df which is the basis and the short_feature_df_team is the right df which is the one that is added
-                        # Code:
-                        alias = short_feature_df_team.index[0] # get the alias from the index of short_feature_df_team
-                        df_perma_filtered = df_perma[(df_perma['Day'] == day)]
-                        print(df_perma_filtered)
-
-                        # Then, perform a left join on the Alias column
-                        merged_df = pd.merge(df_perma_filtered, short_feature_df_team, left_on='Alias', right_index=True, how='left')
-                        # Only drop the row if all columns (apart from the ones form the left df) are NaN
-                        merged_df = merged_df.dropna(how='all', subset=short_feature_df_team.columns)
-                        print(merged_df)
-                        
-                        # When the alias is not found in the df_perma_filtered, then delete that row and don't save it in merged_df
-                            
-                        # Save df_perma
-                        merged_df.to_csv(VIDEOS_DIR / 'test_overall_dataset.csv')
-                            
-                        print("test")
-
-                # short_feature_df_team.to_csv(team_folder / 'short_overall_df.csv')
-                # long_feature_df_team.to_csv(team_folder / 'long_overall_df.csv')
+                team_day_features = team_day_features.reset_index().drop_duplicates(subset='Speaker ID', keep='last')          
                 
-                perma_path = VIDEOS_DIR / "perma_scores_dataset.csv"
-                df_perma = pd.read_csv(perma_path)
-                
-                # One day is e.g. "2023-01-10" -> extract the 10
-                day = day_folder.split("-")[2]
-                
-                # In short_feature_df_team, the speaker ID is the alias
-                # Filter the df_perma for the day and the alias
-                # Then to a left join on the alias, where short_feature_df_team is the left df (store it in a new dataframe)
-                # Code:
-                df_perma[df_perma['day'] == day].merge(short_feature_df_team, how='left', left_on='alias', right_on='Speaker ID')
+                # print(team_day_features)
+                # team_day_features.to_csv(VIDEOS_DIR / 'test_team_day_features.csv')
 
-
+                # TODO: bring back long features
+                short_feature_df, long_feature_df = self.times_series_features.calc_time_series_features(team_day_features, feature_names)
                 
-                # Save files with day_folder in the name
-                short_feature_df_team.to_csv(Path(team_folder) / f'short_overall_df_{day_folder}.csv')
-                long_feature_df_team.to_csv(Path(team_folder) / f'long_overall_df_{day_folder}.csv')
+                self.merge_with_perma(short_feature_df, long_feature_df, day_folder, team_folder)
+                
+                
 
         # Save values in a csv (PERMA score can then be added manually)
         # -> one csv per day containing for each speaker (9 x 4-5) ~45 input features + PERMA score
@@ -161,3 +123,28 @@ class PermaModel:
         
         # Return a tuple to define the sorting order
         return (clip_num, start_frame)
+    
+    def merge_with_perma(self, short_feature_df, long_feature_df, day_folder, team_folder): 
+        perma_path = VIDEOS_DIR / "perma_scores_dataset.csv"
+        df_perma = pd.read_csv(perma_path)
+        
+        # One day is e.g. "2023-01-10" -> extract the 10
+        day = int(day_folder.split("-")[2])
+        
+        # In short_feature_df_team, the column "Speaker ID", which is also the index, contains the alias 
+        # Filter the df_perma for the day and the alias (stored in Speaker ID). The alias in df_perma is stored in the column "Alias"
+        # Then do a left join on the alias, where df_perma is the left df which is the basis and the short_feature_df_team is the right df which is the one that is added
+        # Code:
+        alias = short_feature_df.index[0] # get the alias from the index of short_feature_df_team
+        df_perma_filtered = df_perma[(df_perma['Day'] == day)]
+        print(df_perma_filtered)
+
+        # Then, perform a left join on the Alias column
+        merged_df = pd.merge(df_perma_filtered, short_feature_df, left_on='Alias', right_index=True, how='left')
+        # Only drop the row if all columns (apart from the ones form the left df) are NaN
+        merged_df = merged_df.dropna(how='all', subset=short_feature_df.columns)
+        print(merged_df)
+                        
+        # Save files with day_folder in the name
+        merged_df.to_csv(Path(team_folder) / f'short_overall_df_{day_folder}.csv')
+        #merged_df.to_csv(Path(team_folder) / f'long_overall_df_{day_folder}.csv')
