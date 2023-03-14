@@ -55,4 +55,4 @@ INCLUDE_VISUALIZATION: False
 # -- PART 2: THE FOLLOWING CONFIGS ARE ALL USED FOR Analysing the audio files
 
 # This is the amount of seconds in which the audio is split and analyzed (300s means in chunks of 5 min)
-UNIT_OF_ANALYSIS: 180
+UNIT_OF_ANALYSIS: 300

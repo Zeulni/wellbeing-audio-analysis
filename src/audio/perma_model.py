@@ -92,7 +92,6 @@ class PermaModel:
                 # print(team_day_features)
                 team_day_features.to_csv(VIDEOS_DIR / 'test_team_day_features.csv')
 
-                # TODO: bring back long features
                 short_feature_df, long_feature_df = self.times_series_features.calc_time_series_features(team_day_features, feature_names)
                 
                 self.merge_with_perma(short_feature_df, "short_overall_df", day_folder, team_folder)

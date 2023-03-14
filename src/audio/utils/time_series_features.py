@@ -58,20 +58,20 @@ class TimeSeriesFeatures:
     def calc_slope(self, feature_values):
 
         
-        # # Remove the NaN values
-        # feature_values_nan = feature_values[~np.isnan(feature_values)]
+        # Just remove NaN values (e.g. mit be the case that a person in the meetings in not in the middle one -> so just concatenate first and last meeting)
+        feature_values_nonnan = feature_values[~np.isnan(feature_values)]
         
-        # x = np.arange(len(feature_values_nan))
-        # slope_nan, _ = np.polyfit(x, feature_values_nan, 1)
+        x = np.arange(len(feature_values_nonnan))
+        slope, _ = np.polyfit(x, feature_values_nonnan, 1)
         
         
-        # Just insert the mean for the NaN values (not ideal solution, but better as removing NaN values)
-        nan_mask = np.isnan(feature_values)
-        mean_value = np.nanmean(feature_values)
-        feature_values_imputed = np.where(nan_mask, mean_value, feature_values)
+        # Tested version to insert mean, but doesn't make sense
+        # nan_mask = np.isnan(feature_values)
+        # mean_value = np.nanmean(feature_values)
+        # feature_values_imputed = np.where(nan_mask, mean_value, feature_values)
 
-        x = np.arange(len(feature_values_imputed))
-        slope, _ = np.polyfit(x, feature_values_imputed, 1)
+        # x = np.arange(len(feature_values_imputed))
+        # slope, _ = np.polyfit(x, feature_values_imputed, 1)
                         
         return slope
     
