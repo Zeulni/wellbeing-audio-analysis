@@ -14,8 +14,9 @@ class TimeSeriesFeatures:
             short_feature_df = self.calc_ind_feature(df, feature_name)
             short_overall_df = pd.concat([short_overall_df, short_feature_df], axis=1)
         
-            long_feature_df = self.calc_tsfresh_features(df, feature_name)
-            long_overall_df = pd.concat([long_overall_df, long_feature_df], axis=1)
+            # TODO: remove
+            # long_feature_df = self.calc_tsfresh_features(df, feature_name)
+            # long_overall_df = pd.concat([long_overall_df, long_feature_df], axis=1)
             
         return short_overall_df, long_overall_df
     
@@ -87,7 +88,7 @@ class TimeSeriesFeatures:
         # sort the dataframe by speaker id and time
         df_timeseries = df_timeseries.sort_values(by=['Speaker ID', 'time']).reset_index(drop=True)
         
-        # TODO: does that even work? Remove rows with NaN values
+        # Remove rows with NaN values
         df_timeseries = df_timeseries.dropna()
  
         df_features = extract_features(df_timeseries, column_id='Speaker ID', column_sort='time')
