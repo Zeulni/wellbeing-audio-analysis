@@ -30,7 +30,7 @@ class PermaModel:
     # - Standardize and normalize the data
     # - Train model
     # - Save normalization, standardication, and model function in a pickle file
-    def calculate_features(self):
+    def calculate_features(self, team):
         
         # Read in the CSV file
         # csv_path = PERMA_MODEL_TRAINING_DATA / 'test.csv'
@@ -51,7 +51,6 @@ class PermaModel:
         # short_overall_df.to_csv(PERMA_MODEL_TRAINING_DATA / 'short_overall_df.csv')
         # long_overall_df.to_csv(PERMA_MODEL_TRAINING_DATA / 'long_overall_df.csv')
 
-        team = 'team_13'
         team_folder = str(VIDEOS_DIR / team)
 
         # Loop over the subdirectories (i.e., the day folders)
@@ -74,7 +73,8 @@ class PermaModel:
                     csv_file = glob.glob(os.path.join(clip_folder_path, "*.csv"))
     
                     if not csv_file:
-                        raise Exception("No csv file found for path: " + clip_folder_path)
+                        print("No csv file found for path: " + clip_folder_path)
+                        continue
                     else:
                         csv_path = csv_file[0]
                         
@@ -94,8 +94,8 @@ class PermaModel:
 
                 short_feature_df, long_feature_df = self.times_series_features.calc_time_series_features(team_day_features, feature_names)
                 
-                self.merge_with_perma(short_feature_df, "short_overall_df", day_folder, team_folder)
-                self.merge_with_perma(long_feature_df, "long_overall_df", day_folder, team_folder)
+                self.merge_with_perma(short_feature_df, "short_overall_df", day_folder, team_folder, team)
+                self.merge_with_perma(long_feature_df, "long_overall_df", day_folder, team_folder, team)
                 
 
         # Save values in a csv (PERMA score can then be added manually)
@@ -120,7 +120,7 @@ class PermaModel:
         # Return a tuple to define the sorting order
         return (clip_num, start_frame)
     
-    def merge_with_perma(self, short_feature_df, file_name, day_folder, team_folder): 
+    def merge_with_perma(self, short_feature_df, file_name, day_folder, team_folder, team): 
         perma_path = VIDEOS_DIR / "perma_scores_dataset.csv"
         df_perma = pd.read_csv(perma_path)
         
@@ -140,4 +140,4 @@ class PermaModel:
         # print(merged_df)
                         
         # Save files with day_folder in the name
-        merged_df.to_csv(Path(team_folder) / f'{file_name}_{day_folder}.csv')
+        merged_df.to_csv(Path(team_folder) / f'{team}_{file_name}_{day_folder}.csv')
