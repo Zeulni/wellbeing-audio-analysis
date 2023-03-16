@@ -19,7 +19,7 @@ if __name__ == '__main__':
     # main(video_path)
 
     # Define the path to the top-level directory
-    team = 'team_04'
+    team = 'team_22'
     team_folder = str(VIDEOS_DIR / team)
 
     # Loop over the subdirectories (i.e., the day folders)

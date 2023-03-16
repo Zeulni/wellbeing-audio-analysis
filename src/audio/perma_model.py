@@ -66,7 +66,7 @@ class PermaModel:
                 sorted_folder_names = sorted(folder_names, key=self.custom_sort)
                 
                 # Concatenate the features for each day in the right time sequence
-                for clip_folder in sorted_folder_names:
+                for clip_id, clip_folder in enumerate(sorted_folder_names):
                     
                     clip_folder_path = os.path.join(day_path, clip_folder)
                     # Get the file path of a csv file in the clip_folder
@@ -81,16 +81,22 @@ class PermaModel:
                     df = pd.read_csv(csv_path)
                     df.set_index('Speaker ID', inplace=True)
                     
+                    # Add the clip ID in front of every column name (e.g. "arousal" -> "0_arousal")
+                    df = df.add_prefix(str(clip_id) + '_')
+                    
                     # If team_day_features is empty, just copy the df
                     if team_day_features.empty:
                         team_day_features = df.copy()
                     else:
                         team_day_features = pd.concat([team_day_features, df], axis=1, join='outer')
 
-                team_day_features = team_day_features.reset_index().drop_duplicates(subset='Speaker ID', keep='last')          
+                team_day_features = team_day_features.reset_index().drop_duplicates(subset='Speaker ID', keep='last')
+                
+                # Make sure all Speaker IDs are strings
+                team_day_features['Speaker ID'] = team_day_features['Speaker ID'].astype(str)          
                 
                 # print(team_day_features)
-                team_day_features.to_csv(VIDEOS_DIR / 'test_team_day_features.csv')
+                # team_day_features.to_csv(VIDEOS_DIR / 'test_team_day_features.csv')
 
                 short_feature_df, long_feature_df = self.times_series_features.calc_time_series_features(team_day_features, feature_names)
                 

@@ -7,13 +7,13 @@ from src.audio.perma_model import PermaModel
 
 # video_path is used to run with one call over multiple videos (for the normal usage this is not needed)
 def main(video_path = None) -> None:
-    args = parse_arguments()
-    runner = Runner(args, video_path)
-    runner.run()
+    # args = parse_arguments()
+    # runner = Runner(args, video_path)
+    # runner.run()
 
-    # perma_model = PermaModel()
-    # team = 'team_02'
-    # perma_model.calculate_features(team)
+    perma_model = PermaModel()
+    team = 'team_22'
+    perma_model.calculate_features(team)
 
 if __name__ == "__main__":
     main()

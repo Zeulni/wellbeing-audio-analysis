@@ -20,8 +20,9 @@ class TimeSeriesFeatures:
         return short_overall_df, long_overall_df
     
     def calc_ind_feature(self, df, feature_name):
-        # Calculate statistics for feature columns (e.g. dominance, valence, arousal)
-        feature_cols = [col for col in df.columns if col.startswith(feature_name)]
+                
+        # Columns that contain feature name
+        feature_cols = [col for col in df.columns if feature_name in col]
 
         feature_values = df[feature_cols].values
         
@@ -61,6 +62,10 @@ class TimeSeriesFeatures:
         # Just remove NaN values (e.g. mit be the case that a person in the meetings in not in the middle one -> so just concatenate first and last meeting)
         feature_values_nonnan = feature_values[~np.isnan(feature_values)]
         
+        # If length is 1, then the slope is 0
+        if len(feature_values_nonnan) == 1:
+            return 0
+        
         x = np.arange(len(feature_values_nonnan))
         slope, _ = np.polyfit(x, feature_values_nonnan, 1)
         
@@ -77,8 +82,9 @@ class TimeSeriesFeatures:
     
     
     def calc_tsfresh_features(self, df, feature_name):
-        # extract the column names that start with "arousal_"
-        value_vars = df.filter(regex='^'+feature_name).columns.tolist()
+
+        # extract colums that contain the feature name
+        value_vars = [col for col in df.columns if feature_name in col]
 
         # use the melt function to transform the dataframe to a timeseries format
         id_vars = ['Speaker ID']
@@ -94,10 +100,5 @@ class TimeSeriesFeatures:
         
         # Name the index "Speaker ID"
         df_features.index.name = 'Speaker ID'
-        
-        # print the resulting dataframe
-        # print(df_features.head())
-
-        # df_features.to_csv('features.csv')
         
         return df_features
