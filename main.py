@@ -12,7 +12,7 @@ def main(video_path = None) -> None:
     # runner.run()
 
     perma_model = PermaModel()
-    team = 'team_22'
+    team = 'team_09'
     perma_model.calculate_features(team)
 
 if __name__ == "__main__":
