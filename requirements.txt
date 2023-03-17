@@ -16,6 +16,9 @@ moviepy
 pydub
 PyYAML
 matplotlib
+seaborn
 audonnx
 insightface
 tsfresh
+catboost
+shap
