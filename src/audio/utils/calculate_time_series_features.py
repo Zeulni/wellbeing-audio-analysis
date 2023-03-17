@@ -12,7 +12,7 @@ from src.audio.utils.constants import VIDEOS_DIR
 # Input: The CSV files per team (time series)
 # Output: The calculated features per team (from the time series) concatenated for each day, including the corresponding PERMA value
 
-class PermaModel:
+class CalculateTimeSeriesFeatures:
     def __init__(self):
         self.times_series_features = TimeSeriesFeatures()
     
@@ -30,7 +30,7 @@ class PermaModel:
     # - Standardize and normalize the data
     # - Train model
     # - Save normalization, standardication, and model function in a pickle file
-    def calculate_features(self, team):
+    def run(self, team):
         
         # Read in the CSV file
         # csv_path = PERMA_MODEL_TRAINING_DATA / 'test.csv'
