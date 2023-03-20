@@ -291,6 +291,7 @@ class PermaModel:
         
         # self.plot_pairplot(short_data_X, short_data_y, feature_importance_dict)
         
+        # TODO: plot correlations after regressor, when I have new feature importance?
         self.plot_correlations(short_data_X, short_data_y, feature_importance_dict)
         
         perma_regressor = PermaRegressor(data_y_X_dict)
