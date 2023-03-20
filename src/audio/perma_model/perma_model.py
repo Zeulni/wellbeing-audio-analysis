@@ -7,7 +7,6 @@ import seaborn as sns
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import LocalOutlierFactor
-from sklearn.multioutput import MultiOutputRegressor
 
 from sklearn.feature_selection import SelectFromModel
 from sklearn.linear_model import Lasso
@@ -239,7 +238,6 @@ class PermaModel:
             sns.pairplot(df, height=1.4, aspect=0.8)
             plt.title(f"Correlations of most important features with {target}")
             plt.show()
-            
 
 
     def plot_correlations(self, data_X, data_y, feature_importance_dict) -> None:
@@ -292,9 +290,9 @@ class PermaModel:
         # self.plot_pairplot(short_data_X, short_data_y, feature_importance_dict)
         
         # TODO: plot correlations after regressor, when I have new feature importance?
-        self.plot_correlations(short_data_X, short_data_y, feature_importance_dict)
+        # self.plot_correlations(short_data_X, short_data_y, feature_importance_dict)
         
-        perma_regressor = PermaRegressor(data_y_X_dict)
+        perma_regressor = PermaRegressor(short_data_X, short_data_y)
         perma_regressor.catboost_train()
         
         # TODO: also train a model for the long data (longer time period)
