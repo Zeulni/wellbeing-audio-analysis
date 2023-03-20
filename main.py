@@ -13,7 +13,7 @@ def main(video_path = None) -> None:
     # runner.run()
 
     # calculate_features = CalculateTimeSeriesFeatures()
-    # team = 'team_09_check'
+    # team = 'team_01'
     # calculate_features.run(team)
     
     perma_model = PermaModel()

@@ -7,6 +7,7 @@ import seaborn as sns
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import LocalOutlierFactor
+from sklearn.multioutput import MultiOutputRegressor
 
 from sklearn.feature_selection import SelectFromModel
 from sklearn.linear_model import Lasso
@@ -139,13 +140,13 @@ class PermaModel:
         
         return data
 
-    def standardize_features(self, data_X) -> pd:
+    def standardize_features(self, data_X, file_name) -> pd:
         
         scaler = StandardScaler()
         scaler.fit(data_X)
         
         # Save the scaler as pickle file (to use it for inference later on)        
-        with open(os.path.join(PERMA_MODEL_DIR, "data_short_scaler.pkl"), "wb") as f:
+        with open(os.path.join(PERMA_MODEL_DIR, file_name + "_scaler.pkl"), "wb") as f:
             pkl.dump(scaler, f)
 
         # fit and transform the DataFrame using the scaler
@@ -158,75 +159,101 @@ class PermaModel:
     
     def select_features(self, data_X, data_y) -> pd:
 
-        # define the feature selector (Lasso for regularization to avoid overfitting with high dimensional data and few samples)
+        # Use MultiOutputRegressor to select the features for all target variables at once
         selector = SelectFromModel(Lasso(alpha=0.1, max_iter=10000))
         
-        data_y_X_dict = {}
-
-        # loop over each target variable
-        for target in range(5):
-            # extract the target variable
-            y = data_y.iloc[:, target]
-
-            # fit the feature selector
-            selector.fit(data_X, y)
-
-            # transform the feature matrix
-            data_X_new = selector.transform(data_X)
-            
-            # convert the transformed feature matrix to a DataFrame
-            data_X_new = pd.DataFrame(data_X_new, columns=data_X.columns[selector.get_support()])
-            
-            # Store for each data_y.columns[target] the y and data_X_new in a dictionary
-            data_y_X_dict[data_y.columns[target]] = [y, data_X_new]
-
-            # print the selected features
-            print(f"Selected features for target {data_y.columns[target]}: {data_X_new.columns}")
-                        
-            # self.plot_feature_importance(selector, data_X, target)
+        # fit the feature selector
+        selector.fit(data_X, data_y)
+        
+        # transform the feature matrix
+        data_X_new = selector.transform(data_X)
+        
+        # convert the transformed feature matrix to a DataFrame
+        data_X_new = pd.DataFrame(data_X_new, columns=data_X.columns[selector.get_support()])
+        
+        # print the selected features
+        print(f"Amount selected features: {len(data_X_new.columns)}")
+        
+        feature_importance_dict = self.get_feature_importances(selector, data_X, data_y)
+        
+        # self.plot_feature_importance(selector, data_X, data_y)
+    
     
         # TODO: save the names of the selected features in a pickle file (to use it for inference later on)
         
-        return data_y_X_dict
+        return data_X_new, feature_importance_dict
     
-    def plot_feature_importance(self, selector, data_X, target) -> None:
-        # get the feature importances
+    def plot_feature_importance(self, selector, data_X, data_y) -> None:
+        
+        # Plot the feature importance for every target variable (importances is a 5xN matrix)
         importances = selector.estimator_.coef_
-        # plot the feature importances
-        importance_df = pd.DataFrame({'Feature': data_X.columns, 'Importance': importances})
         
-        # Sort the features by importance
-        importance_df = importance_df.sort_values(by='Importance', ascending=False)
+        # Plot the feature importance for every target variable
+        for i in range(5):
+            importance_df = pd.DataFrame({'Feature': data_X.columns, 'Importance': importances[i]})
+            
+            # Sort the features by importance
+            importance_df = importance_df.sort_values(by='Importance', ascending=False)
+            
+            importance_df.plot(kind='bar', x='Feature', y='Importance', title=f'Feature Importance for Target {data_y.columns[i]}')
+            plt.show()
         
-        importance_df.plot(kind='bar', x='Feature', y='Importance', title=f'Feature Importance for Target {target}')
-        plt.show()
+    def get_feature_importances(self, selector, data_X, data_y) -> dict:
+        # Store for each target variable the most important features
+        feature_importance_dict = {}
         
-    def plot_pairplot(self, data_y_X_dict) -> None:
+        # Plot the feature importance for every target variable (importances is a 5xN matrix)
+        importances = selector.estimator_.coef_
+        
+        # Plot the feature importance for every target variable
+        for i in range(5):
+            importance_df = pd.DataFrame({'Feature': data_X.columns, 'Importance': importances[i]})
+            
+            # Sort the features by importance
+            importance_df = importance_df.sort_values(by='Importance', ascending=False)
+            
+            # Store the most important features in a dictionary (features that have an importance != 0)
+            # Every value is a list with feature names and the corresponding importance
+            feature_importance_dict[data_y.columns[i]] = importance_df[importance_df['Importance'] != 0].values.tolist()
+            
+        return feature_importance_dict
+
+        
+    def plot_pairplot(self, data_X, data_y, feature_importance_dict) -> None:
         
         sns.set(style="ticks", color_codes=True)
         
-        # Create a scatter plot for each target variable (plot all features against each target variable)
-        # Create a matrix of scatter plots
-        for target, data in data_y_X_dict.items():
+        # Create a scatter plot for each target variable (plot only the most important features against each target variable)
+        
+        for target, list_feature_importance in feature_importance_dict.items():
+            
             # extract target variable and corresponding feature matrix
-            y = data[0]
-            X = data[1]
-
+            y = data_y[target]
+            # Only use the most important features for X
+            X = data_X[[feature[0] for feature in list_feature_importance]]
+            
             # concatenate target variable with feature matrix
-            df = pd.concat([y, pd.DataFrame(X)], axis=1)
-
+            df = pd.concat([y, X], axis=1)
+            
             # create pairplot for correlations of all features with the target variable
             sns.pairplot(df, height=1.4, aspect=0.8)
-            plt.title(f"Correlations of all features with {target}")
+            plt.title(f"Correlations of most important features with {target}")
             plt.show()
+            
 
-    def plot_correlations(self, data_y_X_dict) -> None:
 
-        # define the figure size
+    def plot_correlations(self, data_X, data_y, feature_importance_dict) -> None:
+        
+        # Plot correlations based on data_X, data_y and feature_importance_dict
         plt.figure(figsize=(16,10))
-
+        
         # loop over each target variable
-        for i, (target, (y, X)) in enumerate(data_y_X_dict.items()):
+        for i, (target, list_feature_importance) in enumerate(feature_importance_dict.items()):
+            
+            # extract target variable and corresponding feature matrix
+            y = data_y[target]
+            # Only use the most important features for X
+            X = data_X[[feature[0] for feature in list_feature_importance]]
             
             # create a correlation matrix for the features and target variable
             corr_matrix = X.corrwith(y)
@@ -258,15 +285,18 @@ class PermaModel:
         short_data = self.handle_missing_values(short_data, "short_data")
         # long_data = self.handle_missing_values(long_data, "long_data")
         
-        short_data_X = self.standardize_features(short_data_X)
+        short_data_X = self.standardize_features(short_data_X, "short_data")
         
-        data_y_X_dict = self.select_features(short_data_X, short_data_y)
+        short_data_X, feature_importance_dict = self.select_features(short_data_X, short_data_y)
         
-        # self.plot_pairplot(data_y_X_dict)
+        # self.plot_pairplot(short_data_X, short_data_y, feature_importance_dict)
         
-        # self.plot_correlations(data_y_X_dict)
+        self.plot_correlations(short_data_X, short_data_y, feature_importance_dict)
         
         perma_regressor = PermaRegressor(data_y_X_dict)
         perma_regressor.catboost_train()
+        
+        # TODO: also train a model for the long data (longer time period)
+        # TODO: use multi regressor from Mo
         
         print("test")
