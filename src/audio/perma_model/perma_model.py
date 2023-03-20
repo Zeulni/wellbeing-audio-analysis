@@ -99,13 +99,6 @@ class PermaModel:
         print('Target outlier indices:', [i for i, x in enumerate(y) if any((x == y).all() for y in outliers_t)])
     
     def plot_perma_pillars(self, data_y) -> None:
-        
-        # # Plot each target variable as a scatter plot
-        # for col in data_y.columns:
-        #     plt.scatter(data_y.index, data_y[col], label=col)
-
-        # plt.legend()
-        # plt.show()
 
         # Plot each target variable as a box plot
         data_y.boxplot()
@@ -130,10 +123,6 @@ class PermaModel:
         # Remove the columns with all NaN values
         data = data.drop(columns_with_nan, axis=1)
         
-        # Store the columns with NaN values in a pickle file
-        with open(os.path.join(PERMA_MODEL_DIR, filename + "_columns_with_nan.pkl"), "wb") as f:
-            pkl.dump(columns_with_nan, f)
-        
         # Overwrite existing csv with updated dataframe
         data.to_csv(os.path.join(PERMA_MODEL_DIR, filename + ".csv"))
         
@@ -156,7 +145,7 @@ class PermaModel:
         
         return data_X_standardized
     
-    def select_features(self, data_X, data_y) -> pd:
+    def select_features(self, data_X, data_y, file_name) -> pd:
 
         # Use MultiOutputRegressor to select the features for all target variables at once
         selector = SelectFromModel(Lasso(alpha=0.1, max_iter=10000))
@@ -177,8 +166,9 @@ class PermaModel:
         
         # self.plot_feature_importance(selector, data_X, data_y)
     
-    
-        # TODO: save the names of the selected features in a pickle file (to use it for inference later on)
+        # Save the selected features as pickle file (to use it for inference later on)
+        with open(os.path.join(PERMA_MODEL_DIR, file_name + "_selected_features.pkl"), "wb") as f:
+            pkl.dump(data_X_new.columns, f)
         
         return data_X_new, feature_importance_dict
     
@@ -251,10 +241,16 @@ class PermaModel:
             # extract target variable and corresponding feature matrix
             y = data_y[target]
             # Only use the most important features for X
-            X = data_X[[feature[0] for feature in list_feature_importance]]
+            # X = data_X[[feature[0] for feature in list_feature_importance]]
+            
+            # Plot with all features (not just the important ones), as all features are used for the model later on
+            X = data_X
             
             # create a correlation matrix for the features and target variable
             corr_matrix = X.corrwith(y)
+            
+            # Sort the correlations from highest to lowest
+            corr_matrix = corr_matrix.sort_values(ascending=False)
             
             # plot the heatmap
             ax = plt.subplot(2, 3, i+1)
@@ -271,31 +267,21 @@ class PermaModel:
         short_data_X = short_data.iloc[:, 5:] # features
         short_data_y = short_data.iloc[:, :5] # targets
         
+        # TODO: open: how exactly to perform outlier detection? Only on PERMA scores? how to handle the outliers?
+        # self.detect_outliers(short_data_X, short_data_y)
+        short_data = self.handle_missing_values(short_data, "short_data")
+        short_data_X = self.standardize_features(short_data_X, "short_data")
+        short_data_X, feature_importance_dict = self.select_features(short_data_X, short_data_y, "short_data")
+        # self.plot_pairplot(short_data_X, short_data_y, feature_importance_dict)
+        # self.plot_perma_pillars(short_data_y)
+        self.plot_correlations(short_data_X, short_data_y, feature_importance_dict)
+        perma_regressor = PermaRegressor(short_data_X, short_data_y, "short_data")
+        perma_regressor.catboost_train()
+        # perma_regressor.xgboost_train()
+        
+        # TODO: also train a model for the long data (longer time period)
         # long_data = self.read_dataframe("long_data")
         # long_data_X = long_data.iloc[:, 5:] # features
         # long_data_y = long_data.iloc[:, :5] # targets
-        
-        # TODO: open: how exactly to perform outlier detection? Only on PERMA scores? how to handle the outliers?
-        # self.detect_outliers(short_data_X, short_data_y)
-    
-        # self.plot_perma_pillars(short_data_y)
-        
-        short_data = self.handle_missing_values(short_data, "short_data")
-        # long_data = self.handle_missing_values(long_data, "long_data")
-        
-        short_data_X = self.standardize_features(short_data_X, "short_data")
-        
-        short_data_X, feature_importance_dict = self.select_features(short_data_X, short_data_y)
-        
-        # self.plot_pairplot(short_data_X, short_data_y, feature_importance_dict)
-        
-        # TODO: plot correlations after regressor, when I have new feature importance?
-        # self.plot_correlations(short_data_X, short_data_y, feature_importance_dict)
-        
-        perma_regressor = PermaRegressor(short_data_X, short_data_y)
-        perma_regressor.catboost_train()
-        
-        # TODO: also train a model for the long data (longer time period)
-        # TODO: use multi regressor from Mo
         
         print("test")

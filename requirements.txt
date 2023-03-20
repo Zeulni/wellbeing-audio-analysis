@@ -21,4 +21,5 @@ audonnx
 insightface
 tsfresh
 catboost
+xgboost
 shap
