@@ -47,17 +47,12 @@ class PermaModel:
     # LOF works well for high dimensional data
     def detect_outliers(self, data_X, data_y) -> pd:
         
-        # Extract the features and target variables
-        X = data_X.values # features
-        y = data_y.values # targets
+        # Extract the features
+        X = data_X.values
 
         # Set LOF parameters for feature outlier detection
         n_neighbors_f = 20
-        contamination_f = 0.05
-
-        # Set LOF parameters for target outlier detection
-        n_neighbors_t = 20
-        contamination_t = 0.05
+        contamination_f = 0.03
 
         # Fit the LOF model for feature outlier detection
         lof_f = LocalOutlierFactor(n_neighbors=n_neighbors_f, contamination=contamination_f)
@@ -72,32 +67,15 @@ class PermaModel:
         # Identify the feature outliers
         outliers_f = X[scores_f < threshold_f]
 
-        # Fit the LOF models for target outlier detection
-        lof_t = []
-        for i in range(y.shape[1]):
-            lof = LocalOutlierFactor(n_neighbors=n_neighbors_t, contamination=contamination_t)
-            lof.fit(y[:, i].reshape(-1, 1))
-            lof_t.append(lof)
-
-        # Predict the outlier scores for target outlier detection
-        scores_t = np.zeros_like(y)
-        for i in range(y.shape[1]):
-            scores_t[:, i] = lof_t[i].negative_outlier_factor_.reshape(-1)
-
-        # Determine the threshold for outlier detection for target outlier detection
-        threshold_t = np.percentile(scores_t, 100 * contamination_t, axis=0)
-
-        # Identify the target outliers
-        # TODO: shape is different than outliers_f -> cause for problem with printing?
-        outliers_t = y[scores_t < threshold_t]
-
         # Print the number of outliers and their indices for feature outlier detection
         print('Number of feature outliers:', len(outliers_f))
-        print('Feature outlier indices:', [i for i, x in enumerate(X) if any((x == y).all() for y in outliers_f)])
+        outlier_indices_f = [i for i, x in enumerate(X) if any((x == y).all() for y in outliers_f)]
 
-        # Print the number of outliers and their indices for target outlier detection
-        print('Number of target outliers:', len(outliers_t))
-        print('Target outlier indices:', [i for i, x in enumerate(y) if any((x == y).all() for y in outliers_t)])
+        # Create a new dataframe with outliers removed
+        data_X_no_outliers = data_X.drop(index=outlier_indices_f)
+        data_y_no_outliers = data_y.drop(index=outlier_indices_f)
+
+        return data_X_no_outliers, data_y_no_outliers
     
     def plot_perma_pillars(self, data_y) -> None:
 
@@ -355,9 +333,11 @@ class PermaModel:
             data_X = data.iloc[:, 5:] # features
             data_y = data.iloc[:, :5] # targets
             
-            # TODO: open: how exactly to perform outlier detection? Only on PERMA scores? how to handle the outliers?
-            # self.detect_outliers(data_X, data_y)
             data_X = self.handle_missing_values(data_X, database)
+            
+            # TODO: perform outlier detection on PERMA scores before scaling them!
+            # Assumption: filter out ~3 outliers in the input data (data_X)
+            data_X, data_y = self.detect_outliers(data_X, data_y) # Perform it before scaling features
             # y was already standardized
             data_X = self.standardize_features(data_X, database)
             data_X, feature_importance_dict = self.select_features(data_X, data_y, database)
