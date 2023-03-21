@@ -188,16 +188,35 @@ class PermaModel:
         
         reduced_data = pca.transform(data_X)
         
-        print("Explained variance ratio: ", round(sum(pca.explained_variance_ratio_),2))
+        print("Explained variance ratio with " + str(amount_features) + " features:" , round(sum(pca.explained_variance_ratio_),2))
         
         # Transform the reduced data back to a DataFrame
         reduced_data = pd.DataFrame(reduced_data, columns=[f"PC{i}" for i in range(1, amount_features + 1)])
         
-        self.interpret_pca(pca, data_X)
+        self.interpret_pca_plot(pca, data_X)
         
-        return reduced_data
+        top_features = self.interpret_pca_list(pca, data_X)
+        
+        return reduced_data, top_features
     
-    def interpret_pca(self, pca, data_X):
+    def interpret_pca_list(self, pca, data_X) -> dict:
+        
+        loadings = pca.components_
+        
+        feature_names = data_X.columns
+        
+        # Store the top 5 features that contribute the most to each principal component
+        n_top_features = 5
+        top_features = {}
+        for i in range(loadings.shape[0]):
+            pc_loadings = loadings[i, :]
+            pc_top_features_idx = np.abs(pc_loadings).argsort()[::-1][:n_top_features]
+            pc_top_features = [(feature_names[idx], pc_loadings[idx]) for idx in pc_top_features_idx]
+            top_features['PC{}'.format(i+1)] = pc_top_features
+            
+        return top_features
+    
+    def interpret_pca_plot(self, pca, data_X) -> None:
         loadings = pca.components_
         
         feature_names = data_X.columns
@@ -343,7 +362,7 @@ class PermaModel:
             data_X = self.standardize_features(data_X, database)
             data_X, feature_importance_dict = self.select_features(data_X, data_y, database)
             # TODO: Disadvantage PCA: it is hard to interpret the results
-            data_X = self.perform_pca(data_X, database)
+            data_X, top_features = self.perform_pca(data_X, database)
             # self.plot_pairplot(data_X, data_y, feature_importance_dict)
             # self.plot_perma_pillars(data_y)
             self.plot_correlations(data_X, data_y, feature_importance_dict)

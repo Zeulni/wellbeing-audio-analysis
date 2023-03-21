@@ -2,6 +2,7 @@ from numpy import mean, std, absolute
 import pickle as pkl
 import matplotlib.pyplot as plt
 import shap
+import warnings
 
 from catboost import CatBoostRegressor, cv, Pool
 import xgboost as xgb
@@ -27,6 +28,9 @@ class PermaRegressor:
         n_scores = absolute(n_scores)
         # summarize performance
         print('MAE: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+        
+        # Ignore warnings
+        warnings.filterwarnings("ignore")
         
         # TODO: If using "fit" after cross validation, will the results from cv be overwritten?
         regr.fit(self.data_X, self.data_y)
@@ -60,6 +64,9 @@ class PermaRegressor:
         
     def plot_and_save_feature_importance(self, regr, model_name):
         
+        # Close all current plots
+        plt.close('all')
+        
         # Define the size of the plot
         plt.figure(figsize=(16, 8))
         
@@ -75,13 +82,14 @@ class PermaRegressor:
             plt.tight_layout()
         
         plt.savefig(PERMA_MODEL_DIR / f'{self.database_name}_{model_name}_feature_importance.png')
+        
         plt.show()
         plt.clf()
         
         
     # TODO: How to interpret the shap values?
     def plot_and_save_shap_values(self, regr, model_name):        
-        
+    
         # Only plot shap values for the top 5 important features for each estimator
         for i, estimator in enumerate(regr.estimators_):
             explainer = shap.TreeExplainer(estimator)
