@@ -335,6 +335,7 @@ class PermaModel:
             
             data_X = self.handle_missing_values(data_X, database)
             # TODO: create pipeline overview in Powerpoint (with number of features, and rows,...)
+            # TODO: occams razor -> choose simpler model with e.g. depth 3 and 100 estimators
            
             # TODO: write in Overleaf the entire process (how calculated PERMA scores, how outlier, how scaled,...)
             # Only searches for outliers in X, outliers in PERMA (target) were already removed beforehand

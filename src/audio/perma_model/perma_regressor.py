@@ -2,14 +2,13 @@ from numpy import mean, std, absolute
 import pickle as pkl
 import matplotlib.pyplot as plt
 import shap
-import warnings
 
 from catboost import CatBoostRegressor, cv, Pool
 import xgboost as xgb
 
 from sklearn.multioutput import MultiOutputRegressor
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import RepeatedKFold
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import LeaveOneOut
 
 from src.audio.utils.constants import PERMA_MODEL_DIR
 
@@ -19,48 +18,51 @@ class PermaRegressor:
         self.data_y = data_y
         self.database_name = database_name
         
-    def train_model(self, regr, model_name):
+    def train_model(self, multioutput_reg, param_grid, model_name):
         
-        # TODO: Also test LOOCV?
-        cv = RepeatedKFold(n_splits=5, n_repeats=3, random_state=1)
-        n_scores = cross_val_score(regr, self.data_X, self.data_y, scoring='neg_mean_absolute_error', cv=cv, n_jobs=-1)
-        # force the scores to be positive
-        n_scores = absolute(n_scores)
-        # summarize performance
-        print('MAE: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+        loo = LeaveOneOut()
+        grid_search = GridSearchCV(multioutput_reg, param_grid, cv=loo, scoring='neg_mean_absolute_error')
+        grid_search.fit(self.data_X, self.data_y)
         
-        # Ignore warnings
-        warnings.filterwarnings("ignore")
+        print(model_name + " Best Hyperparameters:", grid_search.best_params_)
+        print(model_name + " Best Score:", -grid_search.best_score_)
         
-        # TODO: If using "fit" after cross validation, will the results from cv be overwritten?
-        regr.fit(self.data_X, self.data_y)
+        # Fit the MultiOutputRegressor object with the best hyperparameters
+        multioutput_reg.set_params(**grid_search.best_params_)
+        multioutput_reg.fit(self.data_X, self.data_y)
         
-        # Make a test prediction with dummy data
-        # test_data = self.data_X.iloc[0:1]
-        # print(regr.predict(test_data))
-        
-        self.plot_and_save_feature_importance(regr, model_name)
-        self.plot_and_save_shap_values(regr, model_name)
+        self.plot_and_save_feature_importance(multioutput_reg, model_name)
+        self.plot_and_save_shap_values(multioutput_reg, model_name)
     
         # Save models dict to pickle file
         model_file_name = self.database_name + '_' + model_name + '_perma_model.pkl'
         with open(PERMA_MODEL_DIR / model_file_name, 'wb') as f:
-            pkl.dump(regr, f)       
+            pkl.dump(multioutput_reg, f)       
     
     def catboost_train(self):
         
-        # TODO: Adapt regularization through depth
-        params = {'loss_function':'RMSE', 'depth': 5, 'verbose': False, "save_snapshot": False, "allow_writing_files": False, "train_dir": str(PERMA_MODEL_DIR)}
-        regr = MultiOutputRegressor(CatBoostRegressor(**params))
-        self.train_model(regr, 'catboost')
+        # Define the parameter grid to search over
+        param_grid = {
+            'estimator__max_depth': [3, 5, 7],
+            'estimator__learning_rate': [0.1, 0.01, 0.001],
+            'estimator__n_estimators': [50, 100, 200]
+        }
+        
+        multioutput_reg = MultiOutputRegressor(CatBoostRegressor(loss_function='RMSE' ,verbose=False, save_snapshot=False, allow_writing_files=False, train_dir=str(PERMA_MODEL_DIR)))
+        self.train_model(multioutput_reg, param_grid, 'catboost')    
 
 
     def xgboost_train(self):
-        # Define XGBoost hyperparameters
-        # TODO: Adapt regularization through depth
-        # params = {'objective': 'reg:squarederror', 'max_depth': 5, 'learning_rate': 0.1}    
-        # regr = MultiOutputRegressor(xgb.XGBRegressor(**params))
-        # self.train_model(regr, 'xgboost')
+        
+        # Define the parameter grid to search over
+        param_grid = {
+            'estimator__max_depth': [3, 5, 7],
+            'estimator__learning_rate': [0.1, 0.01, 0.001],
+            'estimator__n_estimators': [50, 100, 200]
+        }
+        
+        multioutput_reg = MultiOutputRegressor(xgb.XGBRegressor(objective='reg:squarederror'))
+        self.train_model(multioutput_reg, param_grid, 'xgboost')
         
     def plot_and_save_feature_importance(self, regr, model_name):
         
