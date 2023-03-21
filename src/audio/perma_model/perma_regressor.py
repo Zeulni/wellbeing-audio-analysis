@@ -88,8 +88,6 @@ class PermaRegressor:
         plt.show()
         plt.clf()
         
-        
-    # TODO: How to interpret the shap values?
     def plot_and_save_shap_values(self, regr, model_name):        
     
         # Only plot shap values for the top 5 important features for each estimator

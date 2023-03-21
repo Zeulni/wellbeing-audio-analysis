@@ -45,6 +45,7 @@ class PermaModel:
         return data
     
     # LOF works well for high dimensional data
+    # See https://towardsdatascience.com/4-machine-learning-techniques-for-outlier-detection-in-python-21e9cfacb81d
     def remove_outliers(self, data_X, data_y) -> pd:
         
         # Extract the features
@@ -53,6 +54,12 @@ class PermaModel:
         # Set LOF parameters for feature outlier detection
         n_neighbors = 20
         contamination = 0.03
+        
+        # Perform PCA for a more stable outlier detection (will just be used to find the indices, transformed data will not be used)
+        # But it is not necessary to perform PCA for LOF, as no difference (at least not for my datasets)
+        pca = PCA(n_components=9)
+        pca.fit(X)
+        X = pca.transform(X)
 
         # Fit the LOF model for feature outlier detection
         lof = LocalOutlierFactor(n_neighbors=n_neighbors, contamination=contamination)
@@ -324,7 +331,7 @@ class PermaModel:
     def run(self): 
 
         # database_list = ["short_data", "long_data"]
-        database_list = ["short_data"]
+        database_list = ["long_data"]
         
         for database in database_list:
             # Read the data
