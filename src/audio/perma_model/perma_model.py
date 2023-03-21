@@ -7,6 +7,7 @@ import seaborn as sns
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import LocalOutlierFactor
+from sklearn.decomposition import PCA
 
 from sklearn.feature_selection import SelectFromModel
 from sklearn.linear_model import Lasso
@@ -104,23 +105,21 @@ class PermaModel:
         data_y.boxplot()
         plt.show()
     
+    # Drop all columns that have at least one NaN value
     def handle_missing_values(self, data, filename) -> pd:
-        
-        # TODO: any or all?
         # Stats in long data: 4656 rows have at least one NaN value, 3105 rows have all NaN values
         
-        # Store all columns where all values are NaN
+        print("Columns in total: ", len(data.columns))
+        
+        # Store all columns where any value is NaN
         columns_with_nan = []
         for col in data.columns:
             if data[col].isnull().any():
                 columns_with_nan.append(col)
                 
-        # Print the columns with NaN values
         print("Columns with NaN values: ", len(columns_with_nan))
         
-        # TODO: open: how to handle missing values? Drop them? Impute them?
-        # TODO: store deleted columns, needed for inference
-        # Remove the columns with all NaN values
+        # Remove the all the columns with NaN values
         data = data.drop(columns_with_nan, axis=1)
         
         # Overwrite existing csv with updated dataframe
@@ -128,13 +127,13 @@ class PermaModel:
         
         return data
 
-    def standardize_features(self, data_X, file_name) -> pd:
-        
+    def standardize_features(self, data_X, database) -> pd:
+                
         scaler = StandardScaler()
         scaler.fit(data_X)
         
         # Save the scaler as pickle file (to use it for inference later on)        
-        with open(os.path.join(PERMA_MODEL_DIR, file_name + "_scaler.pkl"), "wb") as f:
+        with open(os.path.join(PERMA_MODEL_DIR, database + "_scaler.pkl"), "wb") as f:
             pkl.dump(scaler, f)
 
         # fit and transform the DataFrame using the scaler
@@ -145,10 +144,16 @@ class PermaModel:
         
         return data_X_standardized
     
-    def select_features(self, data_X, data_y, file_name) -> pd:
+    # Rule of thumb: 1 feature per 10 samples -> 8-9 features have to be selected
+    def select_features(self, data_X, data_y, database) -> pd:
 
-        # Use MultiOutputRegressor to select the features for all target variables at once
-        selector = SelectFromModel(Lasso(alpha=0.1, max_iter=10000))
+        if database == "short_data":
+            alpha = 0.1
+        elif database == "long_data":
+            alpha = 0.2
+
+        # Use MultiOutputRegressor to select the features for all target variables at once (0.1 original alpha value)
+        selector = SelectFromModel(Lasso(alpha=alpha, max_iter=10000))
         
         # fit the feature selector
         selector.fit(data_X, data_y)
@@ -167,10 +172,68 @@ class PermaModel:
         # self.plot_feature_importance(selector, data_X, data_y)
     
         # Save the selected features as pickle file (to use it for inference later on)
-        with open(os.path.join(PERMA_MODEL_DIR, file_name + "_selected_features.pkl"), "wb") as f:
+        with open(os.path.join(PERMA_MODEL_DIR, database + "_selected_features.pkl"), "wb") as f:
             pkl.dump(data_X_new.columns, f)
         
         return data_X_new, feature_importance_dict
+    
+    def perform_pca(self, data_X, database) -> pd:
+        amount_features = 9
+        pca = PCA(n_components=amount_features)
+        pca.fit(data_X)
+        
+        # Save the PCA as pickle file (to use it for inference later on)
+        with open(os.path.join(PERMA_MODEL_DIR, database + "_pca.pkl"), "wb") as f:
+            pkl.dump(pca, f)
+        
+        reduced_data = pca.transform(data_X)
+        
+        print("Explained variance ratio: ", round(sum(pca.explained_variance_ratio_),2))
+        
+        # Transform the reduced data back to a DataFrame
+        reduced_data = pd.DataFrame(reduced_data, columns=[f"PC{i}" for i in range(1, amount_features + 1)])
+        
+        self.interpret_pca(pca, data_X)
+        
+        return reduced_data
+    
+    def interpret_pca(self, pca, data_X):
+        loadings = pca.components_
+        
+        feature_names = data_X.columns
+        
+        # Create a heatmap of the loadings
+        fig, ax = plt.subplots()
+        im = ax.imshow(loadings, cmap='coolwarm')
+
+        # Add colorbar
+        cbar = ax.figure.colorbar(im, ax=ax)
+
+        # Set the x-axis tick labels to be the original feature names
+        ax.set_xticks(np.arange(len(feature_names)))
+        ax.set_xticklabels(feature_names)
+
+        # Set the y-axis tick labels to be the principal component names
+        ax.set_yticks(np.arange(loadings.shape[0]))
+        ax.set_yticklabels(['PC{}'.format(i+1) for i in range(loadings.shape[0])])
+
+        # Rotate the tick labels and set their alignment
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+        # Loop over data dimensions and create text annotations
+        for i in range(loadings.shape[0]):
+            for j in range(loadings.shape[1]):
+                text = ax.text(j, i, '{:.2f}'.format(loadings[i, j]),
+                            ha="center", va="center", color="w")
+
+        # Set the title
+        ax.set_title("Which features contribute most to which PC")
+
+        # Determine the size of the figure
+        fig.set_size_inches(16, 9)
+
+        # Show the plot
+        plt.show()
     
     def plot_feature_importance(self, selector, data_X, data_y) -> None:
         
@@ -263,25 +326,28 @@ class PermaModel:
     
     def run(self): 
 
-        short_data = self.read_dataframe("short_data")
-        short_data_X = short_data.iloc[:, 5:] # features
-        short_data_y = short_data.iloc[:, :5] # targets
+        # database_list = ["short_data", "long_data"]
+        database_list = ["short_data"]
         
-        # TODO: open: how exactly to perform outlier detection? Only on PERMA scores? how to handle the outliers?
-        # self.detect_outliers(short_data_X, short_data_y)
-        short_data = self.handle_missing_values(short_data, "short_data")
-        short_data_X = self.standardize_features(short_data_X, "short_data")
-        short_data_X, feature_importance_dict = self.select_features(short_data_X, short_data_y, "short_data")
-        # self.plot_pairplot(short_data_X, short_data_y, feature_importance_dict)
-        # self.plot_perma_pillars(short_data_y)
-        self.plot_correlations(short_data_X, short_data_y, feature_importance_dict)
-        perma_regressor = PermaRegressor(short_data_X, short_data_y, "short_data")
-        perma_regressor.catboost_train()
-        # perma_regressor.xgboost_train()
-        
-        # TODO: also train a model for the long data (longer time period)
-        # long_data = self.read_dataframe("long_data")
-        # long_data_X = long_data.iloc[:, 5:] # features
-        # long_data_y = long_data.iloc[:, :5] # targets
-        
-        print("test")
+        for database in database_list:
+            # Read the data
+            data = self.read_dataframe(database)
+            # Extract features and targets
+            data_X = data.iloc[:, 5:] # features
+            data_y = data.iloc[:, :5] # targets
+            
+            # TODO: open: how exactly to perform outlier detection? Only on PERMA scores? how to handle the outliers?
+            # self.detect_outliers(data_X, data_y)
+            data_X = self.handle_missing_values(data_X, database)
+            # y was already standardized
+            data_X = self.standardize_features(data_X, database)
+            data_X, feature_importance_dict = self.select_features(data_X, data_y, database)
+            # TODO: Disadvantage PCA: it is hard to interpret the results
+            data_X = self.perform_pca(data_X, database)
+            # self.plot_pairplot(data_X, data_y, feature_importance_dict)
+            # self.plot_perma_pillars(data_y)
+            self.plot_correlations(data_X, data_y, feature_importance_dict)
+            perma_regressor = PermaRegressor(data_X, data_y, database)
+            perma_regressor.catboost_train()
+            perma_regressor.xgboost_train()
+            print("--------------------------------------------------")

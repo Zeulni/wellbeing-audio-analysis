@@ -76,6 +76,7 @@ class PermaRegressor:
         
         plt.savefig(PERMA_MODEL_DIR / f'{self.database_name}_{model_name}_feature_importance.png')
         plt.show()
+        plt.clf()
         
         
     # TODO: How to interpret the shap values?
