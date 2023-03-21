@@ -5,8 +5,11 @@ import pickle
 from matplotlib import patches
 from matplotlib.figure import Figure
 
+from sklearn.neighbors import LocalOutlierFactor
+
 from sklearn.preprocessing import StandardScaler
-# pip install scikit-learn
+
+from src.audio.utils.constants import PERMA_MODEL_DIR
 
 # Core functions of this script written by Moritz Müller
 
@@ -48,6 +51,63 @@ def standardize_dataframe(df, columns=None):
 
     return df_standardized
 
+def remove_outliers_simple(df, columns):
+
+    # # Reset the index, so it can be used to filter out the outliers
+    df = df.reset_index(drop=True)
+    
+    # Extract the features
+    X = df[columns].values
+    
+    # Average the columns of X into one column
+    X = np.mean(X, axis=1)
+    
+    # Get indices where the average == 7
+    outlier_rows = np.where(X == 7)[0].tolist()
+    
+    outliers = df.iloc[outlier_rows]    
+    
+    # Create a new dataframe with outliers removed
+    data_no_outliers = df.drop(index=outlier_rows)
+
+    return data_no_outliers
+
+def remove_outliers_complex(df, columns):
+    
+    # # Reset the index, so it can be used to filter out the outliers
+    df = df.reset_index(drop=True)
+    
+    # Extract the features
+    X = df[columns].values
+
+    # Set LOF parameters for feature outlier detection
+    n_neighbors = 20
+    contamination = 0.03
+
+    # Fit the LOF model for feature outlier detection
+    lof = LocalOutlierFactor(n_neighbors=n_neighbors, contamination=contamination)
+    lof.fit(X)
+
+    # Predict the outlier scores for feature outlier detection
+    scores = lof.negative_outlier_factor_
+
+    # Determine the threshold for outlier detection for feature outlier detection
+    threshold = np.percentile(scores, 100 * contamination)
+
+    # Identify the feature outliers
+    outliers = X[scores < threshold]
+
+    # Print the number of outliers and their indices for feature outlier detection
+    print('Number of outliers in PERMA dataset:', len(outliers))
+    outlier_rows = [i for i, x in enumerate(X) if any((x == y).all() for y in outliers)]
+
+    # Extract the rows of the outliers
+    outliers = df.iloc[outlier_rows]
+
+    # Create a new dataframe with outliers removed
+    data_no_outliers = df.drop(index=outlier_rows)
+
+    return data_no_outliers
 
 def plot_daily_email_counts(df):
     grouped = df.groupby("Day")["E-Mail-Adresse"].value_counts()
@@ -101,11 +161,11 @@ def plot_perma(dataframe: pd.DataFrame, title: str) -> Figure:
     plt.show()
 
 
-if __name__ == "__main__":
+def run():
     WEEK = True
     # Read in the CSV file
-    df1 = pd.read_csv("PERMA_scores.csv")
-    df2 = pd.read_csv("couhes_list.csv")
+    df1 = pd.read_csv(PERMA_MODEL_DIR / "PERMA_scores.csv")
+    df2 = pd.read_csv(PERMA_MODEL_DIR / "couhes_list.csv")
 
     df = df1[df1["E-Mail-Adresse"].isin(df2["E-Mail-Adresse"])]
 
@@ -163,6 +223,8 @@ if __name__ == "__main__":
     for letter, columns in columns_dict.items():
         df[letter] = df.loc[:, columns].mean(axis=1)
 
+    df = remove_outliers_simple(df, list(columns_dict.keys()))
+
     # Either stndardize based off whole week or per day
     if WEEK:
         df = standardize_dataframe(df, list(columns_dict.keys()))
@@ -215,8 +277,14 @@ if __name__ == "__main__":
         ]
     ]
     
+    # No teamwork on day 11
+    df_merged = df_merged[df_merged["Day"] != 11]
 
-    df_merged.to_csv("perma_scores_dataset.csv", index=False)
+    # df_merged.to_csv("perma_scores_dataset.csv", index=False)
+    
+    # Store in PERMA_MODEL_DIR 
+    df_merged.to_csv(PERMA_MODEL_DIR / "perma_scores_dataset.csv", index=False)
+    
     print(df_merged)
 
     plot_total_email_counts(df_merged)

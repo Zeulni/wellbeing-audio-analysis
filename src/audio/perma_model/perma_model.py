@@ -45,35 +45,35 @@ class PermaModel:
         return data
     
     # LOF works well for high dimensional data
-    def detect_outliers(self, data_X, data_y) -> pd:
+    def remove_outliers(self, data_X, data_y) -> pd:
         
         # Extract the features
         X = data_X.values
 
         # Set LOF parameters for feature outlier detection
-        n_neighbors_f = 20
-        contamination_f = 0.03
+        n_neighbors = 20
+        contamination = 0.03
 
         # Fit the LOF model for feature outlier detection
-        lof_f = LocalOutlierFactor(n_neighbors=n_neighbors_f, contamination=contamination_f)
-        lof_f.fit(X)
+        lof = LocalOutlierFactor(n_neighbors=n_neighbors, contamination=contamination)
+        lof.fit(X)
 
         # Predict the outlier scores for feature outlier detection
-        scores_f = lof_f.negative_outlier_factor_
+        scores = lof.negative_outlier_factor_
 
         # Determine the threshold for outlier detection for feature outlier detection
-        threshold_f = np.percentile(scores_f, 100 * contamination_f)
+        threshold = np.percentile(scores, 100 * contamination)
 
         # Identify the feature outliers
-        outliers_f = X[scores_f < threshold_f]
+        outliers = X[scores < threshold]
 
         # Print the number of outliers and their indices for feature outlier detection
-        print('Number of feature outliers:', len(outliers_f))
-        outlier_indices_f = [i for i, x in enumerate(X) if any((x == y).all() for y in outliers_f)]
+        print('Number of feature outliers:', len(outliers))
+        outlier_rows = [i for i, x in enumerate(X) if any((x == y).all() for y in outliers)]
 
         # Create a new dataframe with outliers removed
-        data_X_no_outliers = data_X.drop(index=outlier_indices_f)
-        data_y_no_outliers = data_y.drop(index=outlier_indices_f)
+        data_X_no_outliers = data_X.drop(index=outlier_rows)
+        data_y_no_outliers = data_y.drop(index=outlier_rows)
 
         return data_X_no_outliers, data_y_no_outliers
     
@@ -334,10 +334,12 @@ class PermaModel:
             data_y = data.iloc[:, :5] # targets
             
             data_X = self.handle_missing_values(data_X, database)
-            
-            # TODO: perform outlier detection on PERMA scores before scaling them!
+            # TODO: create pipeline overview in Powerpoint (with number of features, and rows,...)
+           
+            # TODO: write in Overleaf the entire process (how calculated PERMA scores, how outlier, how scaled,...)
+            # Only searches for outliers in X, outliers in PERMA (target) were already removed beforehand
             # Assumption: filter out ~3 outliers in the input data (data_X)
-            data_X, data_y = self.detect_outliers(data_X, data_y) # Perform it before scaling features
+            data_X, data_y = self.remove_outliers(data_X, data_y) # Perform it before scaling features
             # y was already standardized
             data_X = self.standardize_features(data_X, database)
             data_X, feature_importance_dict = self.select_features(data_X, data_y, database)

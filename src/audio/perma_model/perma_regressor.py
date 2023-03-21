@@ -58,9 +58,9 @@ class PermaRegressor:
     def xgboost_train(self):
         # Define XGBoost hyperparameters
         # TODO: Adapt regularization through depth
-        params = {'objective': 'reg:squarederror', 'max_depth': 5, 'learning_rate': 0.1}    
-        regr = MultiOutputRegressor(xgb.XGBRegressor(**params))
-        self.train_model(regr, 'xgboost')
+        # params = {'objective': 'reg:squarederror', 'max_depth': 5, 'learning_rate': 0.1}    
+        # regr = MultiOutputRegressor(xgb.XGBRegressor(**params))
+        # self.train_model(regr, 'xgboost')
         
     def plot_and_save_feature_importance(self, regr, model_name):
         

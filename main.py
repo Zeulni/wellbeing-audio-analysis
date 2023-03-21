@@ -12,12 +12,19 @@ def main(video_path = None) -> None:
     # runner = Runner(args, video_path)
     # runner.run()
 
-    # calculate_features = CalculateTimeSeriesFeatures()
-    # team = 'team_01'
-    # calculate_features.run(team)
+    # team_list = ["team_01", "team_02", "team_04", "team_06", "team_07", 
+    #              "team_08", "team_09", "team_11", "team_12", "team_13",
+    #              "team_15", "team_16", "team_17", "team_18", "team_19",
+    #              "team_20", "team_22"]
+    
+    # for team in team_list:
+    #     print(team)
+    #     calculate_features = CalculateTimeSeriesFeatures()
+    #     calculate_features.run(team)
     
     perma_model = PermaModel()
     perma_model.run()
+
 
 if __name__ == "__main__":
     main()
