@@ -14,8 +14,8 @@ class TimeSeriesFeatures:
             short_feature_df = self.calc_ind_feature(df, feature_name)
             short_overall_df = pd.concat([short_overall_df, short_feature_df], axis=1)
         
-            long_feature_df = self.calc_tsfresh_features(df, feature_name)
-            long_overall_df = pd.concat([long_overall_df, long_feature_df], axis=1)
+            # long_feature_df = self.calc_tsfresh_features(df, feature_name)
+            # long_overall_df = pd.concat([long_overall_df, long_feature_df], axis=1)
             
         return short_overall_df, long_overall_df
     

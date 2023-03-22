@@ -8,10 +8,10 @@ from src.audio.ASD.utils.asd_pipeline_tools import ASDPipelineTools
 from src.audio.ASD.speaker_diar_pipeline import ASDSpeakerDirPipeline
 from src.audio.com_pattern.com_pattern_analysis import ComPatternAnalysis
 from src.audio.emotions.emotion_analysis import EmotionAnalysis
+from src.audio.perma_model.perma_model_inferencing import PermaModelInferencing
 
 from src.audio.utils.analysis_tools import visualize_emotions, write_results_to_csv, visualize_com_pattern
 
-# from src.audio.utils.constants import VIDEOS_DIR
 
 class Runner:
     def __init__(self, args, video_path = None):
@@ -60,7 +60,6 @@ class Runner:
 
         # Path to the csv file with all the results
         csv_filename = self.video_name + "_audio_analysis_results.csv"
-        # self.csv_path = str(VIDEOS_DIR / self.video_name / csv_filename)
         self.csv_path = os.path.join(self.save_path, csv_filename)
         
         self.faces_id_path = os.path.join(self.save_path, 'faces_id')
@@ -70,6 +69,8 @@ class Runner:
                                                   self.video_path, self.save_path, self.video_name, self.asd_pipeline_tools, self.faces_id_path)
         self.com_pattern_analysis = ComPatternAnalysis(self.video_name, self.unit_of_analysis)
         self.emotion_analysis = EmotionAnalysis(self.audio_file_path, self.unit_of_analysis)
+        
+        self.perma_model_inferencing = PermaModelInferencing(self.csv_path, self.save_path, self.faces_id_path)
         
     # Closing the logfile when the object is deleted
     def __del__(self):
@@ -103,9 +104,9 @@ class Runner:
                 visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_turns_relative', 'norm_speak_duration_relative', 'norm_num_overlaps_relative'])
                 visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_turns_absolute', 'norm_speak_duration_absolute', 'norm_num_overlaps_absolute'])
                 
-            # Model inference here (training somewhere else)
-            # when training the model, dann scaling ALL the values to the same range? 
-            # that scaling has then also to be used for the inference
+            # PERMA model inference
+            if 4 in self.run_pipeline_parts:
+                self.perma_model_inferencing.run()
             
         except Exception as e:
             self.logger.log(str(e), level="ERROR")

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pickle
+import os
 from matplotlib import patches
 from matplotlib.figure import Figure
 
@@ -38,8 +39,8 @@ def standardize_dataframe(df, columns=None):
 
     scaler.fit(df[columns])
     
-    # Save the scaler as pickle file
-    with open("perma_scaler.pkl", "wb") as f:
+    # Save the scaler as pickle file    
+    with open(os.path.join(PERMA_MODEL_DIR, "perma_scaler.pkl"), "wb") as f:
         pickle.dump(scaler, f)
 
     # fit and transform the DataFrame using the scaler

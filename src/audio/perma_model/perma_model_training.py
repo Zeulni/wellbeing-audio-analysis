@@ -17,8 +17,8 @@ from src.audio.utils.constants import PERMA_MODEL_DIR
 
 from src.audio.perma_model.perma_regressor import PermaRegressor
 
-class PermaModel:
-    def __init__(self) -> pd:
+class PermaModelTraining:
+    def __init__(self):
         pass
     
     def read_dataframe(self, folder) -> None:
@@ -45,7 +45,7 @@ class PermaModel:
         return data
     
     # LOF works well for high dimensional data
-    # See https://towardsdatascience.com/4-machine-learning-techniques-for-outlier-detection-in-python-21e9cfacb81d
+    # For hints see: https://towardsdatascience.com/4-machine-learning-techniques-for-outlier-detection-in-python-21e9cfacb81d
     def remove_outliers(self, data_X, data_y) -> pd:
         
         # Extract the features
@@ -57,7 +57,7 @@ class PermaModel:
         
         # Perform PCA for a more stable outlier detection (will just be used to find the indices, transformed data will not be used)
         # But it is not necessary to perform PCA for LOF, as no difference (at least not for my datasets)
-        pca = PCA(n_components=9)
+        pca = PCA(n_components=8)
         pca.fit(X)
         X = pca.transform(X)
 
@@ -163,7 +163,9 @@ class PermaModel:
         return data_X_new, feature_importance_dict
     
     def perform_pca(self, data_X, database) -> pd:
-        amount_features = 9
+        
+        # Rule of thumb: 1 feature per 10 samples -> 8-9 features have to be selected
+        amount_features = 8
         pca = PCA(n_components=amount_features)
         pca.fit(data_X)
         
@@ -343,6 +345,9 @@ class PermaModel:
             data_X = self.handle_missing_values(data_X, database)
             # TODO: create pipeline overview in Powerpoint (with number of features, and rows,...)
             # TODO: occams razor -> choose simpler model with e.g. depth 3 and 100 estimators
+            
+            # TODO: problem: as avg. of PERMA scores at 5.5 and std deviation low -> also all predictions in that range
+            # TODO: solution: use normalization instead of standardization, and then have final scores between 0 and 1?
            
             # TODO: write in Overleaf the entire process (how calculated PERMA scores, how outlier, how scaled,...)
             # Only searches for outliers in X, outliers in PERMA (target) were already removed beforehand
