@@ -19,7 +19,7 @@ class PermaModelTraining:
         database_list = ["short_data"]
         
         best_param = {"short_data": {"threshold_variance": 0.4, "threshold_correlation": 0.9, "alpha_rfe": 0.01, "n_estimators": 200, "max_depth": 3, "learning_rate": 0.01, "model": "catboost"},
-                      "long_data": {"threshold_variance": 0.4, "threshold_correlation": 0.9, "n_estimators": 200, "max_depth": 3, "learning_rate": 0.01, "model": "catboost"}}
+                      "long_data": {"threshold_variance": 0.4, "threshold_correlation": 0.9, "alpha_rfe": 0.01, "n_estimators": 200, "max_depth": 3, "learning_rate": 0.01, "model": "catboost"}}
         
         for database in database_list:
             # Read the data
@@ -43,7 +43,7 @@ class PermaModelTraining:
             data_X, data_y = self.sample_reduction.remove_outliers(data_X, data_y) # Perform it before scaling features
             
             # * EDA
-            self.exp_data_analysis.plot_correlation_matrices_feature_names(data_X, data_y)
+            # self.exp_data_analysis.plot_correlation_matrices_feature_names(data_X, data_y)
             # self.exp_data_analysis.plot_correlation_matrices_feature_types(data_X, data_y)
             # self.exp_data_analysis.plot_pairplots_feature_names(data_X, data_y)
             # self.exp_data_analysis.print_stats(data_X)
@@ -71,6 +71,7 @@ class PermaModelTraining:
             
             # * Model Training
             perma_regressor = PermaRegressor(data_X, data_y, database)
-            perma_regressor.catboost_train()
+            perma_regressor.lasso_train()
+            # perma_regressor.catboost_train()
             # perma_regressor.xgboost_train()
             print("--------------------------------------------------")

@@ -336,40 +336,86 @@ class FeatureReduction():
         
         return reduced_data_X
     
-    # Catboost does not support RFE, so we use a different method
+    # # Catboost does not support RFE, so we use a different method
+    # def recursive_feature_elimination(self, data_X, data_y, database, best_param):
+        
+    #     alpha = best_param['alpha_rfe']
+        
+    #     # Use MultiOutputRegressor to select the features for all target variables at once (0.1 original alpha value)
+    #     # selector = SelectFromModel(Lasso(alpha=alpha, max_iter=10000))
+    #     model = Lasso(alpha=alpha, max_iter=10000)
+    #     # model = LinearRegression()
+        
+    #     # Create the RFE object and compute a cross-validated score.
+    #     # cv = LeaveOneOut()
+    #     # , min_features_to_select=5
+    #     rfecv = RFECV(estimator=model, step=5, cv=LeaveOneOut(), n_jobs=-1, verbose=0, scoring='neg_mean_squared_error')
+    #     rfecv.fit(data_X, data_y)
+        
+    #     print("Optimal number of features : %d" % rfecv.n_features_)
+        
+    #     # Plot number of features VS. cross-validation scores
+    #     plt.figure()
+    #     plt.xlabel("Number of features selected")
+    #     plt.ylabel("Cross validation score (nb of correct classifications)")
+    #     plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), rfecv.cv_results_['mean_test_score'])
+    #     plt.tight_layout()
+    #     plt.show()
+        
+    #     # Get the selected features
+    #     selected_features = data_X.columns[rfecv.get_support()]
+        
+    #     # Save the selected features as pickle file
+    #     # with open(os.path.join(PERMA_MODEL_RESULTS_DIR, self.database_name + "_selected_features.pkl"), "wb") as f:
+    #     #     pkl.dump(selected_features, f)
+        
+    #     # Create a new DataFrame with only the kept features
+    #     reduced_data_X = data_X[selected_features]
+        
+    #     return reduced_data_X
+    
+    # Loop over all target variables and select the features for each one
     def recursive_feature_elimination(self, data_X, data_y, database, best_param):
         
         alpha = best_param['alpha_rfe']
         
         # Use MultiOutputRegressor to select the features for all target variables at once (0.1 original alpha value)
-        # selector = SelectFromModel(Lasso(alpha=alpha, max_iter=10000))
         model = Lasso(alpha=alpha, max_iter=10000)
-        # model = LinearRegression()
-        
         # Create the RFE object and compute a cross-validated score.
-        # cv = LeaveOneOut()
-        # , min_features_to_select=5
-        rfecv = RFECV(estimator=model, step=5, cv=LeaveOneOut(), n_jobs=-1, verbose=0, scoring='neg_mean_squared_error')
-        rfecv.fit(data_X, data_y)
+
         
-        print("Optimal number of features : %d" % rfecv.n_features_)
+        reduced_data_X_features = set()
         
-        # Plot number of features VS. cross-validation scores
-        plt.figure()
-        plt.xlabel("Number of features selected")
-        plt.ylabel("Cross validation score (nb of correct classifications)")
-        plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), rfecv.cv_results_['mean_test_score'])
-        plt.tight_layout()
-        plt.show()
-        
-        # Get the selected features
-        selected_features = data_X.columns[rfecv.get_support()]
-        
-        # Save the selected features as pickle file
-        # with open(os.path.join(PERMA_MODEL_RESULTS_DIR, self.database_name + "_selected_features.pkl"), "wb") as f:
-        #     pkl.dump(selected_features, f)
-        
+        for i, col in enumerate(data_y.columns):
+            
+            data_y_i = data_y.iloc[:, i]
+            
+            rfecv = RFECV(estimator=model, step=5, cv=LeaveOneOut(), n_jobs=-1, verbose=0, scoring='neg_mean_squared_error')
+            rfecv.fit(data_X, data_y_i)
+            
+            print(f'Optimal number of features for {col}: {rfecv.n_features_}')
+            
+            # Get the selected features
+            selected_features = data_X.columns[rfecv.get_support()]
+            
+            # Create a new DataFrame with only the kept features
+            # reduced_data_X_i = data_X[selected_features]
+
+            # reduced_data_X = pd.concat([reduced_data_X, reduced_data_X_i], axis=1)
+            
+            # Add feature names to set (to remove duplicates)
+            reduced_data_X_features.update(selected_features)
+            
+            # Plot number of features VS. cross-validation scores
+            plt.figure()
+            plt.xlabel("Number of features selected")
+            plt.ylabel("Cross validation score (nb of correct classifications)")
+            plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), rfecv.cv_results_['mean_test_score'])
+            plt.tight_layout()
+            plt.show()
+
         # Create a new DataFrame with only the kept features
-        reduced_data_X = data_X[selected_features]
-        
+        reduced_data_X = data_X[reduced_data_X_features]
+
         return reduced_data_X
+            
