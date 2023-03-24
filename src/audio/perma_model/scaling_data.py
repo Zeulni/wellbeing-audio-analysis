@@ -1,32 +1,16 @@
 import os
 import pickle as pkl
 import pandas as pd
-
+from scipy.stats import shapiro
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler
 
 from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
 
 class ScalingData():
     def __init__(self) -> None:
         pass
-    
-    def standardize_features(self, data_X, database) -> pd:
-                
-        scaler = StandardScaler()
-        scaler.fit(data_X)
-        
-        # Save the scaler as pickle file (to use it for inference later on)        
-        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_feature_std_scaler.pkl"), "wb") as f:
-            pkl.dump(scaler, f)
-
-        # fit and transform the DataFrame using the scaler
-        array_standardized = scaler.transform(data_X)
-        
-        # Repalce the original columns with the standardized columns
-        data_X_standardized = pd.DataFrame(array_standardized, columns=data_X.columns)
-        
-        return data_X_standardized
     
     def normalize_targets(self, data_y) -> pd:
 
@@ -69,3 +53,76 @@ class ScalingData():
         data_y_standardized[columns] = array_standardized
 
         return data_y_standardized
+    
+    def standardize_features(self, data_X, database, columns) -> pd:
+                
+        data_X = data_X[columns]
+                
+        scaler = StandardScaler()
+        scaler.fit(data_X)
+        
+        # Save the scaler as pickle file (to use it for inference later on)        
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_feature_std_scaler.pkl"), "wb") as f:
+            pkl.dump(scaler, f)
+
+        # fit and transform the DataFrame using the scaler
+        array_standardized = scaler.transform(data_X)
+        
+        # Repalce the original columns with the standardized columns
+        data_X_standardized = pd.DataFrame(array_standardized, columns=columns)
+        
+        return data_X_standardized
+    
+    def robust_scale_features(self, data_X, database, columns) -> pd:
+        
+        data_X = data_X[columns]
+                
+        scaler = RobustScaler()
+        scaler.fit(data_X)
+        
+        # Save the scaler as pickle file (to use it for inference later on)        
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_feature_robust_scaler.pkl"), "wb") as f:
+            pkl.dump(scaler, f)
+
+        # fit and transform the DataFrame using the scaler
+        array_robust_scaled = scaler.transform(data_X)
+        
+        # Repalce the original columns with the robust scaled columns
+        data_X_robust_scaled = pd.DataFrame(array_robust_scaled, columns=columns)
+        
+        return data_X_robust_scaled
+    
+    def determine_gaussian_columns(self, data_X) -> list:
+        # Determine the columns with a Gaussian distribution
+        gaussian_columns = []
+        
+        for col in data_X.columns:
+            stat, p = shapiro(data_X[col])
+            if p > 0.05:
+                gaussian_columns.append(col)
+                
+        non_gaussian_columns = [col for col in data_X.columns if col not in gaussian_columns]
+        
+        # Save the columns with a Gaussian distribution as pickle file (to use it for inference later on)
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, "gaussian_columns.pkl"), "wb") as f:
+            pkl.dump(gaussian_columns, f)
+            
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, "non_gaussian_columns.pkl"), "wb") as f:
+            pkl.dump(non_gaussian_columns, f)
+        
+        return gaussian_columns, non_gaussian_columns
+    
+    def scale_features(self, data_X, database) -> pd:
+        
+        gaussian_columns, non_gaussian_columns = self.determine_gaussian_columns(data_X)
+        
+        # Gaussian columns: scale using the standard scaler
+        data_X_standardized = self.standardize_features(data_X, database, gaussian_columns)
+        
+        # Non-Gaussian columns: scale using the robust scaler
+        data_X_robust_scaled = self.robust_scale_features(data_X,database, non_gaussian_columns)
+        
+        # Concatenate the standardized and robust scaled columns
+        data_X_scaled = pd.concat([data_X_standardized, data_X_robust_scaled], axis=1)
+        
+        return data_X_scaled

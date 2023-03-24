@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
 
 from src.audio.utils.constants import FEATURE_NAMES
 
@@ -91,7 +92,8 @@ class ExploratoryDataAnalysis():
             # extract target variable and corresponding feature matrix
             y = data_y[target]
             # Only use the most important features for X
-            X = data_X[[feature[0] for feature in list_feature_importance]]
+            # X = data_X[[feature[0] for feature in list_feature_importance]]
+            X = data_X
             
             # concatenate target variable with feature matrix
             df = pd.concat([y, X], axis=1)
@@ -100,3 +102,14 @@ class ExploratoryDataAnalysis():
             sns.pairplot(df, height=1.4, aspect=0.8)
             plt.title(f"Correlations of most important features with {target}")
             plt.show()
+            
+    def print_stats(self, data_X) -> None:
+        
+        # Set the display options to show all columns without truncation
+        pd.set_option('display.max_columns', None)
+        # pd.set_option('display.max_rows', None)
+        # pd.set_option('display.width', None)
+        # pd.set_option('display.max_colwidth', -1)
+
+        # Use the info method to get a summary of the data
+        print(data_X.describe())

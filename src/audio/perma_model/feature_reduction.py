@@ -5,9 +5,13 @@ import pandas as pd
 import pickle as pkl
 import matplotlib.pyplot as plt
 
-from sklearn.feature_selection import SelectFromModel
+from sklearn.pipeline import Pipeline
+from sklearn.feature_selection import SelectFromModel, SelectKBest, mutual_info_regression
 from sklearn.linear_model import Lasso
 from sklearn.decomposition import PCA
+from sklearn.multioutput import MultiOutputRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import GridSearchCV
 
 from src.audio.utils.constants import PERMA_MODEL_DIR
 from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
@@ -37,6 +41,69 @@ class FeatureReduction():
         data.to_csv(os.path.join(PERMA_MODEL_DIR, filename + ".csv"))
         
         return data
+    
+    # def finding_best_k_mutual_info(self, data_X, data_y) -> pd:
+    #     # Define the pipeline with feature selection and regression
+    #     pipeline = Pipeline([
+    #         ('selector', SelectKBest(mutual_info_regression)),
+    #         ('regressor', LinearRegression())
+    #     ])
+
+    #     # Define the grid search parameters
+    #     # param_grid = {'selector__k': np.arange(1, data_X.shape[1] + 1)}
+    #     # in 500 steps
+    #     param_grid = {'estimator__k': np.arange(1, data_X.shape[1] + 1, 500)}
+
+    #     # Define the grid search object with the multi-output regressor and the parameter grid
+    #     grid_search = GridSearchCV(MultiOutputRegressor(pipeline), param_grid=param_grid, scoring='neg_mean_absolute_error')
+
+    #     # Fit the grid search object on the data
+    #     grid_search.fit(data_X, data_y)
+
+    #     # Extract the results of the grid search
+    #     results = grid_search.cv_results_
+
+    #     # Plot the mean absolute error vs. k
+    #     plt.plot(results['param_selector__k'], -1 * results['mean_test_score'])
+    #     plt.xlabel('Number of Features')
+    #     plt.ylabel('Mean Absolute Error')
+    #     plt.title('Mean Absolute Error vs. Number of Features')
+    #     plt.show()
+    
+    def select_features_mutual_info(self, data_X, data_y, database) -> pd:
+            
+        # TODO: select k
+        k = 20
+            
+        # Create a pipeline with feature selection and regression (workaround for multioutput regression)
+        pipeline = Pipeline([
+            ('selector', SelectKBest(mutual_info_regression, k=k)),
+            ('regressor', LinearRegression())
+        ])
+        
+        # Create a MultiOutputRegressor object with the pipeline as the estimator
+        multioutput_reg = MultiOutputRegressor(pipeline)
+        
+        # Fit the multi-output regressor
+        multioutput_reg.fit(data_X, data_y)
+            
+        # Extract the feature selector from the pipeline
+        selector = multioutput_reg.estimators_[0].named_steps['selector']
+            
+        # Transform the feature matrix
+        data_X_new = selector.transform(data_X)
+            
+        # Convert the transformed feature matrix to a DataFrame
+        data_X_new = pd.DataFrame(data_X_new, columns=data_X.columns[selector.get_support()])
+            
+        # print the selected features
+        print(f"Amount selected features: {len(data_X_new.columns)}")
+            
+        # Save the selected features as a pickle file (to use it for inference later on)
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_selected_features_mutual.pkl"), "wb") as f:
+            pkl.dump(data_X_new.columns, f)
+            
+        return data_X_new
     
     # Rule of thumb: 1 feature per 10 samples -> 8-9 features have to be selected
     def select_features_regression(self, data_X, data_y, database) -> pd:
@@ -68,39 +135,56 @@ class FeatureReduction():
         # print the selected features
         print(f"Amount selected features: {len(data_X_new.columns)}")
         
-        feature_importance_dict = self.get_feature_importances(selector, data_X, data_y)
+        # feature_importance_dict = self.get_feature_importances(selector, data_X, data_y)
         
         # self.plot_feature_importance(selector, data_X, data_y)
     
         # Save the selected features as pickle file (to use it for inference later on)
-        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_selected_features.pkl"), "wb") as f:
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_selected_features_regression.pkl"), "wb") as f:
             pkl.dump(data_X_new.columns, f)
         
-        return data_X_new, feature_importance_dict
+        return data_X_new
     
     def perform_pca(self, data_X, database) -> pd:
         
         # Rule of thumb: 1 feature per 10 samples -> 8-9 features have to be selected
         amount_features = 8
-        pca = PCA(n_components=amount_features)
+        pca = PCA()
         pca.fit(data_X)
         
         # Save the PCA as pickle file (to use it for inference later on)
         with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_pca.pkl"), "wb") as f:
             pkl.dump(pca, f)
         
-        reduced_data = pca.transform(data_X)
+        reduced_data = pca.transform(data_X)[:, :amount_features]
         
-        print("Explained variance ratio with " + str(amount_features) + " features:" , round(sum(pca.explained_variance_ratio_),2))
+        # print("Explained variance ratio with " + str(amount_features) + " features:" , round(sum(pca.explained_variance_ratio_),2))
+        print("Explained variance ratio with " + str(amount_features) + " features:" , round(sum(pca.explained_variance_ratio_[:amount_features]),2))
         
         # Transform the reduced data back to a DataFrame
         reduced_data = pd.DataFrame(reduced_data, columns=[f"PC{i}" for i in range(1, amount_features + 1)])
         
+        self.print_pareto_plot(pca, amount_features)
         # self.interpret_pca_plot(pca, data_X)
         
-        top_features = self.interpret_pca_list(pca, data_X)
+        # top_features = self.interpret_pca_list(pca, data_X)
         
-        return reduced_data, top_features
+        return reduced_data
+    
+    def print_pareto_plot(self, pca, amount_features) -> None:
+        # Calculate the cumulative sum of explained variances
+        cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
+
+        # Create a Pareto chart
+        fig, ax = plt.subplots()
+        ax.bar(range(len(pca.explained_variance_ratio_)), pca.explained_variance_ratio_, alpha=0.5, align='center', label='Individual explained variance')
+        ax.plot(range(len(pca.explained_variance_ratio_)), cumulative_variance, '-o', label='Cumulative explained variance')
+        ax.set_xticks(range(len(pca.explained_variance_ratio_)))
+        ax.set_xticklabels(['PC{}'.format(i) for i in range(1,len(pca.explained_variance_ratio_)+1)])
+        ax.set_xlabel('Principal components')
+        ax.set_ylabel('Explained variance ratio')
+        ax.legend(loc='best')
+        plt.show()
     
     def interpret_pca_list(self, pca, data_X) -> dict:
         
