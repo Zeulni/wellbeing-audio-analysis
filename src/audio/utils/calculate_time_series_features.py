@@ -8,6 +8,7 @@ from src.audio.utils.time_series_features import TimeSeriesFeatures
 # from src.audio.utils.constants import PERMA_MODEL_TRAINING_DATA
 from src.audio.utils.constants import VIDEOS_DIR
 from src.audio.utils.constants import FEATURE_NAMES
+from src.audio.utils.constants import PERMA_MODEL_DIR
 
 class CalculateTimeSeriesFeatures:
     def __init__(self):
@@ -81,7 +82,7 @@ class CalculateTimeSeriesFeatures:
         return (clip_num, start_frame)
     
     def merge_with_perma(self, short_feature_df, file_name, day_folder, team_folder, team): 
-        perma_path = VIDEOS_DIR / "perma_scores_dataset.csv"
+        perma_path = PERMA_MODEL_DIR / "perma_scores_dataset.csv"
         df_perma = pd.read_csv(perma_path)
         
         # One day is e.g. "2023-01-10" -> extract the 10

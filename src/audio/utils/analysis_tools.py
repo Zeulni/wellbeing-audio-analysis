@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 import os
 
+from src.audio.utils.constants import PERMA_MODEL_DIR
+from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
+
 def write_results_to_csv(emotions_output, com_pattern_output, csv_path, video_name, asd_pipeline_tools) -> str:
 
     data_emotions_output = []
@@ -151,3 +154,32 @@ def visualize_com_pattern(csv_path, unit_of_analysis, video_name, plotted_featur
 
     # Show the plot
     plt.show()
+    
+def read_final_database(folder) -> None:
+    # Read the csvs as dataframes (just run everytime again instead of checking if csv is available -> always up to date)
+    data_folder = PERMA_MODEL_DIR / folder
+    
+    # Read all the csvs in the data folder as dataframes and append them in one dataframe
+    data = pd.DataFrame()
+    
+    # Create a list of all csv files in data_folder and sort them
+    csv_files = sorted([file for file in data_folder.glob("*.csv")])
+    for file in csv_files:
+        data = pd.concat([data, pd.read_csv(file)], axis=0)
+        
+    # Remove the rows "Unnamed: 0", "E-Mail-Adresse", "Alias", "First Name", "Last Name/Surname", "Day"
+    data = data.drop(["Unnamed: 0", "E-Mail-Adresse", "Alias", "First Name", "Last Name/Surname", "Day"], axis=1)
+    
+    # Reset the index
+    data = data.reset_index(drop=True)
+
+    # Save the dataframe as csv
+    data.to_csv(os.path.join(PERMA_MODEL_DIR, folder + ".csv"))
+    
+    return data
+
+def create_perma_results_folder() -> None:
+    # Create a folder for the results of the PERMA analysis
+    if not os.path.exists(PERMA_MODEL_RESULTS_DIR):
+        os.mkdir(PERMA_MODEL_RESULTS_DIR)
+

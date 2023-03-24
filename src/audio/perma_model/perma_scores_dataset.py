@@ -9,6 +9,7 @@ from matplotlib.figure import Figure
 from sklearn.neighbors import LocalOutlierFactor
 
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 
 from src.audio.utils.constants import PERMA_MODEL_DIR
 
@@ -40,7 +41,7 @@ def standardize_dataframe(df, columns=None):
     scaler.fit(df[columns])
     
     # Save the scaler as pickle file    
-    with open(os.path.join(PERMA_MODEL_DIR, "perma_scaler.pkl"), "wb") as f:
+    with open(os.path.join(PERMA_MODEL_DIR, "perma_stand_scaler.pkl"), "wb") as f:
         pickle.dump(scaler, f)
 
     # fit and transform the DataFrame using the scaler
@@ -51,6 +52,45 @@ def standardize_dataframe(df, columns=None):
     df_standardized[columns] = array_standardized
 
     return df_standardized
+
+# Using MinMaxScaler
+def normalize_dataframe(df, columns=None):
+    """
+    Normalizes selected columns of a dataframe using the min and max
+    of all rows.
+
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        The dataframe to be normalized.
+    columns : list or None, optional
+        The list of column names to normalize. If None, normalizes all columns.
+        Default is None.
+
+    Returns:
+    --------
+    pandas.DataFrame
+        The normalized dataframe.
+    """
+    if columns is None:
+        columns = df.columns
+    
+    scaler = MinMaxScaler()
+
+    scaler.fit(df[columns])
+    
+    # Save the scaler as pickle file    
+    with open(os.path.join(PERMA_MODEL_DIR, "perma_norm_scaler.pkl"), "wb") as f:
+        pickle.dump(scaler, f)
+
+    # fit and transform the DataFrame using the scaler
+    array_normalized = scaler.transform(df[columns])
+    
+    # Repalce the original columns with the normalized columns
+    df_normalized = df.copy()
+    df_normalized[columns] = array_normalized
+
+    return df_normalized
 
 def remove_outliers_simple(df, columns):
 
@@ -225,14 +265,20 @@ def run():
         df[letter] = df.loc[:, columns].mean(axis=1)
 
     df = remove_outliers_simple(df, list(columns_dict.keys()))
+    
+    # No teamwork on day 11
+    df = df[df["Day"] != 11]
+
+    # *Normalize when training the data to only do it for the final dataset 
 
     # Either stndardize based off whole week or per day
-    if WEEK:
-        df = standardize_dataframe(df, list(columns_dict.keys()))
-    else:
-        df = df.groupby("Day", group_keys=False).apply(
-            standardize_dataframe, columns=list(columns_dict.keys())
-        )
+    # if WEEK:
+    #     # df = standardize_dataframe(df, list(columns_dict.keys()))
+    #     df = normalize_dataframe(df, list(columns_dict.keys()))
+    # else:
+    #     df = df.groupby("Day", group_keys=False).apply(
+    #         standardize_dataframe, columns=list(columns_dict.keys())
+    #     )
 
     # Drop unnecessary columns
     df = df.drop(
@@ -258,6 +304,7 @@ def run():
 
     # merge the dataframes based on the email address to get participants names
     df_merged = pd.merge(df, df2, on="E-Mail-Adresse", how="left")
+    
 
     # Add one column which is the alias for the participant (the name before the @ in the email address)
     df_merged["Alias"] = df_merged["E-Mail-Adresse"].str.split("@").str[0]
@@ -278,8 +325,6 @@ def run():
         ]
     ]
     
-    # No teamwork on day 11
-    df_merged = df_merged[df_merged["Day"] != 11]
 
     # df_merged.to_csv("perma_scores_dataset.csv", index=False)
     
@@ -287,6 +332,10 @@ def run():
     df_merged.to_csv(PERMA_MODEL_DIR / "perma_scores_dataset.csv", index=False)
     
     print(df_merged)
+    
+    # Print the min and max value for each column
+    for column in df_merged.columns:
+        print(f"{column}: {df_merged[column].min()}, {df_merged[column].max()}")
 
     plot_total_email_counts(df_merged)
     plot_daily_email_counts(df_merged)

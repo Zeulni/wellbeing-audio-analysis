@@ -28,7 +28,7 @@ class PermaModelInferencing:
         # TODO: specifying in config file whether to use long or short features? -> adapt the code accordingly
         # TODO: for long data I probably have to save the NaN columns, as scaler has different dimension otherwise
         # * Load the and scale the features
-        with open(PERMA_MODEL_DIR / "short_data_scaler.pkl", 'rb') as f:
+        with open(PERMA_MODEL_DIR / "short_data_feature_std_scaler.pkl", 'rb') as f:
             self.feature_scaler = pkl.load(f)
             
         with open(PERMA_MODEL_DIR / "short_data_selected_features.pkl", 'rb') as f:
@@ -38,10 +38,10 @@ class PermaModelInferencing:
             self.pca = pkl.load(f)
             
         # TODO: decide whether xgboost or catboost
-        with open(PERMA_MODEL_DIR / "short_data_xgboost_perma_model.pkl", 'rb') as f:
+        with open(PERMA_MODEL_DIR / "short_data_catboost_perma_model.pkl", 'rb') as f:
             self.perma_model = pkl.load(f)
             
-        with open(PERMA_MODEL_DIR / "perma_scaler.pkl", 'rb') as f:
+        with open(PERMA_MODEL_DIR / "perma_norm_scaler.pkl", 'rb') as f:
             self.perma_scaler = pkl.load(f)
     
     def run(self):
@@ -59,7 +59,7 @@ class PermaModelInferencing:
         # Transform to dataframe again (based on index and colum names of selftime_series_df)
         feature_df = pd.DataFrame(feature_array, index=feature_df.index, columns=feature_df.columns)
         
-        # Select only these columns from the dataframe 
+        # Select only columns based on feature selection algorithm from the dataframe 
         feature_df = feature_df[self.selected_features]
 
         # Perform PCA
@@ -68,10 +68,11 @@ class PermaModelInferencing:
         # Run the regression model    
         perma_scores = self.perma_model.predict(feature_array)
 
-        # Undo scaling of PERMA scores       
-        perma_scores = self.perma_scaler.inverse_transform(perma_scores)
-        # Clip the values to be between 0 and 7 (definition of our PERMA scores)
-        perma_scores = perma_scores.clip(0, 7)
+        # Undo scaling of PERMA scores   
+        # TODO: Revert scaling of PERMA scores    
+        # perma_scores = self.perma_scaler.inverse_transform(perma_scores)
+        # # Clip the values to be between 0 and 7 (definition of our PERMA scores)
+        # perma_scores = perma_scores.clip(0, 7)
         
         # Saves the results to a csv file
         perma_df = pd.DataFrame(perma_scores, columns=["P", "E", "R", "M", "A"],index=feature_df.index)        
@@ -96,17 +97,18 @@ class PermaModelInferencing:
             ax.fill(angles, values, alpha=0.3)
             ax.set_xticks(angles[:-1])
             ax.set_xticklabels(row.index, fontsize=10)
-            ax.set_yticks([1, 2, 3, 4, 5, 6, 7])
-            ax.set_ylim([0, 7])
+            ax.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+            ax.set_ylim([0.0, 1.0])
             ax.set_title(row.name, fontsize=12)
             ax.grid(True)
 
             # Load the image for the speaker and add it to the figure
+            # TODO: implement naming algo with "__speakername"
             speaker_id = str(row.name).split()[-1]
             file_name = os.path.join(self.faces_id_path, f"{speaker_id}.jpg")
             img = Image.open(file_name)
-            img = img.resize((100, 100))
-            fig.figimage(img, xo=ax.bbox.x0 + 75, yo=ax.bbox.y1 + 50, alpha=1)
+            # img = img.resize((100, 100))
+            fig.figimage(img, xo=ax.bbox.x0+100, yo=ax.bbox.y1-200, alpha=1)
 
 
         # Adjust the layout and save the figure
