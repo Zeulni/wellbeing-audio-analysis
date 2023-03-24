@@ -62,8 +62,8 @@ class PermaRegressor:
         # Print baseline RMSE and MAE
         self.calc_baseline(model_name)
         
-        # self.plot_and_save_feature_importance(multioutput_reg_model, model_name)
-        # self.plot_and_save_shap_values(multioutput_reg_model, model_name)
+        self.plot_and_save_feature_importance(multioutput_reg_model, model_name)
+        self.plot_and_save_shap_values(multioutput_reg_model, model_name)
     
         # Save models dict to pickle file
         model_file_name = self.database_name + '_' + model_name + '_perma_model.pkl'

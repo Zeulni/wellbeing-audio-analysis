@@ -283,9 +283,11 @@ class FeatureReduction():
         return feature_importance_dict
     
     # Reduce features with low variance
-    def variance_thresholding(self, data_X, threshold=0.5) -> pd.DataFrame:
+    def variance_thresholding(self, data_X, best_param) -> pd.DataFrame:
         
-        # variances = np.var(data_X_normalized, axis=0)        
+        # variances = np.var(data_X_normalized, axis=0)   
+        
+        threshold = best_param['threshold_variance']
         
         # Create a VarianceThreshold feature selector
         selector = VarianceThreshold(threshold=threshold)
@@ -304,7 +306,9 @@ class FeatureReduction():
         return reduced_data_X
     
     # Identify highly correlated features to drop them (1 feature will stay, but it removes duplicates)
-    def correlation_thresholding(self, data_X, threshold=0.8) -> pd.DataFrame:
+    def correlation_thresholding(self, data_X, best_param) -> pd.DataFrame:
+        
+        threshold = best_param['threshold_correlation']
         
         # Compute correlation matrix with absolute values
         matrix = data_X.corr().abs()
@@ -333,20 +337,10 @@ class FeatureReduction():
         return reduced_data_X
     
     # Catboost does not support RFE, so we use a different method
-    def recursive_feature_elimination(self, data_X, data_y, database):
+    def recursive_feature_elimination(self, data_X, data_y, database, best_param):
         
-        # # TODO: values for normalized features
-        # if database == "short_data":
-        #     alpha = 0.025
-        # elif database == "long_data":
-        #     alpha = 0.05
+        alpha = best_param['alpha_rfe']
         
-        # TODO: values for standardized features
-        if database == "short_data":
-            alpha = 0.01
-        elif database == "long_data":
-            alpha = 0.02
-
         # Use MultiOutputRegressor to select the features for all target variables at once (0.1 original alpha value)
         # selector = SelectFromModel(Lasso(alpha=alpha, max_iter=10000))
         model = Lasso(alpha=alpha, max_iter=10000)

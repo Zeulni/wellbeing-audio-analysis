@@ -18,7 +18,8 @@ class PermaModelTraining:
         # database_list = ["short_data", "long_data"]
         database_list = ["short_data"]
         
-        short_data_best_param = {"threshold_variance": 0.4, "threshold_correlation": 0.9, "n_estimators": 200, "max_depth": 3, "learning_rate": 0.01, "model": "catboost"}
+        best_param = {"short_data": {"threshold_variance": 0.4, "threshold_correlation": 0.9, "alpha_rfe": 0.01, "n_estimators": 200, "max_depth": 3, "learning_rate": 0.01, "model": "catboost"},
+                      "long_data": {"threshold_variance": 0.4, "threshold_correlation": 0.9, "n_estimators": 200, "max_depth": 3, "learning_rate": 0.01, "model": "catboost"}}
         
         for database in database_list:
             # Read the data
@@ -42,7 +43,7 @@ class PermaModelTraining:
             data_X, data_y = self.sample_reduction.remove_outliers(data_X, data_y) # Perform it before scaling features
             
             # * EDA
-            # self.exp_data_analysis.plot_correlation_matrices_feature_names(data_X, data_y)
+            self.exp_data_analysis.plot_correlation_matrices_feature_names(data_X, data_y)
             # self.exp_data_analysis.plot_correlation_matrices_feature_types(data_X, data_y)
             # self.exp_data_analysis.plot_pairplots_feature_names(data_X, data_y)
             # self.exp_data_analysis.print_stats(data_X)
@@ -54,9 +55,9 @@ class PermaModelTraining:
             
             # * Feature Selection
             # TODO: if take 3 step selection method, just store final features in a list and then select them
-            data_X = self.feature_reduction.variance_thresholding(data_X, threshold=0.4)
-            data_X = self.feature_reduction.correlation_thresholding(data_X, threshold=0.9)
-            data_X = self.feature_reduction.recursive_feature_elimination(data_X, data_y, database)
+            data_X = self.feature_reduction.variance_thresholding(data_X, best_param[database])
+            data_X = self.feature_reduction.correlation_thresholding(data_X, best_param[database])
+            data_X = self.feature_reduction.recursive_feature_elimination(data_X, data_y, database, best_param[database])
             # self.feature_reduction.finding_best_k_mutual_info(data_X, data_y)
             # data_X = self.feature_reduction.select_features_mutual_info(data_X, data_y, database)
             # data_X = self.feature_reduction.select_features_regression(data_X, data_y, database)
@@ -71,5 +72,5 @@ class PermaModelTraining:
             # * Model Training
             perma_regressor = PermaRegressor(data_X, data_y, database)
             perma_regressor.catboost_train()
-            perma_regressor.xgboost_train()
+            # perma_regressor.xgboost_train()
             print("--------------------------------------------------")
