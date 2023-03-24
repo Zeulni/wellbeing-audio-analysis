@@ -16,7 +16,9 @@ class PermaModelTraining:
     def run(self): 
 
         # database_list = ["short_data", "long_data"]
-        database_list = ["long_data"]
+        database_list = ["short_data"]
+        
+        short_data_best_param = {"threshold_variance": 0.4, "threshold_correlation": 0.9, "n_estimators": 200, "max_depth": 3, "learning_rate": 0.01, "model": "catboost"}
         
         for database in database_list:
             # Read the data
@@ -51,15 +53,19 @@ class PermaModelTraining:
             data_X = self.scaling_data.scale_features(data_X, database)
             
             # * Feature Selection
-            self.feature_reduction.finding_best_k_mutual_info(data_X, data_y)
-            data_X = self.feature_reduction.select_features_mutual_info(data_X, data_y, database)
-            data_X = self.feature_reduction.select_features_regression(data_X, data_y, database)
-            data_X = self.feature_reduction.perform_pca(data_X, database)
+            # TODO: if take 3 step selection method, just store final features in a list and then select them
+            data_X = self.feature_reduction.variance_thresholding(data_X, threshold=0.4)
+            data_X = self.feature_reduction.correlation_thresholding(data_X, threshold=0.9)
+            data_X = self.feature_reduction.recursive_feature_elimination(data_X, data_y, database)
+            # self.feature_reduction.finding_best_k_mutual_info(data_X, data_y)
+            # data_X = self.feature_reduction.select_features_mutual_info(data_X, data_y, database)
+            # data_X = self.feature_reduction.select_features_regression(data_X, data_y, database)
+            # data_X = self.feature_reduction.perform_pca(data_X, database)
             
             # self.exp_data_analysis.plot_pairplot_final_features(data_X, data_y, feature_importance_dict)
             # self.exp_data_analysis.plot_perma_pillars(data_y)
             # TODO: get all plots back in
-            # self.exp_data_analysis.plot_correlations_with_target(data_X, data_y, feature_importance_dict)
+            self.exp_data_analysis.plot_correlations_with_target(data_X, data_y)
             
             
             # * Model Training

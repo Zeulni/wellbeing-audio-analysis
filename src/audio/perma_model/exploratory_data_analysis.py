@@ -51,13 +51,15 @@ class ExploratoryDataAnalysis():
         data_y.boxplot()
         plt.show()
         
-    def plot_correlations_with_target(self, data_X, data_y, feature_importance_dict) -> None:
+    def plot_correlations_with_target(self, data_X, data_y) -> None:
         
         # Plot correlations based on data_X, data_y and feature_importance_dict
         plt.figure(figsize=(16,10))
         
+        target_values = ["P", "E", "R", "M", "A"]
+        
         # loop over each target variable
-        for i, (target, list_feature_importance) in enumerate(feature_importance_dict.items()):
+        for i, target in enumerate(target_values):
             
             # extract target variable and corresponding feature matrix
             y = data_y[target]

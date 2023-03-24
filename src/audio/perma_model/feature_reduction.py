@@ -5,13 +5,14 @@ import pandas as pd
 import pickle as pkl
 import matplotlib.pyplot as plt
 
-from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectFromModel, SelectKBest, mutual_info_regression
 from sklearn.linear_model import Lasso
-from sklearn.decomposition import PCA
-from sklearn.multioutput import MultiOutputRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.feature_selection import RFECV
+from sklearn.model_selection import LeaveOneOut
 
 from src.audio.utils.constants import PERMA_MODEL_DIR
 from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
@@ -31,8 +32,8 @@ class FeatureReduction():
         for col in data.columns:
             if data[col].isnull().any():
                 columns_with_nan.append(col)
-                
-        print("Columns with NaN values: ", len(columns_with_nan))
+        
+        print("Number of features after removing NaN columns: ", len(data.columns) - len(columns_with_nan))
         
         # Remove the all the columns with NaN values
         data = data.drop(columns_with_nan, axis=1)
@@ -42,67 +43,72 @@ class FeatureReduction():
         
         return data
     
-    # def finding_best_k_mutual_info(self, data_X, data_y) -> pd:
-    #     # Define the pipeline with feature selection and regression
-    #     pipeline = Pipeline([
-    #         ('selector', SelectKBest(mutual_info_regression)),
-    #         ('regressor', LinearRegression())
-    #     ])
+    def finding_best_k_mutual_info(self, data_X, data_y) -> pd:
+        
+        # TODO: also test for other targets
+        data_y = data_y["P"]
+        
+        # Define the pipeline with feature selection and regression
+        selector = SelectKBest(mutual_info_regression)
 
-    #     # Define the grid search parameters
-    #     # param_grid = {'selector__k': np.arange(1, data_X.shape[1] + 1)}
-    #     # in 500 steps
-    #     param_grid = {'estimator__k': np.arange(1, data_X.shape[1] + 1, 500)}
+        # Define the grid search parameters
+        # param_grid = {'selector__k': np.arange(1, data_X.shape[1] + 1)}
+        # in 500 steps
+        param_grid = {'k': np.arange(1, data_X.shape[1] + 1, 500)}
 
-    #     # Define the grid search object with the multi-output regressor and the parameter grid
-    #     grid_search = GridSearchCV(MultiOutputRegressor(pipeline), param_grid=param_grid, scoring='neg_mean_absolute_error')
+        # Define the grid search object with the multi-output regressor and the parameter grid
+        grid_search = GridSearchCV(selector, param_grid=param_grid, scoring='neg_mean_absolute_error')
 
-    #     # Fit the grid search object on the data
-    #     grid_search.fit(data_X, data_y)
+        # Fit the grid search object on the data
+        grid_search.fit(data_X, data_y)
 
-    #     # Extract the results of the grid search
-    #     results = grid_search.cv_results_
+        # Extract the results of the grid search
+        results = grid_search.cv_results_
 
-    #     # Plot the mean absolute error vs. k
-    #     plt.plot(results['param_selector__k'], -1 * results['mean_test_score'])
-    #     plt.xlabel('Number of Features')
-    #     plt.ylabel('Mean Absolute Error')
-    #     plt.title('Mean Absolute Error vs. Number of Features')
-    #     plt.show()
+        # Plot the mean absolute error vs. k
+        plt.plot(results['param_k'], -1 * results['mean_test_score'])
+        plt.xlabel('Number of Features')
+        plt.ylabel('Mean Absolute Error')
+        plt.title('Mean Absolute Error vs. Number of Features')
+        plt.show()
     
     def select_features_mutual_info(self, data_X, data_y, database) -> pd:
             
-        # TODO: select k
-        k = 20
+        # TODO: change,
+        k = 8
             
-        # Create a pipeline with feature selection and regression (workaround for multioutput regression)
-        pipeline = Pipeline([
-            ('selector', SelectKBest(mutual_info_regression, k=k)),
-            ('regressor', LinearRegression())
-        ])
-        
-        # Create a MultiOutputRegressor object with the pipeline as the estimator
-        multioutput_reg = MultiOutputRegressor(pipeline)
-        
-        # Fit the multi-output regressor
-        multioutput_reg.fit(data_X, data_y)
+        # Create an empty DataFrame to store the selected features for each target variable
+        data_X_new = pd.DataFrame()
+
+        # Loop over each target variable
+        for i, col in enumerate(data_y.columns):
             
-        # Extract the feature selector from the pipeline
-        selector = multioutput_reg.estimators_[0].named_steps['selector']
-            
-        # Transform the feature matrix
-        data_X_new = selector.transform(data_X)
-            
-        # Convert the transformed feature matrix to a DataFrame
-        data_X_new = pd.DataFrame(data_X_new, columns=data_X.columns[selector.get_support()])
-            
-        # print the selected features
+            # Select the target variable and the corresponding features from the input data
+            data_y_i = data_y.iloc[:, i]
+            data_X_i = data_X
+
+            # Create a pipeline with feature selection and regression
+            selector = SelectKBest(mutual_info_regression, k=k)
+
+            # Fit the pipeline to the current target variable
+            selector.fit(data_X_i, data_y_i)
+
+            # Transform the feature matrix
+            data_X_i_new = selector.transform(data_X_i)
+
+            # Convert the transformed feature matrix to a DataFrame
+            data_X_i_new = pd.DataFrame(data_X_i_new, columns=data_X_i.columns[selector.get_support()])
+
+            # Append the selected features for the current target variable to the result DataFrame
+            data_X_new = pd.concat([data_X_new, data_X_i_new], axis=1)
+
+        # Print the selected features
         print(f"Amount selected features: {len(data_X_new.columns)}")
-            
+
         # Save the selected features as a pickle file (to use it for inference later on)
         with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_selected_features_mutual.pkl"), "wb") as f:
             pkl.dump(data_X_new.columns, f)
-            
+
         return data_X_new
     
     # Rule of thumb: 1 feature per 10 samples -> 8-9 features have to be selected
@@ -275,3 +281,101 @@ class FeatureReduction():
             feature_importance_dict[data_y.columns[i]] = importance_df[importance_df['Importance'] != 0].values.tolist()
             
         return feature_importance_dict
+    
+    # Reduce features with low variance
+    def variance_thresholding(self, data_X, threshold=0.5) -> pd.DataFrame:
+        
+        # variances = np.var(data_X_normalized, axis=0)        
+        
+        # Create a VarianceThreshold feature selector
+        selector = VarianceThreshold(threshold=threshold)
+        
+        # Fit the selector to the data (data is already normalized)
+        selector.fit(data_X)
+        
+        # Get the indices of the features that are kept
+        kept_indices = selector.get_support(indices=True)
+        
+        print(f'Number of features after variance thresholding: {len(kept_indices)}')
+        
+        # Create a new DataFrame with only the kept features
+        reduced_data_X = data_X.iloc[:, kept_indices]
+        
+        return reduced_data_X
+    
+    # Identify highly correlated features to drop them (1 feature will stay, but it removes duplicates)
+    def correlation_thresholding(self, data_X, threshold=0.8) -> pd.DataFrame:
+        
+        # Compute correlation matrix with absolute values
+        matrix = data_X.corr().abs()
+
+        # Create a boolean mask
+        mask = np.triu(np.ones_like(matrix, dtype=bool))
+
+        # Subset the matrix
+        reduced_matrix = matrix.mask(mask)
+
+        # Find cols that meet the threshold
+        to_drop = set()
+        for col in reduced_matrix:
+            # Check if any other column has correlation coefficient greater than threshold
+            if any(reduced_matrix[col] > threshold):
+                # Add all other columns with high correlation to the set of columns to drop
+                for c in reduced_matrix.columns:
+                    value = reduced_matrix[col][c]
+                    if c != col and value > threshold:
+                        to_drop.update([c])
+        
+        print(f'Number of features after correlation thresholding: {len(data_X.columns) - len(to_drop)}')
+        
+        reduced_data_X = data_X.drop(to_drop, axis=1)
+        
+        return reduced_data_X
+    
+    # Catboost does not support RFE, so we use a different method
+    def recursive_feature_elimination(self, data_X, data_y, database):
+        
+        # # TODO: values for normalized features
+        # if database == "short_data":
+        #     alpha = 0.025
+        # elif database == "long_data":
+        #     alpha = 0.05
+        
+        # TODO: values for standardized features
+        if database == "short_data":
+            alpha = 0.01
+        elif database == "long_data":
+            alpha = 0.02
+
+        # Use MultiOutputRegressor to select the features for all target variables at once (0.1 original alpha value)
+        # selector = SelectFromModel(Lasso(alpha=alpha, max_iter=10000))
+        model = Lasso(alpha=alpha, max_iter=10000)
+        # model = LinearRegression()
+        
+        # Create the RFE object and compute a cross-validated score.
+        # cv = LeaveOneOut()
+        # , min_features_to_select=5
+        rfecv = RFECV(estimator=model, step=5, cv=LeaveOneOut(), n_jobs=-1, verbose=0, scoring='neg_mean_squared_error')
+        rfecv.fit(data_X, data_y)
+        
+        print("Optimal number of features : %d" % rfecv.n_features_)
+        
+        # Plot number of features VS. cross-validation scores
+        plt.figure()
+        plt.xlabel("Number of features selected")
+        plt.ylabel("Cross validation score (nb of correct classifications)")
+        plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), rfecv.cv_results_['mean_test_score'])
+        plt.tight_layout()
+        plt.show()
+        
+        # Get the selected features
+        selected_features = data_X.columns[rfecv.get_support()]
+        
+        # Save the selected features as pickle file
+        # with open(os.path.join(PERMA_MODEL_RESULTS_DIR, self.database_name + "_selected_features.pkl"), "wb") as f:
+        #     pkl.dump(selected_features, f)
+        
+        # Create a new DataFrame with only the kept features
+        reduced_data_X = data_X[selected_features]
+        
+        return reduced_data_X

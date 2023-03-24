@@ -41,7 +41,7 @@ class SampleReduction():
         outliers = X[scores < threshold]
 
         # Print the number of outliers and their indices for feature outlier detection
-        print('Number of feature outliers:', len(outliers))
+        print('Number of sample (rows) outliers:', len(outliers))
         outlier_rows = [i for i, x in enumerate(X) if any((x == y).all() for y in outliers)]
 
         # Create a new dataframe with outliers removed

@@ -12,6 +12,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import make_scorer
 
+
 from math import sqrt
 
 from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
@@ -22,7 +23,7 @@ class PermaRegressor:
         self.data_y = data_y
         self.database_name = database_name
         
-    def train_model(self, multioutput_reg, model_name):
+    def train_model(self, multioutput_reg_model, model_name):
         # Define the parameter grid to search over
         # param_grid = {
         #     'estimator__max_depth': [3, 5, 7],
@@ -30,45 +31,44 @@ class PermaRegressor:
         #     'estimator__n_estimators': [50, 100, 200]
         # }
         
-        param_grid = {
-            'estimator__max_depth': [5],
-            'estimator__learning_rate': [0.01],
-            'estimator__n_estimators': [100]
-        }
-        
         # param_grid = {
-        #     'estimator__max_depth': [3, 5, 7],
-        #     'estimator__learning_rate': [0.1, 0.01],
-        #     'estimator__n_estimators': [100, 200]
+        #     'estimator__max_depth': [5],
+        #     'estimator__learning_rate': [0.01],
+        #     'estimator__n_estimators': [100]
         # }
+        
+        param_grid = {
+            'estimator__max_depth': [3, 5, 7],
+            'estimator__learning_rate': [0.1, 0.01],
+            'estimator__n_estimators': [100, 200]
+        }
         
         
         loo = LeaveOneOut()
-        # TODO: change to RMSE?
         scoring = 'root_mean_squared_error'
         rmse_scorer = make_scorer(lambda y_true, y_pred: sqrt(mean_squared_error(y_true, y_pred)), greater_is_better=False)
         # scoring = 'mean_absolute_error'
         # msa_scorer = make_scorer(mean_absolute_error, greater_is_better=False)
-        grid_search = GridSearchCV(multioutput_reg, param_grid, cv=loo, scoring=rmse_scorer)
+        grid_search = GridSearchCV(multioutput_reg_model, param_grid, cv=loo, scoring=rmse_scorer)
         grid_search.fit(self.data_X, self.data_y)
         
         print(model_name + " Best Hyperparameters:", grid_search.best_params_)
         print(model_name + " Best Score " + scoring + ": ", -grid_search.best_score_)
         
         # Fit the MultiOutputRegressor object with the best hyperparameters
-        multioutput_reg.set_params(**grid_search.best_params_)
-        multioutput_reg.fit(self.data_X, self.data_y)
+        multioutput_reg_model.set_params(**grid_search.best_params_)
+        multioutput_reg_model.fit(self.data_X, self.data_y)
         
         # Print baseline RMSE and MAE
         self.calc_baseline(model_name)
         
-        # self.plot_and_save_feature_importance(multioutput_reg, model_name)
-        # self.plot_and_save_shap_values(multioutput_reg, model_name)
+        # self.plot_and_save_feature_importance(multioutput_reg_model, model_name)
+        # self.plot_and_save_shap_values(multioutput_reg_model, model_name)
     
         # Save models dict to pickle file
         model_file_name = self.database_name + '_' + model_name + '_perma_model.pkl'
         with open(PERMA_MODEL_RESULTS_DIR / model_file_name, 'wb') as f:
-            pkl.dump(multioutput_reg, f)
+            pkl.dump(multioutput_reg_model, f)
 
     def calc_baseline(self, model_name):
         
@@ -88,9 +88,8 @@ class PermaRegressor:
     
     def catboost_train(self):
         
-        multioutput_reg = MultiOutputRegressor(CatBoostRegressor(loss_function='RMSE' ,verbose=False, save_snapshot=False, allow_writing_files=False, train_dir=str(PERMA_MODEL_RESULTS_DIR)))
-        self.train_model(multioutput_reg, 'catboost')    
-
+        multioutput_reg_model = MultiOutputRegressor(CatBoostRegressor(loss_function='RMSE' ,verbose=False, save_snapshot=False, allow_writing_files=False, train_dir=str(PERMA_MODEL_RESULTS_DIR)))
+        self.train_model(multioutput_reg_model, 'catboost')
 
     def xgboost_train(self):
         
@@ -101,8 +100,8 @@ class PermaRegressor:
         #     'estimator__n_estimators': [50, 100, 200]
         # }
         
-        multioutput_reg = MultiOutputRegressor(xgb.XGBRegressor(objective='reg:squarederror'))
-        self.train_model(multioutput_reg, 'xgboost')
+        multioutput_reg_model = MultiOutputRegressor(xgb.XGBRegressor(objective='reg:squarederror'))
+        self.train_model(multioutput_reg_model, 'xgboost')
         
     def plot_and_save_feature_importance(self, regr, model_name):
         
