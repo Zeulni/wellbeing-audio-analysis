@@ -18,8 +18,8 @@ class PermaModelTraining:
         # database_list = ["short_data", "long_data"]
         database_list = ["short_data"]
         
-        best_param = {"short_data": {"threshold_variance": 0.4, "threshold_correlation": 0.9, "alpha_rfe": 0.01, "n_estimators": 200, "max_depth": 3, "learning_rate": 0.01, "model": "catboost"},
-                      "long_data": {"threshold_variance": 0.4, "threshold_correlation": 0.9, "alpha_rfe": 0.01, "n_estimators": 200, "max_depth": 3, "learning_rate": 0.01, "model": "catboost"}}
+        best_param = {"short_data": {"threshold_variance": 0.4, "threshold_correlation": 0.9, "alpha_rfe": 0.01},
+                      "long_data": {"threshold_variance": 0.8, "threshold_correlation": 0.9, "alpha_rfe": 0.1}}
         
         for database in database_list:
             # Read the data
@@ -30,10 +30,6 @@ class PermaModelTraining:
             data_y = data.iloc[:, :5] # targets
             
             data_X = self.feature_reduction.remove_nan_columns(data_X, database)
-            # TODO: occams razor -> choose simpler model with e.g. depth 3 and 100 estimators
-            
-            # TODO: problem: as avg. of PERMA scores at 5.5 and std deviation low -> also all predictions in that range
-            # TODO: solution: use normalization instead of standardization, and then have final scores between 0 and 1?
            
             
             # TODO: write in Overleaf the entire process (how calculated PERMA scores, how outlier, how scaled, why used which scaling,...)
@@ -56,12 +52,19 @@ class PermaModelTraining:
             # * Feature Selection
             # TODO: if take 3 step selection method, just store final features in a list and then select them
             data_X = self.feature_reduction.variance_thresholding(data_X, best_param[database])
-            data_X = self.feature_reduction.correlation_thresholding(data_X, best_param[database])
+            data_X, correlated_features = self.feature_reduction.correlation_thresholding(data_X, best_param[database])
+            # data_X = self.feature_reduction.perform_pca(data_X, database, 10)
+            # data_X = self.feature_reduction.select_features_mutual_info(data_X, data_y, database, 5)
             data_X = self.feature_reduction.recursive_feature_elimination(data_X, data_y, database, best_param[database])
+            
+            # Filter correlated features based on the remaining columns in data_X
+            columns_list = list(data_X.columns)
+            filtered_pairs = [pair for pair in correlated_features if any(feature in pair for feature in columns_list)]
+            
             # self.feature_reduction.finding_best_k_mutual_info(data_X, data_y)
-            # data_X = self.feature_reduction.select_features_mutual_info(data_X, data_y, database)
+            # data_X = self.feature_reduction.select_features_mutual_info(data_X, data_y, database, 2)
             # data_X = self.feature_reduction.select_features_regression(data_X, data_y, database)
-            # data_X = self.feature_reduction.perform_pca(data_X, database)
+            # data_X = self.feature_reduction.perform_pca(data_X, database, 8)
             
             # self.exp_data_analysis.plot_pairplot_final_features(data_X, data_y, feature_importance_dict)
             # self.exp_data_analysis.plot_perma_pillars(data_y)

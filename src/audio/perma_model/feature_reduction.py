@@ -14,6 +14,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import LeaveOneOut
+from sklearn.model_selection import KFold
 
 from src.audio.utils.constants import PERMA_MODEL_DIR
 from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
@@ -73,10 +74,9 @@ class FeatureReduction():
         plt.title('Mean Absolute Error vs. Number of Features')
         plt.show()
     
-    def select_features_mutual_info(self, data_X, data_y, database) -> pd:
+    def select_features_mutual_info(self, data_X, data_y, database, k_per_target) -> pd:
             
-        # TODO: change,
-        k = 8
+        k = k_per_target
             
         # Create an empty DataFrame to store the selected features for each target variable
         data_X_new = pd.DataFrame()
@@ -102,6 +102,9 @@ class FeatureReduction():
 
             # Append the selected features for the current target variable to the result DataFrame
             data_X_new = pd.concat([data_X_new, data_X_i_new], axis=1)
+
+        # If column names are not unique, delete the duplicates
+        data_X_new = data_X_new.loc[:, ~data_X_new.columns.duplicated()]
 
         # Print the selected features
         print(f"Amount selected features: {len(data_X_new.columns)}")
@@ -152,10 +155,9 @@ class FeatureReduction():
         
         return data_X_new
     
-    def perform_pca(self, data_X, database) -> pd:
+    def perform_pca(self, data_X, database, amount_features) -> pd:
         
         # Rule of thumb: 1 feature per 10 samples -> 8-9 features have to be selected
-        amount_features = 8
         pca = PCA()
         pca.fit(data_X)
         
@@ -319,10 +321,13 @@ class FeatureReduction():
 
         # Subset the matrix
         reduced_matrix = matrix.mask(mask)
+        
+        # Dict that stores for each feature the features that are highly correlated
+        correlated_features = []
 
         # Find cols that meet the threshold
         to_drop = set()
-        for col in reduced_matrix:
+        for i, col in enumerate(reduced_matrix):
             # Check if any other column has correlation coefficient greater than threshold
             if any(reduced_matrix[col] > threshold):
                 # Add all other columns with high correlation to the set of columns to drop
@@ -330,12 +335,14 @@ class FeatureReduction():
                     value = reduced_matrix[col][c]
                     if c != col and value > threshold:
                         to_drop.update([c])
+                        # Add the correlated feature to the list (at position i)
+                        correlated_features.append([c, col])
         
         print(f'Number of features after correlation thresholding: {len(data_X.columns) - len(to_drop)}')
         
         reduced_data_X = data_X.drop(to_drop, axis=1)
         
-        return reduced_data_X
+        return reduced_data_X, correlated_features
     
     # Catboost does not support RFE, so we use a different method
     # def recursive_feature_elimination(self, data_X, data_y, database, best_param):
@@ -380,16 +387,23 @@ class FeatureReduction():
         
         alpha = best_param['alpha_rfe']
         
-        # Use MultiOutputRegressor to select the features for all target variables at once (0.1 original alpha value)
-        model = Lasso(alpha=alpha, max_iter=10000)
         
         reduced_data_X_features = set()
         
         for i, col in enumerate(data_y.columns):
+            model = Lasso(alpha=alpha, max_iter=10000)
             
             data_y_i = data_y.iloc[:, i]
             
-            rfecv = RFECV(estimator=model, step=5, cv=LeaveOneOut(), n_jobs=-1, verbose=0, scoring='neg_mean_squared_error')
+            # scoring = 'neg_mean_absolute_error'
+            scoring = 'neg_mean_squared_error'
+            # scoring = 'neg_root_mean_squared_error'
+            # scoring = 'r2'
+            # Calculate cv factor, so every eval set has the length of 2 samples
+            # cv_factor = int(len(data_y_i) / 2)
+            # cv = KFold(n_splits=cv_factor, shuffle=True, random_state=42)
+            cv = LeaveOneOut()
+            rfecv = RFECV(estimator=model, step=5, cv=cv, n_jobs=-1, verbose=0, scoring=scoring)
             rfecv.fit(data_X, data_y_i)
             
             print(f'Optimal number of features for {col}: {rfecv.n_features_}')
@@ -412,6 +426,8 @@ class FeatureReduction():
             plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), rfecv.cv_results_['mean_test_score'])
             plt.tight_layout()
             plt.show()
+
+        print(f'Number of features after recursive feature elimination: {len(reduced_data_X_features)}')
 
         # Create a new DataFrame with only the kept features
         reduced_data_X = data_X[reduced_data_X_features]
