@@ -11,6 +11,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import LeaveOneOut
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import make_scorer, r2_score
 
 
@@ -20,29 +21,34 @@ from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
 
 class PermaRegressor:
     def __init__(self, data_X, data_y, database_name) -> None:
-        self.data_X = data_X
-        self.data_y = data_y
+        # self.data_X = data_X
+        # self.data_y = data_y
+        
+        # Divide into train and test set (shuffle=True)
+        self.data_X_train, self.data_X_test, self.data_y_train, self.data_y_test = train_test_split(data_X, data_y, test_size=0.2, random_state=42)
+        
         self.database_name = database_name
         
     def train_model(self, multioutput_reg_model, model_name, param_grid):        
         
-        loo = LeaveOneOut()
-        scoring = 'root_mean_squared_error'
-        rmse_scorer = make_scorer(lambda y_true, y_pred: sqrt(mean_squared_error(y_true, y_pred)), greater_is_better=False)
-        # scoring = 'mean_absolute_error'
-        # msa_scorer = make_scorer(mean_absolute_error, greater_is_better=False)
-        grid_search = GridSearchCV(multioutput_reg_model, param_grid, cv=loo, scoring=rmse_scorer)
-        grid_search.fit(self.data_X, self.data_y)
+        # TODO: loo back?
+        loo = LeaveOneOut() 
+        rmse = "neg_root_mean_squared_error"
+        grid_search = GridSearchCV(multioutput_reg_model, param_grid, cv=loo, scoring=rmse, verbose=1, n_jobs=-1, refit=rmse)
+        grid_search.fit(self.data_X_train, self.data_y_train)
         
         print(model_name + " Best Hyperparameters:", grid_search.best_params_)
-        print(model_name + " Best Score " + scoring + ": ", -grid_search.best_score_)
+        print(model_name + " Best Score " + rmse + ": ", round(-grid_search.best_score_,3))
         
         # Fit the MultiOutputRegressor object with the best hyperparameters
-        multioutput_reg_model.set_params(**grid_search.best_params_)
-        multioutput_reg_model.fit(self.data_X, self.data_y)
+        # multioutput_reg_model.set_params(**grid_search.best_params_)
+        # multioutput_reg_model.fit(self.data_X, self.data_y)
+        
+        multioutput_reg_model = grid_search.best_estimator_
+        
         
         # Print baseline RMSE and MAE
-        self.calc_baseline(model_name)
+        self.calc_baseline(multioutput_reg_model, model_name)
         
         self.plot_and_save_feature_importance(multioutput_reg_model, model_name)
         self.plot_and_save_shap_values(multioutput_reg_model, model_name)
@@ -85,9 +91,11 @@ class PermaRegressor:
         best_scores = []
         for i in range(self.data_y.shape[1]):
             model = Lasso()
-            scoring = 'root_mean_squared_error'
-            rmse_scorer = make_scorer(lambda y_true, y_pred: sqrt(mean_squared_error(y_true, y_pred)), greater_is_better=False)
-            grid_search = GridSearchCV(model, param_grid, cv=LeaveOneOut(), scoring=rmse_scorer)
+            # scoring = 'root_mean_squared_error'
+            scorer = ["neg_root_mean_squared_error", "r2"]
+            # rmse_scorer = make_scorer(lambda y_true, y_pred: sqrt(mean_squared_error(y_true, y_pred)), greater_is_better=False)
+            loo = LeaveOneOut() 
+            grid_search = GridSearchCV(model, param_grid, cv=loo, scoring=scorer, verbose=0, n_jobs=-1, refit="r2")
             grid_search.fit(self.data_X, self.data_y.iloc[:, i])
             best_alpha = grid_search.best_params_['alpha']
             models.append(Lasso(alpha=best_alpha))
@@ -96,8 +104,7 @@ class PermaRegressor:
             best_scores.append(-grid_search.best_score_)
             
         # Print the sum and mean of the best scores
-        print(model_name + " Best Score " + scoring + ": ", sum(best_scores))
-        print(model_name + " Mean Best Score " + scoring + ": ", np.mean(best_scores))
+        # print(model_name + " Mean Best Score " + scoring + ": ", np.mean(best_scores))
             
         
         multioutput_reg_model = MultiOutputRegressor(Lasso())
@@ -105,13 +112,8 @@ class PermaRegressor:
         # Set estimators_ attribute of MultiOutputRegressor object
         multioutput_reg_model.estimators_ = models
         
-        # Make a prediction and calculate R2 score
-        y_pred = multioutput_reg_model.predict(self.data_X)
-        r2 = r2_score(self.data_y, y_pred)
-        print("R2 score: ", r2)
-        
         # Print baseline RMSE and MAE
-        self.calc_baseline(model_name)
+        self.calc_baseline(multioutput_reg_model, model_name)
         
         self.plot_and_save_feature_importance(multioutput_reg_model, model_name)
         self.plot_and_save_shap_values(multioutput_reg_model, model_name)
@@ -121,21 +123,32 @@ class PermaRegressor:
         with open(PERMA_MODEL_RESULTS_DIR / model_file_name, 'wb') as f:
             pkl.dump(multioutput_reg_model, f)
 
-    def calc_baseline(self, model_name):
+    def calc_baseline(self, multioutput_reg_model, model_name):
         
+        # TODO: Baseline based on train set mean!?
         # Calculate the mean of the PERMA scores
-        mean_perma_scores = self.data_y.mean(axis=0)
+        mean_perma_scores = self.data_y_train.mean(axis=0)
         
-        y_pred_baseline = np.tile(mean_perma_scores, (len(self.data_y), 1))
+        y_pred_baseline = np.tile(mean_perma_scores, (len(self.data_y_test), 1))
         
         # Calculate the RMSE of the baseline model
-        baseline_rmse = np.sqrt(mean_squared_error(self.data_y, y_pred_baseline))
+        baseline_rmse = np.sqrt(mean_squared_error(self.data_y_test, y_pred_baseline))
         
-        # Calculate the MAE of the baseline model
-        baseline_mae = mean_absolute_error(self.data_y, y_pred_baseline)
+        # Calculate the R2 score of the baseline model
+        baseline_r2 = r2_score(self.data_y_test, y_pred_baseline)
         
-        print(model_name + " Baseline RMSE:", baseline_rmse)
-        print(model_name + " Baseline MAE:", baseline_mae)
+        print(model_name + " Baseline r2:", round(baseline_r2, 3))
+        print(model_name + " Baseline RMSE:", round(baseline_rmse,3))
+        
+        # Using the entire dataset as test set (with multioutput_reg_model) to comput R2
+        y_pred = multioutput_reg_model.predict(self.data_X_test)
+        r2 = r2_score(self.data_y_test, y_pred)
+        print(model_name + " r2 - entire dataset:", round(r2,3))
+        
+        # Same for RMSE
+        rmse = np.sqrt(mean_squared_error(self.data_y_test, y_pred))
+        print(model_name + " RMSE - entire dataset:", round(rmse,3))
+        
     
     def catboost_train(self):
         
@@ -146,17 +159,17 @@ class PermaRegressor:
         #     'estimator__n_estimators': [50, 100, 200]
         # }
         
-        param_grid = {
-            'estimator__max_depth': [5],
-            'estimator__learning_rate': [0.01],
-            'estimator__n_estimators': [100]
-        }
-        
         # param_grid = {
-        #     'estimator__max_depth': [3, 5, 7],
-        #     'estimator__learning_rate': [0.1, 0.01],
-        #     'estimator__n_estimators': [100, 200]
+        #     'estimator__max_depth': [5],
+        #     'estimator__learning_rate': [0.01],
+        #     'estimator__n_estimators': [100]
         # }
+        
+        param_grid = {
+            'estimator__max_depth': [3, 5, 7],
+            'estimator__learning_rate': [0.1, 0.01],
+            'estimator__n_estimators': [100, 200]
+        }
         
         multioutput_reg_model = MultiOutputRegressor(CatBoostRegressor(loss_function='RMSE' ,verbose=False, save_snapshot=False, allow_writing_files=False, train_dir=str(PERMA_MODEL_RESULTS_DIR)))
         self.train_model(multioutput_reg_model, 'catboost', param_grid)
@@ -200,11 +213,11 @@ class PermaRegressor:
             elif model_name == 'lasso':
                 sorted_feature_importance = estimator.coef_.argsort()
                 feature_importance = estimator.coef_[sorted_feature_importance]
-            plt.barh(self.data_X.columns[sorted_feature_importance], 
+            plt.barh(self.data_X_train.columns[sorted_feature_importance], 
                     feature_importance, 
                     color='turquoise')
             plt.xlabel(model_name + " Feature Importance")
-            plt.title(self.data_y.columns[i])
+            plt.title(self.data_y_train.columns[i])
             plt.tight_layout()
         
         plt.savefig(PERMA_MODEL_RESULTS_DIR / f'{self.database_name}_{model_name}_feature_importance.png')
@@ -220,17 +233,17 @@ class PermaRegressor:
                 explainer = shap.TreeExplainer(estimator)
                 sorted_feature_importance = estimator.feature_importances_.argsort()
             elif model_name == 'lasso':
-                explainer = shap.Explainer(estimator, self.data_X)
+                explainer = shap.Explainer(estimator, self.data_X_train)
 
                 sorted_feature_importance = estimator.coef_.argsort()
-            shap_values = explainer.shap_values(self.data_X)
+            shap_values = explainer.shap_values(self.data_X_train)
             
-            columns_shap_values = self.data_X.columns[sorted_feature_importance]
+            columns_shap_values = self.data_X_train.columns[sorted_feature_importance]
             shap_values = shap_values[:, sorted_feature_importance]
 
-            shap.summary_plot(shap_values, self.data_X[columns_shap_values], feature_names = columns_shap_values, show=False)
+            shap.summary_plot(shap_values, self.data_X_train[columns_shap_values], feature_names = columns_shap_values, show=False)
             # plt.xlabel("SHAP Values")
-            plt.title(self.data_y.columns[i])
-            plt.savefig(PERMA_MODEL_RESULTS_DIR / f'{self.database_name}_{model_name}_shap_values_{self.data_y.columns[i]}.png')
+            plt.title(self.data_y_train.columns[i])
+            plt.savefig(PERMA_MODEL_RESULTS_DIR / f'{self.database_name}_{model_name}_shap_values_{self.data_y_train.columns[i]}.png')
             plt.show()
             plt.clf()
