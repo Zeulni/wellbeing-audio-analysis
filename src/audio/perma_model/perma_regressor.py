@@ -11,7 +11,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import LeaveOneOut
-from sklearn.metrics import make_scorer
+from sklearn.metrics import make_scorer, r2_score
 
 
 from math import sqrt
@@ -54,11 +54,21 @@ class PermaRegressor:
             
     def train_lasso_model(self, multioutput_reg_model, model_name, param_grid):        
         
+        # models = []
+        # for i in range(self.data_y.shape[1]):
+        #     models.append(Lasso())
+        
+        # multioutput_reg_model = MultiOutputRegressor(Lasso())
+        
+        # # Set estimators_ attribute of MultiOutputRegressor object
+        # multioutput_reg_model.estimators_ = models
+        
         # loo = LeaveOneOut()
         # scoring = 'root_mean_squared_error'
         # rmse_scorer = make_scorer(lambda y_true, y_pred: sqrt(mean_squared_error(y_true, y_pred)), greater_is_better=False)
         # # scoring = 'mean_absolute_error'
-        # # msa_scorer = make_scorer(mean_absolute_error, greater_is_better=False)
+        # msa_scorer = make_scorer(mean_absolute_error, greater_is_better=False)
+        # r2_scorer = make_scorer(r2_score)
         # grid_search = GridSearchCV(multioutput_reg_model, param_grid, cv=loo, scoring=rmse_scorer)
         # grid_search.fit(self.data_X, self.data_y)
         
@@ -68,6 +78,8 @@ class PermaRegressor:
         # # Fit the MultiOutputRegressor object with the best hyperparameters
         # multioutput_reg_model.set_params(**grid_search.best_params_)
         # multioutput_reg_model.fit(self.data_X, self.data_y)
+        
+
         
         models = []
         best_scores = []
@@ -92,6 +104,11 @@ class PermaRegressor:
         
         # Set estimators_ attribute of MultiOutputRegressor object
         multioutput_reg_model.estimators_ = models
+        
+        # Make a prediction and calculate R2 score
+        y_pred = multioutput_reg_model.predict(self.data_X)
+        r2 = r2_score(self.data_y, y_pred)
+        print("R2 score: ", r2)
         
         # Print baseline RMSE and MAE
         self.calc_baseline(model_name)
@@ -129,17 +146,17 @@ class PermaRegressor:
         #     'estimator__n_estimators': [50, 100, 200]
         # }
         
-        # param_grid = {
-        #     'estimator__max_depth': [5],
-        #     'estimator__learning_rate': [0.01],
-        #     'estimator__n_estimators': [100]
-        # }
-        
         param_grid = {
-            'estimator__max_depth': [3, 5, 7],
-            'estimator__learning_rate': [0.1, 0.01],
-            'estimator__n_estimators': [100, 200]
+            'estimator__max_depth': [5],
+            'estimator__learning_rate': [0.01],
+            'estimator__n_estimators': [100]
         }
+        
+        # param_grid = {
+        #     'estimator__max_depth': [3, 5, 7],
+        #     'estimator__learning_rate': [0.1, 0.01],
+        #     'estimator__n_estimators': [100, 200]
+        # }
         
         multioutput_reg_model = MultiOutputRegressor(CatBoostRegressor(loss_function='RMSE' ,verbose=False, save_snapshot=False, allow_writing_files=False, train_dir=str(PERMA_MODEL_RESULTS_DIR)))
         self.train_model(multioutput_reg_model, 'catboost', param_grid)

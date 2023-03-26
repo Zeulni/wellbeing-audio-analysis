@@ -336,7 +336,7 @@ class FeatureReduction():
         
         return reduced_data_X
     
-    # # Catboost does not support RFE, so we use a different method
+    # Catboost does not support RFE, so we use a different method
     # def recursive_feature_elimination(self, data_X, data_y, database, best_param):
         
     #     alpha = best_param['alpha_rfe']
