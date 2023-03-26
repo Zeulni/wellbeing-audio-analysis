@@ -34,7 +34,7 @@ class PermaRegressor:
         # TODO: loo back?
         loo = LeaveOneOut() 
         rmse = "neg_root_mean_squared_error"
-        grid_search = GridSearchCV(multioutput_reg_model, param_grid, cv=loo, scoring=rmse, verbose=1, n_jobs=-1, refit=rmse)
+        grid_search = GridSearchCV(multioutput_reg_model, param_grid, cv=loo, scoring=rmse, verbose=0, n_jobs=-1, refit=rmse)
         grid_search.fit(self.data_X_train, self.data_y_train)
         
         print(model_name + " Best Hyperparameters:", grid_search.best_params_)
@@ -89,22 +89,24 @@ class PermaRegressor:
         
         models = []
         best_scores = []
-        for i in range(self.data_y.shape[1]):
+        for i in range(self.data_y_train.shape[1]):
             model = Lasso()
             # scoring = 'root_mean_squared_error'
-            scorer = ["neg_root_mean_squared_error", "r2"]
+            # scorer = ["neg_root_mean_squared_error", "r2"]
+            rmse = "neg_root_mean_squared_error"
             # rmse_scorer = make_scorer(lambda y_true, y_pred: sqrt(mean_squared_error(y_true, y_pred)), greater_is_better=False)
             loo = LeaveOneOut() 
-            grid_search = GridSearchCV(model, param_grid, cv=loo, scoring=scorer, verbose=0, n_jobs=-1, refit="r2")
-            grid_search.fit(self.data_X, self.data_y.iloc[:, i])
-            best_alpha = grid_search.best_params_['alpha']
-            models.append(Lasso(alpha=best_alpha))
+            grid_search = GridSearchCV(model, param_grid, cv=loo, scoring=rmse, verbose=0, n_jobs=-1, refit="r2")
+            grid_search.fit(self.data_X_train, self.data_y_train.iloc[:, i])
+            # best_alpha = grid_search.best_params_['alpha']
+            # models.append(Lasso(alpha=best_alpha))
+            models.append(grid_search.best_estimator_)
             # Train model with best alpha
-            models[i].fit(self.data_X, self.data_y.iloc[:, i])
+            # models[i].fit(self.data_X, self.data_y.iloc[:, i])
             best_scores.append(-grid_search.best_score_)
             
         # Print the sum and mean of the best scores
-        # print(model_name + " Mean Best Score " + scoring + ": ", np.mean(best_scores))
+        print(model_name + " Mean Best Score " + rmse + ": ", np.mean(best_scores))
             
         
         multioutput_reg_model = MultiOutputRegressor(Lasso())
@@ -137,17 +139,17 @@ class PermaRegressor:
         # Calculate the R2 score of the baseline model
         baseline_r2 = r2_score(self.data_y_test, y_pred_baseline)
         
-        print(model_name + " Baseline r2:", round(baseline_r2, 3))
-        print(model_name + " Baseline RMSE:", round(baseline_rmse,3))
+        print(model_name + " Test Set Baseline r2:", round(baseline_r2, 3))
+        print(model_name + " Test Set Baseline RMSE:", round(baseline_rmse,3))
         
         # Using the entire dataset as test set (with multioutput_reg_model) to comput R2
         y_pred = multioutput_reg_model.predict(self.data_X_test)
         r2 = r2_score(self.data_y_test, y_pred)
-        print(model_name + " r2 - entire dataset:", round(r2,3))
+        print(model_name + " Test Set Prediction r2:", round(r2,3))
         
         # Same for RMSE
         rmse = np.sqrt(mean_squared_error(self.data_y_test, y_pred))
-        print(model_name + " RMSE - entire dataset:", round(rmse,3))
+        print(model_name + " Test Set Prediction RMSE:", round(rmse,3))
         
     
     def catboost_train(self):

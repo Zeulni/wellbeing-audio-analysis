@@ -71,7 +71,7 @@ class PermaModelTraining:
             
             # * Model Training
             perma_regressor = PermaRegressor(data_X, data_y, database)
-            # perma_regressor.lasso_train()
+            perma_regressor.lasso_train()
             perma_regressor.catboost_train()
             perma_regressor.xgboost_train()
             print("--------------------------------------------------")

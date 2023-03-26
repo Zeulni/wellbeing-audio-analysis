@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from sklearn.feature_selection import SelectFromModel, SelectKBest, mutual_info_regression
 from sklearn.linear_model import Lasso
+import xgboost as xgb
 from sklearn.linear_model import LinearRegression
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV
@@ -344,7 +345,7 @@ class FeatureReduction():
     #     # Use MultiOutputRegressor to select the features for all target variables at once (0.1 original alpha value)
     #     # selector = SelectFromModel(Lasso(alpha=alpha, max_iter=10000))
     #     model = Lasso(alpha=alpha, max_iter=10000)
-    #     # model = LinearRegression()
+    #     # model = xgb.XGBRegressor()
         
     #     # Create the RFE object and compute a cross-validated score.
     #     # cv = LeaveOneOut()
@@ -381,8 +382,6 @@ class FeatureReduction():
         
         # Use MultiOutputRegressor to select the features for all target variables at once (0.1 original alpha value)
         model = Lasso(alpha=alpha, max_iter=10000)
-        # Create the RFE object and compute a cross-validated score.
-
         
         reduced_data_X_features = set()
         
@@ -409,7 +408,7 @@ class FeatureReduction():
             # Plot number of features VS. cross-validation scores
             plt.figure()
             plt.xlabel("Number of features selected")
-            plt.ylabel("Cross validation score (nb of correct classifications)")
+            plt.ylabel("Cross validation score")
             plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), rfecv.cv_results_['mean_test_score'])
             plt.tight_layout()
             plt.show()
