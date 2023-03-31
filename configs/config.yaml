@@ -57,3 +57,8 @@ INCLUDE_VISUALIZATION: False
 
 # This is the amount of seconds in which the audio is split and analyzed (300s means in chunks of 5 min)
 UNIT_OF_ANALYSIS: 300
+
+# -- PART 2: THE FOLLOWING CONFIGS ARE ALL USED FOR Inferencing the PERMA values
+
+# Chossing the scale of the final PERMA values (either "norm": 0 - 1, or "defaul": 0 - 7)
+PERMA_SCALE: "norm"

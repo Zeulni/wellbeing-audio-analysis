@@ -70,7 +70,8 @@ class Runner:
         self.com_pattern_analysis = ComPatternAnalysis(self.video_name, self.unit_of_analysis)
         self.emotion_analysis = EmotionAnalysis(self.audio_file_path, self.unit_of_analysis)
         
-        self.perma_model_inferencing = PermaModelInferencing(self.csv_path, self.save_path, self.faces_id_path)
+        self.perma_scale = args.get("PERMA_SCALE", "norm")
+        self.perma_model_inferencing = PermaModelInferencing(self.csv_path, self.save_path, self.faces_id_path, self.perma_scale, self.logger)
         
     # Closing the logfile when the object is deleted
     def __del__(self):
@@ -97,6 +98,7 @@ class Runner:
                 emotions_output = self.emotion_analysis.run(splitted_speaker_overview)
                 self.asd_pipeline_tools.write_to_terminal("Emotion analysis finished for " + str(len(emotions_output)) + " speakers")
                 write_results_to_csv(emotions_output, com_pattern_output, self.csv_path, self.video_name, self.asd_pipeline_tools)
+                self.logger.log("Time series data written to csv file: " + self.csv_path)
                 
             # Visualize the results
             if 3 in self.run_pipeline_parts:    

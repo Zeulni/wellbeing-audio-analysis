@@ -1,4 +1,4 @@
-from src.audio.perma_model.scaling_data import ScalingData
+from src.audio.perma_model.data_scaling import DataScaling
 from src.audio.perma_model.exploratory_data_analysis import ExploratoryDataAnalysis
 from src.audio.perma_model.feature_reduction import FeatureReduction
 from src.audio.perma_model.sample_reduction import SampleReduction
@@ -8,7 +8,7 @@ from src.audio.perma_model.perma_regressor import PermaRegressor
 
 class PermaModelTraining:
     def __init__(self):
-        self.scaling_data = ScalingData()
+        self.data_scaling = DataScaling()
         self.exp_data_analysis = ExploratoryDataAnalysis()
         self.feature_reduction = FeatureReduction()
         self.sample_reduction = SampleReduction()
@@ -45,9 +45,9 @@ class PermaModelTraining:
             # self.exp_data_analysis.print_stats(data_X)
             
             # * Scaling
-            data_y = self.scaling_data.normalize_targets(data_y)       
+            data_y = self.data_scaling.normalize_targets(data_y)       
             # data_y = self.scaling_data.standardize_targets(data_y)     
-            data_X = self.scaling_data.scale_features(data_X, database)
+            data_X = self.data_scaling.scale_features(data_X, database)
             
             # * Feature Selection
             # TODO: if take 3 step selection method, just store final features in a list and then select them
@@ -68,7 +68,6 @@ class PermaModelTraining:
             
             # self.exp_data_analysis.plot_pairplot_final_features(data_X, data_y, feature_importance_dict)
             # self.exp_data_analysis.plot_perma_pillars(data_y)
-            # TODO: get all plots back in
             self.exp_data_analysis.plot_correlations_with_target(data_X, data_y)
             
             

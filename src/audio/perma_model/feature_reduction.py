@@ -28,6 +28,7 @@ class FeatureReduction():
         # Stats in long data: 4656 rows have at least one NaN value, 3105 rows have all NaN values
         
         print("Columns in total: ", len(data.columns))
+        print("Rows in total: ", len(data))
         
         # Store all columns where any value is NaN
         columns_with_nan = []
@@ -429,8 +430,15 @@ class FeatureReduction():
 
         print(f'Number of features after recursive feature elimination: {len(reduced_data_X_features)}')
 
+        # Sort the features by alphabetical order
+        reduced_data_X_features = sorted(reduced_data_X_features)
+
         # Create a new DataFrame with only the kept features
         reduced_data_X = data_X[reduced_data_X_features]
+        
+        # Save the selected features as pickle file
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_selected_features.pkl"), "wb") as f:
+            pkl.dump(reduced_data_X_features, f)
 
         return reduced_data_X
             

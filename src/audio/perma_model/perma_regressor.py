@@ -52,7 +52,7 @@ class PermaRegressor:
         self.calc_baseline(multioutput_reg_model, model_name)
         
         self.plot_and_save_feature_importance(multioutput_reg_model, model_name)
-        # self.plot_and_save_shap_values(multioutput_reg_model, model_name)
+        self.plot_and_save_shap_values(multioutput_reg_model, model_name)
     
         # Save models dict to pickle file
         model_file_name = self.database_name + '_' + model_name + '_perma_model.pkl'
@@ -104,7 +104,7 @@ class PermaRegressor:
         self.calc_baseline_comparison(multioutput_reg_model, model_name)
         
         self.plot_and_save_feature_importance(multioutput_reg_model, model_name)
-        # self.plot_and_save_shap_values(multioutput_reg_model, model_name)
+        self.plot_and_save_shap_values(multioutput_reg_model, model_name)
     
         # Save models dict to pickle file
         model_file_name = self.database_name + '_' + model_name + '_perma_model.pkl'

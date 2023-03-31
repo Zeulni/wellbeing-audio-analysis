@@ -8,7 +8,7 @@ from sklearn.preprocessing import RobustScaler
 
 from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
 
-class ScalingData():
+class DataScaling():
     def __init__(self) -> None:
         pass
     
@@ -92,7 +92,7 @@ class ScalingData():
         
         return data_X_robust_scaled
     
-    def determine_gaussian_columns(self, data_X) -> list:
+    def determine_gaussian_columns(self, data_X, database) -> list:
         # Determine the columns with a Gaussian distribution
         gaussian_columns = []
         
@@ -104,23 +104,23 @@ class ScalingData():
         non_gaussian_columns = [col for col in data_X.columns if col not in gaussian_columns]
         
         # Save the columns with a Gaussian distribution as pickle file (to use it for inference later on)
-        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, "gaussian_columns.pkl"), "wb") as f:
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_gaussian_columns.pkl"), "wb") as f:
             pkl.dump(gaussian_columns, f)
             
-        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, "non_gaussian_columns.pkl"), "wb") as f:
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_non_gaussian_columns.pkl"), "wb") as f:
             pkl.dump(non_gaussian_columns, f)
         
         return gaussian_columns, non_gaussian_columns
     
     def scale_features(self, data_X, database) -> pd:
         
-        gaussian_columns, non_gaussian_columns = self.determine_gaussian_columns(data_X)
+        gaussian_columns, non_gaussian_columns = self.determine_gaussian_columns(data_X, database)
         
         # Gaussian columns: scale using the standard scaler
         data_X_standardized = self.standardize_features(data_X, database, gaussian_columns)
         
         # Non-Gaussian columns: scale using the robust scaler
-        data_X_robust_scaled = self.robust_scale_features(data_X,database, non_gaussian_columns)
+        data_X_robust_scaled = self.robust_scale_features(data_X, database, non_gaussian_columns)
         
         # Concatenate the standardized and robust scaled columns
         data_X_scaled = pd.concat([data_X_standardized, data_X_robust_scaled], axis=1)
