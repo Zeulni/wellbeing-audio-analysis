@@ -2,6 +2,8 @@ import numpy as np
 import pickle as pkl
 import matplotlib.pyplot as plt
 import shap
+import pandas as pd
+import multiprocessing
 
 from catboost import CatBoostRegressor
 import xgboost as xgb
@@ -15,7 +17,8 @@ from sklearn.model_selection import LeaveOneOut
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import make_scorer, r2_score
 from sklearn.model_selection import KFold
-import multiprocessing
+
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, classification_report
 
 
 from math import sqrt
@@ -69,13 +72,13 @@ class PermaRegressor:
         self.xgboost_reg_model = xgb.XGBRegressor(objective='reg:squarederror')  
         
         # Create the lists with params and models
-        # self.model_name_list = ["ridge", "lasso", "xgboost", "catboost"]
-        # self.model_param_grid_list = [self.ridge_param_grid, self.lasso_param_grid, self.xgboost_param_grid, self.catboost_param_grid]
-        # self.reg_model_list = [self.ridge_reg_model, self.lasso_reg_model, self.xgboost_reg_model, self.catboost_reg_model]
+        self.model_name_list = ["ridge", "lasso", "xgboost", "catboost"]
+        self.model_param_grid_list = [self.ridge_param_grid, self.lasso_param_grid, self.xgboost_param_grid, self.catboost_param_grid]
+        self.reg_model_list = [self.ridge_reg_model, self.lasso_reg_model, self.xgboost_reg_model, self.catboost_reg_model]
         
-        self.model_name_list = ["lasso"]
-        self.model_param_grid_list = [self.lasso_param_grid]
-        self.reg_model_list = [self.lasso_reg_model]
+        # self.model_name_list = ["lasso"]
+        # self.model_param_grid_list = [self.lasso_param_grid]
+        # self.reg_model_list = [self.lasso_reg_model]
         
         
     def train_model(self, multioutput_reg_model, model_name, param_grid):        
@@ -149,26 +152,8 @@ class PermaRegressor:
             
         self.plot_and_save_feature_importance(model_name)
         self.plot_and_save_shap_values(model_name)
-            
-        # Print the sum and mean of the best scores
-        # print(model_name + " Mean Best Score " + scoring + ": ", np.mean(best_scores))
-        # print(model_name + " Best Params: ", best_params)
-        
-        # multioutput_reg_model = MultiOutputRegressor(Lasso())
-        
-        # # Set estimators_ attribute of MultiOutputRegressor object
-        # multioutput_reg_model.estimators_ = models
-        
-        # # Print baseline RMSE and MAE
-        # self.calc_baseline_comparison(multioutput_reg_model, model_name)
-        
-        # self.plot_and_save_feature_importance(multioutput_reg_model, model_name)
-        # self.plot_and_save_shap_values(multioutput_reg_model, model_name)
-    
-        # # Save models dict to pickle file
-        # model_file_name = self.database_name + '_' + model_name + '_perma_model.pkl'
-        # with open(PERMA_MODEL_RESULTS_DIR / model_file_name, 'wb') as f:
-        #     pkl.dump(multioutput_reg_model, f)
+        # self.transform_to_classification(model_name)
+
 
     def train_multiple_models(self):
         
@@ -181,6 +166,51 @@ class PermaRegressor:
 
         self.plot_baseline_bar_plot_comparison()
         self.plot_baseline_box_plot_comparison()
+        
+        
+    def transform_to_classification(self, model_name):
+        
+        for y_i, reg_model in enumerate(self.models):
+        
+            number_of_classes = 3
+            labels = [i for i in range(number_of_classes)]
+            # Based on train set, choose the borders of the bins so that the number of samples in each bin is equal
+            data_y_train = self.data_y_train.iloc[:, y_i]
+            # print(data_y_train.value_counts())
+            # Print value counts sorted by value
+            print(data_y_train.value_counts().sort_index())
+
+            # * Quantile-Based Binning (other option: equal-width binning)
+            percentiles = np.linspace(0, 100, num=(number_of_classes+1))
+            bin_edges = np.percentile(data_y_train, percentiles)
+            # If two values in bin_edges are equal, add a small value to the second value
+            
+            # Add a lower bound to the first bin edge and an upper bound to the last bin edge
+            bin_edges[0] = -np.inf
+            bin_edges[-1] = np.inf
+            
+            # Print the distribution of each class in the train set
+            print("Distribution of classes in train set for " + str(self.data_y_train.columns[y_i]) + ":")
+            print(pd.cut(data_y_train, bins=bin_edges, labels=labels).value_counts().sort_index())
+        
+            # Calculate the true classes for the test set (bin the PERMA scores into 3 classes)
+            data_y_test = self.data_y_test.iloc[:, y_i]
+            true_classes = pd.cut(data_y_test, bins=bin_edges, labels=labels)
+            true_classes = true_classes.to_numpy()
+            
+            # Calculate the predicted classes for the test set (bin the PERMA scores into 3 classes)
+            y_pred = reg_model.predict(self.data_X_test[self.perma_feature_list[y_i]])
+            pred_classes = pd.cut(y_pred, bins=bin_edges, labels=labels)
+            pred_classes = pred_classes.to_numpy()
+            
+            # Plot the confusion matrix
+            conf_matrix = confusion_matrix(true_classes, pred_classes)
+            print("---- Confusion matrix for " + model_name + " " + str(self.data_y_train.columns[y_i]) + " : \n", conf_matrix)
+            
+            # Calculate the classification report
+            class_report = classification_report(true_classes, pred_classes)
+            perma_pillar = str(self.data_y_train.columns[y_i])
+            print("---- Classification report for " + model_name + " " + perma_pillar + " : \n", class_report)
 
     def calc_baseline_comparison(self, reg_model, model_name, y_i):
         
@@ -290,25 +320,6 @@ class PermaRegressor:
     
     def catboost_train(self):
         
-        # Define the parameter grid to search over
-        # param_grid = {
-        #     'estimator__max_depth': [3, 5, 7],
-        #     'estimator__learning_rate': [0.1, 0.01, 0.001],
-        #     'estimator__n_estimators': [50, 100, 200]
-        # }
-        
-        # param_grid = {
-        #     'max_depth': [5],
-        #     'learning_rate': [0.01],
-        #     'n_estimators': [100]
-        # }
-        
-        # param_grid = {
-        #     'estimator__max_depth': [3, 5, 7],
-        #     'estimator__learning_rate': [0.1, 0.01],
-        #     'estimator__n_estimators': [100, 200]
-        # }
-        
         param_grid_ind = {
             'max_depth': [3, 5, 7],
             'learning_rate': [0.1, 0.01],
@@ -321,13 +332,6 @@ class PermaRegressor:
         self.train_ind_models(reg_model, 'catboost', param_grid_ind)
 
     def xgboost_train(self):
-        
-        # Define the parameter grid to search over
-        # param_grid = {
-        #     'estimator__max_depth': [3, 5, 7],
-        #     'estimator__learning_rate': [0.1, 0.01],
-        #     'estimator__n_estimators': [100, 200]
-        # }
         
         param_grid_ind = {
             'max_depth': [3, 5, 7],

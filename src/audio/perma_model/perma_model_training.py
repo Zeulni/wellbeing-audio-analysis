@@ -16,7 +16,7 @@ class PermaModelTraining:
     def run(self): 
 
         # database_list = ["short_data", "long_data"]
-        database_list = ["short_data"]
+        database_list = ["long_data"]
         
         best_param = {"short_data": {"threshold_variance": 0.04, "threshold_correlation": 0.9, "alpha_rfe": 0.01},
                       "long_data": {"threshold_variance": 0.04, "threshold_correlation": 0.9, "alpha_rfe": 0.01}}
@@ -48,18 +48,16 @@ class PermaModelTraining:
             # data_y = self.scaling_data.standardize_targets(data_y)     
             data_X = self.data_scaling.scale_features(data_X, database)
             
-            # TODO: test long dataset
             
             # * Feature Selection
             data_X = self.feature_reduction.variance_thresholding(data_X, best_param[database])
-            data_X, correlated_features = self.feature_reduction.correlation_thresholding(data_X, best_param[database])
+            data_X, correlated_features = self.feature_reduction.correlation_thresholding(data_X, data_y, best_param[database])
             # data_X = self.feature_reduction.perform_pca(data_X, database, 10)
             # data_X = self.feature_reduction.select_features_mutual_info(data_X, data_y, database, 5)
             data_X, perma_feature_list = self.feature_reduction.recursive_feature_elimination(data_X, data_y, database, best_param[database])
             
             # Filter correlated features based on the remaining columns in data_X
-            columns_list = list(data_X.columns)
-            filtered_pairs = [pair for pair in correlated_features if any(feature in pair for feature in columns_list)]
+            # tbd
             
             # self.feature_reduction.finding_best_k_mutual_info(data_X, data_y)
             # data_X = self.feature_reduction.select_features_mutual_info(data_X, data_y, database, 2)
@@ -70,6 +68,7 @@ class PermaModelTraining:
             # self.exp_data_analysis.plot_perma_pillars(data_y)
             self.exp_data_analysis.plot_correlations_with_target(data_X, data_y)
             
+            # TODO: Supervised correlation thresholding?
             # TODO: create inference pipeline again
             
             # * Model Training

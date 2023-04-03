@@ -1,4 +1,4 @@
-
+import copy
 import numpy as np
 import os
 import pandas as pd
@@ -320,12 +320,12 @@ class FeatureReduction():
         return reduced_data_X
     
     # Identify highly correlated features to drop them (1 feature will stay, but it removes duplicates)
-    def correlation_thresholding(self, data_X, best_param) -> pd.DataFrame:
+    def correlation_thresholding(self, data_X, data_y, best_param) -> pd.DataFrame:
         
         # Plot the correlation matrix as a heatmap
-        plt.figure(figsize=(16, 9))
-        sns.heatmap(data_X.corr(), annot=True)
-        plt.show()
+        # plt.figure(figsize=(16, 9))
+        # sns.heatmap(data_X.corr(), annot=True)
+        # plt.show()
         
         threshold = best_param['threshold_correlation']
         
@@ -340,30 +340,74 @@ class FeatureReduction():
         
         # Dict that stores for each feature the features that are highly correlated
         correlated_features = []
-
+        
+        # Create a list with the length of reduced_matrix, each entry is a list again with the column name as str
+        correlation_overview = []
+            
         # Find cols that meet the threshold
         to_drop = set()
         for i, col in enumerate(reduced_matrix):
+            correlation_overview.append([col])
             # Check if any other column has correlation coefficient greater than threshold
             if any(reduced_matrix[col] > threshold):
                 # Add all other columns with high correlation to the set of columns to drop
                 for c in reduced_matrix.columns:
                     value = reduced_matrix[col][c]
                     if c != col and value > threshold:
+                        correlation_overview[i].append(c)
                         to_drop.update([c])
                         # Add the correlated feature to the list (at position i)
                         correlated_features.append([c, col])
         
-        print(f'Number of features after correlation thresholding: {len(data_X.columns) - len(to_drop)}')
+        # Create a copy correlation_overview
+        correlation_overview_copy = copy.deepcopy(correlation_overview)
         
-        reduced_data_X = data_X.drop(to_drop, axis=1)
+        # For each list in correlation_overview, correlate each feature with each dimension in data_y
+        # Then select the one in each list that has the highest avg correlation with the target variables
+        correlation_overview_high_corr = []
+        for i, feature_list in enumerate(correlation_overview):
+            # Create a new list for each feature in the list
+            correlation_overview_high_corr.append([])
+            for feature in feature_list:
+                # Create a new list for each target variable
+                correlation_overview_high_corr[i].append([])
+                for target in data_y.columns:
+                    # Store the correlation coefficient between the feature and the target variable
+                    correlation_overview_high_corr[i][feature_list.index(feature)].append(abs(data_X[feature].corr(data_y[target])))
+                    
+        # For each list in correlation_overview_high_corr, select the feature with the highest avg correlation
+        # with the target variables
+        for i, feature_list in enumerate(correlation_overview_high_corr):
+            # Create a new list for each feature in the list
+            correlation_overview_high_corr[i] = []
+            for feature in feature_list:
+                # Create a new list for each target variable
+                correlation_overview_high_corr[i].append(np.mean(feature))
+            
+                
+        # In correlation_overview, remove the most important feature in each list (so it contains the features to be dropped)
+        for i, feature_list in enumerate(correlation_overview):
+            # Get the index of the feature with the highest correlation with the target variables
+            index = correlation_overview_high_corr[i].index(max(correlation_overview_high_corr[i]))
+            # Remove the feature with the highest correlation with the target variables
+            correlation_overview[i].pop(index)
+
+            
+        # Flatten all lists in correlation_overview and store them in a set
+        to_drop_new = set([item for sublist in correlation_overview for item in sublist])
+        
+        # print(f'Number of features after correlation thresholding: {len(data_X.columns) - len(to_drop)}')
+        # reduced_data_X = data_X.drop(to_drop, axis=1)
+        
+        print(f'Number of features after correlation thresholding: {len(data_X.columns) - len(to_drop_new)}')
+        reduced_data_X = data_X.drop(to_drop_new, axis=1)
         
         # * No feature is anymore correlated with each other above the threshold value
-        plt.figure(figsize=(16, 9))
-        sns.heatmap(reduced_data_X.corr(), annot=True)
-        plt.show()
+        # plt.figure(figsize=(16, 9))
+        # sns.heatmap(reduced_data_X.corr(), annot=True)
+        # plt.show()
         
-        return reduced_data_X, correlated_features
+        return reduced_data_X, correlation_overview_copy
     
     # Catboost does not support RFE, so we use a different method
     # def recursive_feature_elimination(self, data_X, data_y, database, best_param):
