@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import pickle as pkl
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from sklearn.feature_selection import SelectFromModel, SelectKBest, mutual_info_regression
 from sklearn.linear_model import Lasso
@@ -15,6 +16,7 @@ from sklearn.feature_selection import VarianceThreshold
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import LeaveOneOut
 from sklearn.model_selection import KFold
+from sklearn.preprocessing import MinMaxScaler
 
 from src.audio.utils.constants import PERMA_MODEL_DIR
 from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
@@ -289,7 +291,15 @@ class FeatureReduction():
     # Reduce features with low variance
     def variance_thresholding(self, data_X, best_param) -> pd.DataFrame:
         
+        
+        # Scaling from before has no influence (same as directly normalized)
+        scaler = MinMaxScaler()
+        data_X_normalized = scaler.fit_transform(data_X)
+        
         # variances = np.var(data_X_normalized, axis=0)   
+        
+        # Debugging
+        variances = pd.DataFrame({'Feature': data_X.columns, 'Variance': np.var(data_X_normalized, axis=0)})
         
         threshold = best_param['threshold_variance']
         
@@ -297,7 +307,7 @@ class FeatureReduction():
         selector = VarianceThreshold(threshold=threshold)
         
         # Fit the selector to the data (data is already normalized)
-        selector.fit(data_X)
+        selector.fit(data_X_normalized)
         
         # Get the indices of the features that are kept
         kept_indices = selector.get_support(indices=True)
@@ -311,6 +321,11 @@ class FeatureReduction():
     
     # Identify highly correlated features to drop them (1 feature will stay, but it removes duplicates)
     def correlation_thresholding(self, data_X, best_param) -> pd.DataFrame:
+        
+        # Plot the correlation matrix as a heatmap
+        plt.figure(figsize=(16, 9))
+        sns.heatmap(data_X.corr(), annot=True)
+        plt.show()
         
         threshold = best_param['threshold_correlation']
         
@@ -342,6 +357,11 @@ class FeatureReduction():
         print(f'Number of features after correlation thresholding: {len(data_X.columns) - len(to_drop)}')
         
         reduced_data_X = data_X.drop(to_drop, axis=1)
+        
+        # * No feature is anymore correlated with each other above the threshold value
+        plt.figure(figsize=(16, 9))
+        sns.heatmap(reduced_data_X.corr(), annot=True)
+        plt.show()
         
         return reduced_data_X, correlated_features
     
@@ -388,6 +408,7 @@ class FeatureReduction():
         
         alpha = best_param['alpha_rfe']
         
+        perma_feature_list = []
         
         reduced_data_X_features = set()
         
@@ -396,15 +417,15 @@ class FeatureReduction():
             
             data_y_i = data_y.iloc[:, i]
             
-            # scoring = 'neg_mean_absolute_error'
-            scoring = 'neg_mean_squared_error'
+            scoring = 'neg_mean_absolute_error'
+            # scoring = 'neg_mean_squared_error'
             # scoring = 'neg_root_mean_squared_error'
             # scoring = 'r2'
             # Calculate cv factor, so every eval set has the length of 2 samples
             # cv_factor = int(len(data_y_i) / 2)
             # cv = KFold(n_splits=cv_factor, shuffle=True, random_state=42)
             cv = LeaveOneOut()
-            rfecv = RFECV(estimator=model, step=5, cv=cv, n_jobs=-1, verbose=0, scoring=scoring)
+            rfecv = RFECV(estimator=model, step=1, cv=cv, n_jobs=-1, verbose=0, scoring=scoring, min_features_to_select=1)
             rfecv.fit(data_X, data_y_i)
             
             print(f'Optimal number of features for {col}: {rfecv.n_features_}')
@@ -419,14 +440,23 @@ class FeatureReduction():
             
             # Add feature names to set (to remove duplicates)
             reduced_data_X_features.update(selected_features)
+            # selected_features = sorted(selected_features)
+            
+            # Create a dataframe (select the features from data_X) and append it to the list
+            perma_feature_list.append(selected_features)
+            
+            # TODO: could also store them just once
+            filename = database + "_selected_features_" + str(col) + ".pkl"
+            with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_" + str(col) + "_selected_features.pkl"), "wb") as f:
+                pkl.dump(reduced_data_X_features, f)
             
             # Plot number of features VS. cross-validation scores
-            plt.figure()
-            plt.xlabel("Number of features selected")
-            plt.ylabel("Cross validation score")
-            plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), rfecv.cv_results_['mean_test_score'])
-            plt.tight_layout()
-            plt.show()
+            # plt.figure()
+            # plt.xlabel("Number of features selected")
+            # plt.ylabel("Cross validation score")
+            # plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), rfecv.cv_results_['mean_test_score'])
+            # plt.tight_layout()
+            # plt.show()
 
         print(f'Number of features after recursive feature elimination: {len(reduced_data_X_features)}')
 
@@ -437,8 +467,8 @@ class FeatureReduction():
         reduced_data_X = data_X[reduced_data_X_features]
         
         # Save the selected features as pickle file
-        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_selected_features.pkl"), "wb") as f:
-            pkl.dump(reduced_data_X_features, f)
+        # with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_selected_features.pkl"), "wb") as f:
+        #     pkl.dump(reduced_data_X_features, f)
 
-        return reduced_data_X
+        return reduced_data_X, perma_feature_list
             
