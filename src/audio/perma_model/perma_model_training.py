@@ -19,7 +19,7 @@ class PermaModelTraining:
         database_list = ["short_data"]
         
         best_param = {"short_data": {"threshold_variance": 0.04, "threshold_correlation": 0.9, "alpha_rfe": 0.01},
-                      "long_data": {"threshold_variance": 0.8, "threshold_correlation": 0.9, "alpha_rfe": 0.1}}
+                      "long_data": {"threshold_variance": 0.04, "threshold_correlation": 0.9, "alpha_rfe": 0.01}}
         
         for database in database_list:
             # Read the data
@@ -48,10 +48,7 @@ class PermaModelTraining:
             # data_y = self.scaling_data.standardize_targets(data_y)     
             data_X = self.data_scaling.scale_features(data_X, database)
             
-            # TODO: added: varianc bug (normalization), correlation plotting -> proof that uncorrelated features are removed
-            # TODO on monday: try it ridge regression beside lasso regression (not that many coef to 0), with min 2-3 features, MAE than RMSE? outliers not punished that much
-            # TODO: return baseline scores and avg them per model -> have one score, which can be compared among models
-            # TODO: then train other models in parallel and plot model comparison
+            # TODO: test long dataset
             
             # * Feature Selection
             data_X = self.feature_reduction.variance_thresholding(data_X, best_param[database])
@@ -71,7 +68,7 @@ class PermaModelTraining:
             
             # self.exp_data_analysis.plot_pairplot_final_features(data_X, data_y, feature_importance_dict)
             # self.exp_data_analysis.plot_perma_pillars(data_y)
-            # self.exp_data_analysis.plot_correlations_with_target(data_X, data_y)
+            self.exp_data_analysis.plot_correlations_with_target(data_X, data_y)
             
             # TODO: create inference pipeline again
             

@@ -323,9 +323,9 @@ class FeatureReduction():
     def correlation_thresholding(self, data_X, best_param) -> pd.DataFrame:
         
         # Plot the correlation matrix as a heatmap
-        # plt.figure(figsize=(16, 9))
-        # sns.heatmap(data_X.corr(), annot=True)
-        # plt.show()
+        plt.figure(figsize=(16, 9))
+        sns.heatmap(data_X.corr(), annot=True)
+        plt.show()
         
         threshold = best_param['threshold_correlation']
         
@@ -359,9 +359,9 @@ class FeatureReduction():
         reduced_data_X = data_X.drop(to_drop, axis=1)
         
         # * No feature is anymore correlated with each other above the threshold value
-        # plt.figure(figsize=(16, 9))
-        # sns.heatmap(reduced_data_X.corr(), annot=True)
-        # plt.show()
+        plt.figure(figsize=(16, 9))
+        sns.heatmap(reduced_data_X.corr(), annot=True)
+        plt.show()
         
         return reduced_data_X, correlated_features
     

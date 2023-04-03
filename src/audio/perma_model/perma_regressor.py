@@ -73,9 +73,9 @@ class PermaRegressor:
         # self.model_param_grid_list = [self.ridge_param_grid, self.lasso_param_grid, self.xgboost_param_grid, self.catboost_param_grid]
         # self.reg_model_list = [self.ridge_reg_model, self.lasso_reg_model, self.xgboost_reg_model, self.catboost_reg_model]
         
-        self.model_name_list = ["ridge", "lasso"]
-        self.model_param_grid_list = [self.ridge_param_grid, self.lasso_param_grid]
-        self.reg_model_list = [self.ridge_reg_model, self.lasso_reg_model]
+        self.model_name_list = ["lasso"]
+        self.model_param_grid_list = [self.lasso_param_grid]
+        self.reg_model_list = [self.lasso_reg_model]
         
         
     def train_model(self, multioutput_reg_model, model_name, param_grid):        
@@ -108,7 +108,7 @@ class PermaRegressor:
             
     def train_ind_models(self, reg_model, model_name, param_grid):        
         
-        models = []
+        self.models = []
         # for i in range(self.data_y_train.shape[1]):
         #     models.append(reg_model)
         
@@ -132,7 +132,7 @@ class PermaRegressor:
             # best_alpha = grid_search.best_params_['alpha']
             # models.append(Lasso(alpha=best_alpha))
             # models_trained.append(grid_search.best_estimator_)
-            models.append(grid_search.best_estimator_)
+            self.models.append(grid_search.best_estimator_)
             best_params.append(grid_search.best_params_)
             # Train model with best alpha
             # models[i].fit(self.data_X, self.data_y.iloc[:, i])
@@ -140,7 +140,15 @@ class PermaRegressor:
             
             print("Best score for " + model_name + " : ", round(-grid_search.best_score_,3))
             
-            self.calc_baseline_comparison(models[i], model_name, i)
+            self.calc_baseline_comparison(self.models[i], model_name, i)
+            
+            perma_pillar = str(self.data_y_train.columns[i])
+            model_file_name = self.database_name + '_' + model_name + '_' + perma_pillar + '_perma_model.pkl'
+            with open(PERMA_MODEL_RESULTS_DIR / model_file_name, 'wb') as f:
+                pkl.dump(self.models[i], f)
+            
+        self.plot_and_save_feature_importance(model_name)
+        self.plot_and_save_shap_values(model_name)
             
         # Print the sum and mean of the best scores
         # print(model_name + " Mean Best Score " + scoring + ": ", np.mean(best_scores))
@@ -171,7 +179,8 @@ class PermaRegressor:
         # with multiprocessing.Pool() as pool:
         #     pool.starmap(self.train_ind_models, zip(self.reg_model_list, self.model_name_list, self.model_param_grid_list))
 
-        self.plot_baseline_comparison()
+        self.plot_baseline_bar_plot_comparison()
+        self.plot_baseline_box_plot_comparison()
 
     def calc_baseline_comparison(self, reg_model, model_name, y_i):
         
@@ -209,7 +218,7 @@ class PermaRegressor:
         print(model_name + " Test Set Prediction MAE:", round(mae,3))
         self.baseline_comp_dict[model_name]["prediction"].append(mae)
         
-    def plot_baseline_comparison(self):
+    def plot_baseline_bar_plot_comparison(self):
         
         # Initialize empty lists to store the model names and average values
         models = []
@@ -223,6 +232,7 @@ class PermaRegressor:
             prediction_avgs.append(np.mean(values["prediction"]))
 
         # Set up the plot
+        plt.rcParams['font.size'] = 16
         fig, ax = plt.subplots()
         bar_width = 0.35
         opacity = 0.8
@@ -245,8 +255,35 @@ class PermaRegressor:
         ax.set_ylabel('Average MAE over all 5 PERMA pillars')
         ax.set_title('Baseline and Prediction Averages by Model')
         ax.set_xticks(index + bar_width / 2)
-        ax.set_xticklabels(models)
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+        ax.set_xticklabels(models, fontsize=20)
+        ax.legend(loc="lower right")
+
+        # Show the plot
+        plt.show()
+        
+    def plot_baseline_box_plot_comparison(self):
+        
+        # Initialize empty list to store the model names and prediction values
+        models = []
+        prediction_values = []
+
+        # Iterate over the keys in the baseline_comp_dict dictionary to extract the model names and prediction values
+        for model, values in self.baseline_comp_dict.items():
+            models.append(model)
+            prediction_values.append(values["prediction"])
+
+        # Set up the plot
+        plt.rcParams['font.size'] = 16
+        fig, ax = plt.subplots()
+
+        # Create the box plot for the prediction values
+        ax.boxplot(prediction_values)
+
+        # Add labels, title and legend to the plot
+        ax.set_xlabel('Models')
+        ax.set_ylabel('Prediction Values')
+        ax.set_title('Prediction Values by Model')
+        ax.set_xticklabels(models, fontsize=20)
 
         # Show the plot
         plt.show()
@@ -319,7 +356,7 @@ class PermaRegressor:
         reg_model = Lasso()
         self.train_ind_models(reg_model, 'lasso', param_grid)
         
-    def plot_and_save_feature_importance(self, regr, model_name):
+    def plot_and_save_feature_importance(self, model_name):
         
         # Close all current plots
         plt.close('all')
@@ -328,45 +365,48 @@ class PermaRegressor:
         plt.figure(figsize=(16, 8))
             
         # Loop over every estimator and plot the feature importance as a subplot
-        for i, estimator in enumerate(regr.estimators_):
+        
+        for i, reg_model in enumerate(self.models):
             plt.subplot(2, 3, i+1)
             if model_name == 'catboost' or model_name == 'xgboost':
-                sorted_feature_importance = estimator.feature_importances_.argsort()
-                feature_importance = estimator.feature_importances_[sorted_feature_importance]
-            elif model_name == 'lasso':
-                sorted_feature_importance = estimator.coef_.argsort()
-                feature_importance = estimator.coef_[sorted_feature_importance]
+                sorted_feature_importance = reg_model.feature_importances_.argsort()
+                feature_importance = reg_model.feature_importances_[sorted_feature_importance]
+            elif model_name == 'lasso' or model_name == 'ridge':
+                sorted_feature_importance = reg_model.coef_.argsort()
+                feature_importance = reg_model.coef_[sorted_feature_importance]
             plt.barh(self.data_X_train.columns[sorted_feature_importance], 
                     feature_importance, 
                     color='turquoise')
             plt.xlabel(model_name + " Feature Importance")
-            plt.title(self.data_y_train.columns[i])
+            perma_pillar = str(self.data_y_train.columns[i])
+            plt.title(perma_pillar)
             plt.tight_layout()
-        
-        plt.savefig(PERMA_MODEL_RESULTS_DIR / f'{self.database_name}_{model_name}_feature_importance.png')
-        
+            
+            plt.savefig(PERMA_MODEL_RESULTS_DIR / f'{self.database_name}_{model_name}_feature_importance_{perma_pillar}.png')
         plt.show()
         plt.clf()
         
-    def plot_and_save_shap_values(self, regr, model_name):        
+    def plot_and_save_shap_values(self, model_name):        
     
         # Only plot shap values for the top 5 important features for each estimator
-        for i, estimator in enumerate(regr.estimators_):
+        for i, reg_model in enumerate(self.models):
             if model_name == 'catboost' or model_name == 'xgboost':
-                explainer = shap.TreeExplainer(estimator)
-                sorted_feature_importance = estimator.feature_importances_.argsort()
-            elif model_name == 'lasso':
-                explainer = shap.Explainer(estimator, self.data_X_train)
-
-                sorted_feature_importance = estimator.coef_.argsort()
-            shap_values = explainer.shap_values(self.data_X_train)
+                explainer = shap.TreeExplainer(reg_model)
+                sorted_feature_importance = reg_model.feature_importances_.argsort()
+            elif model_name == 'lasso' or model_name == 'ridge':
+                explainer = shap.Explainer(reg_model, self.data_X_train[self.perma_feature_list[i]])
+                sorted_feature_importance = reg_model.coef_.argsort()
+                
+            shap_values = explainer.shap_values(self.data_X_train[self.perma_feature_list[i]])
             
             columns_shap_values = self.data_X_train.columns[sorted_feature_importance]
             shap_values = shap_values[:, sorted_feature_importance]
 
             shap.summary_plot(shap_values, self.data_X_train[columns_shap_values], feature_names = columns_shap_values, show=False)
-            # plt.xlabel("SHAP Values")
-            plt.title(self.data_y_train.columns[i])
-            plt.savefig(PERMA_MODEL_RESULTS_DIR / f'{self.database_name}_{model_name}_shap_values_{self.data_y_train.columns[i]}.png')
+            plt.xlabel("SHAP Values")
+            perma_pillar = str(self.data_y_train.columns[i])
+            plt.title(perma_pillar)
+            plt.tight_layout()
+            plt.savefig(PERMA_MODEL_RESULTS_DIR / f'{self.database_name}_{model_name}_shap_values_{perma_pillar}.png')
             plt.show()
             plt.clf()
