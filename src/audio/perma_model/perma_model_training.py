@@ -16,7 +16,7 @@ class PermaModelTraining:
     def run(self): 
 
         # database_list = ["short_data", "long_data"]
-        database_list = ["long_data"]
+        database_list = ["short_data"]
         
         best_param = {"short_data": {"threshold_variance": 0.04, "threshold_correlation": 0.9, "alpha_rfe": 0.01},
                       "long_data": {"threshold_variance": 0.04, "threshold_correlation": 0.9, "alpha_rfe": 0.01}}
@@ -73,7 +73,7 @@ class PermaModelTraining:
             
             # * Model Training
             perma_regressor = PermaRegressor(data_X, data_y, perma_feature_list, database)
-            perma_regressor.train_multiple_models()
+            perma_regressor.train_multiple_models_per_pillar()
             # perma_regressor.lasso_train()
             # perma_regressor.catboost_train()
             # perma_regressor.xgboost_train()

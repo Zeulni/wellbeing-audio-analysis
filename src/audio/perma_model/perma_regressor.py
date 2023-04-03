@@ -37,10 +37,11 @@ class PermaRegressor:
         
         self.database_name = database_name
         
-        self.baseline_comp_dict = {"ridge": {"baseline": [], "prediction": []},
-                                   "lasso": {"baseline": [], "prediction": []},
-                                   "xgboost": {"baseline": [], "prediction": []},
-                                   "catboost": {"baseline": [], "prediction": []}}
+        self.baseline_comp_dict = {"P": {"baseline": [], "prediction": []},
+                                   "E": {"baseline": [], "prediction": []},
+                                   "R": {"baseline": [], "prediction": []},
+                                   "M": {"baseline": [], "prediction": []},
+                                   "A": {"baseline": [], "prediction": []}}
         
         
         # * Ridge Model
@@ -61,7 +62,7 @@ class PermaRegressor:
             'learning_rate': [0.1, 0.01],
             'n_estimators': [100, 200]
         }
-        self.catboost_reg_model = CatBoostRegressor(loss_function='RMSE' ,verbose=False, save_snapshot=False, allow_writing_files=False, train_dir=str(PERMA_MODEL_RESULTS_DIR))
+        self.catboost_reg_model = CatBoostRegressor(loss_function='MAE' ,verbose=False, save_snapshot=False, allow_writing_files=False, train_dir=str(PERMA_MODEL_RESULTS_DIR))
         
         # * XGBoost Model
         self.xgboost_param_grid = {
@@ -69,16 +70,17 @@ class PermaRegressor:
             'learning_rate': [0.1, 0.01],
             'n_estimators': [100, 200]
         }
-        self.xgboost_reg_model = xgb.XGBRegressor(objective='reg:squarederror')  
+        
+        self.xgboost_reg_model = xgb.XGBRegressor(objective='reg:absoluteerror')  
         
         # Create the lists with params and models
         self.model_name_list = ["ridge", "lasso", "xgboost", "catboost"]
         self.model_param_grid_list = [self.ridge_param_grid, self.lasso_param_grid, self.xgboost_param_grid, self.catboost_param_grid]
         self.reg_model_list = [self.ridge_reg_model, self.lasso_reg_model, self.xgboost_reg_model, self.catboost_reg_model]
         
-        # self.model_name_list = ["lasso"]
-        # self.model_param_grid_list = [self.lasso_param_grid]
-        # self.reg_model_list = [self.lasso_reg_model]
+        # self.model_name_list = ["ridge", "lasso"]
+        # self.model_param_grid_list = [self.ridge_param_grid, self.lasso_param_grid]
+        # self.reg_model_list = [self.ridge_reg_model, self.lasso_reg_model]
         
         
     def train_model(self, multioutput_reg_model, model_name, param_grid):        
@@ -101,76 +103,81 @@ class PermaRegressor:
         # Print baseline RMSE and MAE
         self.calc_baseline(multioutput_reg_model, model_name)
         
-        self.plot_and_save_feature_importance(multioutput_reg_model, model_name)
-        self.plot_and_save_shap_values(multioutput_reg_model, model_name)
+        # TODO: bring back
+        # self.plot_and_save_feature_importance(multioutput_reg_model, model_name)
+        # self.plot_and_save_shap_values(multioutput_reg_model, model_name)
     
         # Save models dict to pickle file
         model_file_name = self.database_name + '_' + model_name + '_perma_model.pkl'
         with open(PERMA_MODEL_RESULTS_DIR / model_file_name, 'wb') as f:
             pkl.dump(multioutput_reg_model, f)
             
-    def train_ind_models(self, reg_model, model_name, param_grid):        
-        
-        self.models = []
+    def train_ind_models(self):        
+        # , reg_model, model_name, param_grid
+        self.best_models = []
+        self.best_models_names = []
         # for i in range(self.data_y_train.shape[1]):
         #     models.append(reg_model)
         
-
         
-        best_params = []
-        best_scores = []
-        for i in range(self.data_y_train.shape[1]):
-            model = reg_model
-            # scorer = ["neg_root_mean_squared_error", "r2"]
-            # scoring = "neg_root_mean_squared_error"
-            scoring = 'neg_mean_absolute_error'
-            # scoring = "neg_mean_squared_error"
-            # scoring = "r2"
-            # rmse_scorer = make_scorer(lambda y_true, y_pred: sqrt(mean_squared_error(y_true, y_pred)), greater_is_better=False)
-            # cv_factor = int(len(self.data_y_train) / 2)
-            # cv = KFold(n_splits=cv_factor, shuffle=True, random_state=42)
-            cv = LeaveOneOut() 
-            grid_search = GridSearchCV(model, param_grid, cv=cv, scoring=scoring, verbose=0, n_jobs=-1, refit=scoring)
-            grid_search.fit(self.data_X_train[self.perma_feature_list[i]], self.data_y_train.iloc[:, i])
-            # best_alpha = grid_search.best_params_['alpha']
-            # models.append(Lasso(alpha=best_alpha))
-            # models_trained.append(grid_search.best_estimator_)
-            self.models.append(grid_search.best_estimator_)
-            best_params.append(grid_search.best_params_)
-            # Train model with best alpha
-            # models[i].fit(self.data_X, self.data_y.iloc[:, i])
-            best_scores.append(-grid_search.best_score_)
+        # best_params = []
+        # best_scores = []
+        # Loop over every pillar
+        for perma_i in range(self.data_y_train.shape[1]):
+            pillar_models = []
+            pillar_best_scores = []
+            for model_i, reg_model in enumerate(self.reg_model_list):
             
-            print("Best score for " + model_name + " : ", round(-grid_search.best_score_,3))
+                param_grid = self.model_param_grid_list[model_i]
+                model_name = self.model_name_list[model_i]
             
-            self.calc_baseline_comparison(self.models[i], model_name, i)
+                grid_search = GridSearchCV(reg_model, param_grid, cv=LeaveOneOut() , scoring='neg_mean_absolute_error', verbose=0, n_jobs=-1, refit='neg_mean_absolute_error')
+                grid_search.fit(self.data_X_train[self.perma_feature_list[perma_i]], self.data_y_train.iloc[:, perma_i])
+                # models_trained.append(grid_search.best_estimator_)
+                # self.best_models.append(grid_search.best_estimator_)
+                # best_params.append(grid_search.best_params_)
+                pillar_models.append(grid_search.best_estimator_)
+                pillar_best_scores.append(-grid_search.best_score_)
+                # best_scores.append(-grid_search.best_score_)
+                
+                print("Best score for " + model_name + " : ", round(-grid_search.best_score_,3))
             
-            perma_pillar = str(self.data_y_train.columns[i])
-            model_file_name = self.database_name + '_' + model_name + '_' + perma_pillar + '_perma_model.pkl'
+            # Select the best model and store in in the models list
+            best_model_i = np.argmin(pillar_best_scores)
+            self.best_models.append(pillar_models[best_model_i])
+            self.best_models_names.append(self.model_name_list[best_model_i])
+            
+            self.calc_baseline_comparison(self.best_models[perma_i], self.best_models_names[perma_i], perma_i)
+            
+            perma_pillar = str(self.data_y_train.columns[perma_i])
+            model_file_name = self.database_name + '_' + self.best_models_names[perma_i] + '_' + perma_pillar + '_perma_model.pkl'
             with open(PERMA_MODEL_RESULTS_DIR / model_file_name, 'wb') as f:
-                pkl.dump(self.models[i], f)
-            
-        self.plot_and_save_feature_importance(model_name)
-        self.plot_and_save_shap_values(model_name)
-        # self.transform_to_classification(model_name)
+                pkl.dump(self.best_models[perma_i], f)
 
 
-    def train_multiple_models(self):
+    def train_multiple_models_per_pillar(self):
         
-        for i in range(len(self.model_name_list)):
-            self.train_ind_models(self.reg_model_list[i], self.model_name_list[i], self.model_param_grid_list[i])
+        self.train_ind_models()
+        
+        # for i in range(len(self.model_name_list)):
+        #     self.train_ind_models(self.reg_model_list[i], self.model_name_list[i], self.model_param_grid_list[i])
         
         # Use multiprocessing to train the models in parallel
         # with multiprocessing.Pool() as pool:
         #     pool.starmap(self.train_ind_models, zip(self.reg_model_list, self.model_name_list, self.model_param_grid_list))
 
+        # TODO: add again
+        # self.plot_and_save_feature_importance()
+        # self.plot_and_save_shap_values()
+        self.transform_to_classification()
         self.plot_baseline_bar_plot_comparison()
-        self.plot_baseline_box_plot_comparison()
+        # self.plot_baseline_box_plot_comparison()
         
         
-    def transform_to_classification(self, model_name):
+    def transform_to_classification(self):
         
-        for y_i, reg_model in enumerate(self.models):
+        for y_i, reg_model in enumerate(self.best_models):
+            model_name = self.best_models_names[y_i]
         
             number_of_classes = 3
             labels = [i for i in range(number_of_classes)]
@@ -214,10 +221,10 @@ class PermaRegressor:
 
     def calc_baseline_comparison(self, reg_model, model_name, y_i):
         
+        perma_pillar = str(self.data_y_train.columns[y_i])
         data_y_train = self.data_y_train.iloc[:, y_i]
         data_y_test = self.data_y_test.iloc[:, y_i]
-        
-        # TODO: Baseline based on train set mean!?        
+             
         # Select only the y_i column and then calculate the mean of the PERMA scores
         mean_perma_scores = data_y_train.mean(axis=0)
         
@@ -235,7 +242,7 @@ class PermaRegressor:
         # print(model_name + " Test Set Baseline r2:", round(baseline_r2, 3))
         # print(model_name + " Test Set Baseline RMSE:", round(baseline_rmse,3))
         print (model_name + " Test Set Baseline MAE:", round(baseline_mae,3))
-        self.baseline_comp_dict[model_name]["baseline"].append(baseline_mae)
+        self.baseline_comp_dict[perma_pillar]["baseline"].append(baseline_mae)
         
         # Using the entire dataset as test set (with reg_model) to comput R2, RMSE, MAE
         y_pred = reg_model.predict(self.data_X_test[self.perma_feature_list[y_i]])
@@ -246,18 +253,18 @@ class PermaRegressor:
         # print(model_name + " Test Set Prediction r2:", round(r2,3))
         # print(model_name + " Test Set Prediction RMSE:", round(rmse,3))
         print(model_name + " Test Set Prediction MAE:", round(mae,3))
-        self.baseline_comp_dict[model_name]["prediction"].append(mae)
+        self.baseline_comp_dict[perma_pillar]["prediction"].append(mae)
         
     def plot_baseline_bar_plot_comparison(self):
         
         # Initialize empty lists to store the model names and average values
-        models = []
+        perma_pillars = []
         baseline_avgs = []
         prediction_avgs = []
 
         # Iterate over the keys in the baseline_comp_dict dictionary to extract the model names and values
-        for model, values in self.baseline_comp_dict.items():
-            models.append(model)
+        for perma_pillar, values in self.baseline_comp_dict.items():
+            perma_pillars.append(perma_pillar)
             baseline_avgs.append(np.mean(values["baseline"]))
             prediction_avgs.append(np.mean(values["prediction"]))
 
@@ -266,7 +273,7 @@ class PermaRegressor:
         fig, ax = plt.subplots()
         bar_width = 0.35
         opacity = 0.8
-        index = np.arange(len(models))
+        index = np.arange(len(perma_pillars))
 
         # Create the bars for the baseline values
         rects1 = ax.bar(index, baseline_avgs, bar_width,
@@ -281,11 +288,11 @@ class PermaRegressor:
                         label='Prediction')
 
         # Add labels, title and legend to the plot
-        ax.set_xlabel('Models')
-        ax.set_ylabel('Average MAE over all 5 PERMA pillars')
-        ax.set_title('Baseline and Prediction Averages by Model')
+        ax.set_xlabel('PERMA Pillars')
+        ax.set_ylabel('Baseline vs Prediction MAE for best models')
+        ax.set_title('Baseline and Prediction Averages by PERMA Pillar')
         ax.set_xticks(index + bar_width / 2)
-        ax.set_xticklabels(models, fontsize=20)
+        ax.set_xticklabels(perma_pillars, fontsize=20)
         ax.legend(loc="lower right")
 
         # Show the plot
@@ -360,7 +367,7 @@ class PermaRegressor:
         reg_model = Lasso()
         self.train_ind_models(reg_model, 'lasso', param_grid)
         
-    def plot_and_save_feature_importance(self, model_name):
+    def plot_and_save_feature_importance(self):
         
         # Close all current plots
         plt.close('all')
@@ -370,7 +377,8 @@ class PermaRegressor:
             
         # Loop over every estimator and plot the feature importance as a subplot
         
-        for i, reg_model in enumerate(self.models):
+        for i, reg_model in enumerate(self.best_models):
+            model_name = self.best_models_names[i]
             plt.subplot(2, 3, i+1)
             if model_name == 'catboost' or model_name == 'xgboost':
                 sorted_feature_importance = reg_model.feature_importances_.argsort()
@@ -390,10 +398,11 @@ class PermaRegressor:
         plt.show()
         plt.clf()
         
-    def plot_and_save_shap_values(self, model_name):        
+    def plot_and_save_shap_values(self):        
     
         # Only plot shap values for the top 5 important features for each estimator
-        for i, reg_model in enumerate(self.models):
+        for i, reg_model in enumerate(self.best_models):
+            model_name = self.best_models_names[i]
             if model_name == 'catboost' or model_name == 'xgboost':
                 explainer = shap.TreeExplainer(reg_model)
                 sorted_feature_importance = reg_model.feature_importances_.argsort()
@@ -410,7 +419,6 @@ class PermaRegressor:
             plt.xlabel("SHAP Values")
             perma_pillar = str(self.data_y_train.columns[i])
             plt.title(perma_pillar)
-            plt.tight_layout()
             plt.savefig(PERMA_MODEL_RESULTS_DIR / f'{self.database_name}_{model_name}_shap_values_{perma_pillar}.png')
             plt.show()
             plt.clf()
