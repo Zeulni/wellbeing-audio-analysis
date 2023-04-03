@@ -18,7 +18,7 @@ class PermaModelTraining:
         # database_list = ["short_data", "long_data"]
         database_list = ["short_data"]
         
-        best_param = {"short_data": {"threshold_variance": 0.4, "threshold_correlation": 0.9, "alpha_rfe": 0.01},
+        best_param = {"short_data": {"threshold_variance": 0.04, "threshold_correlation": 0.9, "alpha_rfe": 0.01},
                       "long_data": {"threshold_variance": 0.8, "threshold_correlation": 0.9, "alpha_rfe": 0.1}}
         
         for database in database_list:
@@ -32,8 +32,7 @@ class PermaModelTraining:
             data_X = self.feature_reduction.remove_nan_columns(data_X, database)
            
             
-            # TODO: write in Overleaf the entire process (how calculated PERMA scores, how outlier, how scaled, why used which scaling,...)
-            # TODO: RMSE because of higher penalty for outliers (most of the data scentered around mean -> RMSE good metric)
+            # RMSE because of higher penalty for outliers (most of the data scentered around mean -> RMSE good metric)
             # Only searches for outliers in X, outliers in PERMA (target) were already removed beforehand
             # Assumption: filter out ~3 outliers in the input data (data_X)
             data_X, data_y = self.sample_reduction.remove_outliers(data_X, data_y) # Perform it before scaling features
@@ -49,13 +48,17 @@ class PermaModelTraining:
             # data_y = self.scaling_data.standardize_targets(data_y)     
             data_X = self.data_scaling.scale_features(data_X, database)
             
+            # TODO: added: varianc bug (normalization), correlation plotting -> proof that uncorrelated features are removed
+            # TODO on monday: try it ridge regression beside lasso regression (not that many coef to 0), with min 2-3 features, MAE than RMSE? outliers not punished that much
+            # TODO: return baseline scores and avg them per model -> have one score, which can be compared among models
+            # TODO: then train other models in parallel and plot model comparison
+            
             # * Feature Selection
-            # TODO: if take 3 step selection method, just store final features in a list and then select them
             data_X = self.feature_reduction.variance_thresholding(data_X, best_param[database])
             data_X, correlated_features = self.feature_reduction.correlation_thresholding(data_X, best_param[database])
             # data_X = self.feature_reduction.perform_pca(data_X, database, 10)
             # data_X = self.feature_reduction.select_features_mutual_info(data_X, data_y, database, 5)
-            data_X = self.feature_reduction.recursive_feature_elimination(data_X, data_y, database, best_param[database])
+            data_X, perma_feature_list = self.feature_reduction.recursive_feature_elimination(data_X, data_y, database, best_param[database])
             
             # Filter correlated features based on the remaining columns in data_X
             columns_list = list(data_X.columns)
@@ -68,12 +71,14 @@ class PermaModelTraining:
             
             # self.exp_data_analysis.plot_pairplot_final_features(data_X, data_y, feature_importance_dict)
             # self.exp_data_analysis.plot_perma_pillars(data_y)
-            self.exp_data_analysis.plot_correlations_with_target(data_X, data_y)
+            # self.exp_data_analysis.plot_correlations_with_target(data_X, data_y)
             
+            # TODO: create inference pipeline again
             
             # * Model Training
-            perma_regressor = PermaRegressor(data_X, data_y, database)
-            perma_regressor.lasso_train()
-            perma_regressor.catboost_train()
-            perma_regressor.xgboost_train()
+            perma_regressor = PermaRegressor(data_X, data_y, perma_feature_list, database)
+            perma_regressor.train_multiple_models()
+            # perma_regressor.lasso_train()
+            # perma_regressor.catboost_train()
+            # perma_regressor.xgboost_train()
             print("--------------------------------------------------")
