@@ -83,6 +83,8 @@ class FeatureReduction():
             
         # Create an empty DataFrame to store the selected features for each target variable
         data_X_new = pd.DataFrame()
+        
+        perma_feature_list = []
 
         # Loop over each target variable
         for i, col in enumerate(data_y.columns):
@@ -105,6 +107,8 @@ class FeatureReduction():
 
             # Append the selected features for the current target variable to the result DataFrame
             data_X_new = pd.concat([data_X_new, data_X_i_new], axis=1)
+            
+            perma_feature_list.append(data_X_i_new.columns)
 
         # If column names are not unique, delete the duplicates
         data_X_new = data_X_new.loc[:, ~data_X_new.columns.duplicated()]
@@ -112,11 +116,13 @@ class FeatureReduction():
         # Print the selected features
         print(f"Amount selected features: {len(data_X_new.columns)}")
 
+        # TODO: store the features used for each pillar, not the overall ones
+
         # Save the selected features as a pickle file (to use it for inference later on)
         with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_selected_features_mutual.pkl"), "wb") as f:
             pkl.dump(data_X_new.columns, f)
 
-        return data_X_new
+        return data_X_new, perma_feature_list
     
     # Rule of thumb: 1 feature per 10 samples -> 8-9 features have to be selected
     def select_features_regression(self, data_X, data_y, database) -> pd:
@@ -477,6 +483,14 @@ class FeatureReduction():
             # Get the selected features
             selected_features = data_X.columns[rfecv.get_support()]
             
+            # If there are more than 7 features, than select the 7 most important features based on the "ranking_" attribute
+            # amount_max_features = 7
+            # if len(selected_features) > amount_max_features:
+            #     # Get the indices of the most important features
+            #     indices = np.argsort(rfecv.ranking_)
+            #     # Get the names of the most important features
+            #     selected_features = data_X.columns[indices[:amount_max_features]]
+            
             # Create a new DataFrame with only the kept features
             # reduced_data_X_i = data_X[selected_features]
 
@@ -489,7 +503,6 @@ class FeatureReduction():
             # Create a dataframe (select the features from data_X) and append it to the list
             perma_feature_list.append(selected_features)
             
-            # TODO: could also store them just once
             filename = database + "_selected_features_" + str(col) + ".pkl"
             with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_" + str(col) + "_selected_features.pkl"), "wb") as f:
                 pkl.dump(reduced_data_X_features, f)

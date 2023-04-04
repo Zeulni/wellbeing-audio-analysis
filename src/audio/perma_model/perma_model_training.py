@@ -53,7 +53,7 @@ class PermaModelTraining:
             data_X = self.feature_reduction.variance_thresholding(data_X, best_param[database])
             data_X, correlated_features = self.feature_reduction.correlation_thresholding(data_X, data_y, best_param[database])
             # data_X = self.feature_reduction.perform_pca(data_X, database, 10)
-            # data_X = self.feature_reduction.select_features_mutual_info(data_X, data_y, database, 5)
+            # data_X, perma_feature_list = self.feature_reduction.select_features_mutual_info(data_X, data_y, database, 6)
             data_X, perma_feature_list = self.feature_reduction.recursive_feature_elimination(data_X, data_y, database, best_param[database])
             
             # Filter correlated features based on the remaining columns in data_X

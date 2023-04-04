@@ -9,6 +9,7 @@ from catboost import CatBoostRegressor
 import xgboost as xgb
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import Ridge
+from scipy.optimize import minimize_scalar
 
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.multioutput import MultiOutputRegressor
@@ -71,7 +72,8 @@ class PermaRegressor:
             'n_estimators': [100, 200]
         }
         
-        self.xgboost_reg_model = xgb.XGBRegressor(objective='reg:absoluteerror')  
+        # Performs better with squarrederror than absolute error
+        self.xgboost_reg_model = xgb.XGBRegressor(objective='reg:squarederror')  
         
         # Create the lists with params and models
         self.model_name_list = ["ridge", "lasso", "xgboost", "catboost"]
@@ -169,17 +171,22 @@ class PermaRegressor:
         # TODO: add again
         # self.plot_and_save_feature_importance()
         # self.plot_and_save_shap_values()
-        self.transform_to_classification()
+        # self.transform_to_classification()
         self.plot_baseline_bar_plot_comparison()
         # self.plot_baseline_box_plot_comparison()
         
+    # define a function that measures the imbalance of the classes
+    def imbalance(self, border, col):
+        bins = pd.cut(col, bins=[-np.inf, border, np.inf], labels=False)
+        counts = pd.value_counts(bins)
+        return abs(counts[0] - counts[1])
         
     def transform_to_classification(self):
         
         for y_i, reg_model in enumerate(self.best_models):
             model_name = self.best_models_names[y_i]
         
-            number_of_classes = 3
+            number_of_classes = 2
             labels = [i for i in range(number_of_classes)]
             # Based on train set, choose the borders of the bins so that the number of samples in each bin is equal
             data_y_train = self.data_y_train.iloc[:, y_i]
@@ -187,10 +194,14 @@ class PermaRegressor:
             # Print value counts sorted by value
             print(data_y_train.value_counts().sort_index())
 
-            # * Quantile-Based Binning (other option: equal-width binning)
+            # * Quantile-Based Binning (other option: equal-width binning), not optimal for skewed distributions
             percentiles = np.linspace(0, 100, num=(number_of_classes+1))
             bin_edges = np.percentile(data_y_train, percentiles)
-            # If two values in bin_edges are equal, add a small value to the second value
+
+            
+            # result = minimize_scalar(lambda x: self.imbalance(x, data_y_train), bounds=(np.percentile(data_y_train, 40), np.percentile(data_y_train, 60)), method='bounded')
+            # border = result.x
+            # bin_edges = np.array([0, border, 1])
             
             # Add a lower bound to the first bin edge and an upper bound to the last bin edge
             bin_edges[0] = -np.inf
@@ -201,6 +212,7 @@ class PermaRegressor:
             print(pd.cut(data_y_train, bins=bin_edges, labels=labels).value_counts().sort_index())
         
             # Calculate the true classes for the test set (bin the PERMA scores into 3 classes)
+
             data_y_test = self.data_y_test.iloc[:, y_i]
             true_classes = pd.cut(data_y_test, bins=bin_edges, labels=labels)
             true_classes = true_classes.to_numpy()
@@ -286,7 +298,14 @@ class PermaRegressor:
                         alpha=opacity,
                         color='g',
                         label='Prediction')
-
+        
+        # Show over each bars the name of the best model (in self.best_models_names), the names are tilted 90 degrees
+        for i, rect in enumerate(rects2):
+            height = rect.get_height()
+            ax.text(rect.get_x() + rect.get_width()/2., 1.05*height,
+                    self.best_models_names[i],
+                    ha='center', va='bottom', rotation=90, fontsize=10)
+       
         # Add labels, title and legend to the plot
         ax.set_xlabel('PERMA Pillars')
         ax.set_ylabel('Baseline vs Prediction MAE for best models')
