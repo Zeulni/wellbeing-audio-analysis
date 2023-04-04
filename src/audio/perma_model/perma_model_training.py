@@ -5,6 +5,7 @@ from src.audio.perma_model.sample_reduction import SampleReduction
 from src.audio.utils.analysis_tools import read_final_database, create_perma_results_folder
 
 from src.audio.perma_model.perma_regressor import PermaRegressor
+from src.audio.perma_model.perma_classifier import PermaClassifier
 
 class PermaModelTraining:
     def __init__(self):
@@ -66,15 +67,20 @@ class PermaModelTraining:
             
             # self.exp_data_analysis.plot_pairplot_final_features(data_X, data_y, feature_importance_dict)
             # self.exp_data_analysis.plot_perma_pillars(data_y)
-            self.exp_data_analysis.plot_correlations_with_target(data_X, data_y)
+            # self.exp_data_analysis.plot_correlations_with_target(data_X, data_y)
             
-            # TODO: Supervised correlation thresholding?
-            # TODO: create inference pipeline again
             
             # * Model Training
             perma_regressor = PermaRegressor(data_X, data_y, perma_feature_list, database)
-            perma_regressor.train_multiple_models_per_pillar()
+            # perma_regressor.train_multiple_models_per_pillar()
             # perma_regressor.lasso_train()
             # perma_regressor.catboost_train()
             # perma_regressor.xgboost_train()
+            
+            # TODO: use different feature selection for classification (especially rcv?)
+            data_X_train, data_X_test, data_y_train, data_y_test = perma_regressor.get_dataset()
+            perma_classifier = PermaClassifier(data_X_train, data_X_test, data_y_train, data_y_test, perma_feature_list, database)
+            perma_classifier.train_multiple_models_per_pillar()
+            
+            
             print("--------------------------------------------------")

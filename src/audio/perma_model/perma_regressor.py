@@ -84,6 +84,8 @@ class PermaRegressor:
         # self.model_param_grid_list = [self.ridge_param_grid, self.lasso_param_grid]
         # self.reg_model_list = [self.ridge_reg_model, self.lasso_reg_model]
         
+    def get_dataset(self):
+        return self.data_X_train, self.data_X_test, self.data_y_train, self.data_y_test
         
     def train_model(self, multioutput_reg_model, model_name, param_grid):        
         
@@ -160,9 +162,6 @@ class PermaRegressor:
     def train_multiple_models_per_pillar(self):
         
         self.train_ind_models()
-        
-        # for i in range(len(self.model_name_list)):
-        #     self.train_ind_models(self.reg_model_list[i], self.model_name_list[i], self.model_param_grid_list[i])
         
         # Use multiprocessing to train the models in parallel
         # with multiprocessing.Pool() as pool:
