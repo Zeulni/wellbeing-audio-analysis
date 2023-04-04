@@ -46,7 +46,7 @@ class FeatureReduction():
         # Overwrite existing csv with updated dataframe
         data.to_csv(os.path.join(PERMA_MODEL_DIR, filename + ".csv"))
         
-        return data
+        return data, columns_with_nan
     
     def finding_best_k_mutual_info(self, data_X, data_y) -> pd:
         
@@ -527,5 +527,5 @@ class FeatureReduction():
         # with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_selected_features.pkl"), "wb") as f:
         #     pkl.dump(reduced_data_X_features, f)
 
-        return reduced_data_X, perma_feature_list
+        return reduced_data_X, perma_feature_list, reduced_data_X_features
             

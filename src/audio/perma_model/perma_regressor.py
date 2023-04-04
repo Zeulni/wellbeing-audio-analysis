@@ -15,7 +15,6 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import LeaveOneOut
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import make_scorer, r2_score
 from sklearn.model_selection import KFold
 
@@ -27,12 +26,11 @@ from math import sqrt
 from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
 
 class PermaRegressor:
-    def __init__(self, data_X, data_y, perma_feature_list, database_name) -> None:
-        # self.data_X = data_X
-        # self.data_y = data_y
-        
-        # Divide into train and test set (shuffle=True)
-        self.data_X_train, self.data_X_test, self.data_y_train, self.data_y_test = train_test_split(data_X, data_y, test_size=0.15, random_state=42)
+    def __init__(self, data_X_train, data_X_test, data_y_train, data_y_test, perma_feature_list, database_name) -> None:
+        self.data_X_train = data_X_train
+        self.data_X_test = data_X_test
+        self.data_y_train = data_y_train
+        self.data_y_test = data_y_test
         
         self.perma_feature_list = perma_feature_list
         
@@ -83,9 +81,7 @@ class PermaRegressor:
         # self.model_name_list = ["ridge", "lasso"]
         # self.model_param_grid_list = [self.ridge_param_grid, self.lasso_param_grid]
         # self.reg_model_list = [self.ridge_reg_model, self.lasso_reg_model]
-        
-    def get_dataset(self):
-        return self.data_X_train, self.data_X_test, self.data_y_train, self.data_y_test
+
         
     def train_model(self, multioutput_reg_model, model_name, param_grid):        
         

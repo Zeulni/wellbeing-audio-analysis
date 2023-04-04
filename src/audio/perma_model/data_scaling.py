@@ -31,7 +31,7 @@ class DataScaling():
         data_y_normalized = data_y.copy()
         data_y_normalized[columns] = array_normalized
 
-        return data_y_normalized
+        return data_y_normalized, scaler
     
     def standardize_targets(self, data_y) -> pd:
 
@@ -71,7 +71,7 @@ class DataScaling():
         # Repalce the original columns with the standardized columns
         data_X_standardized = pd.DataFrame(array_standardized, columns=columns)
         
-        return data_X_standardized
+        return data_X_standardized, scaler
     
     def robust_scale_features(self, data_X, database, columns) -> pd:
         
@@ -90,7 +90,7 @@ class DataScaling():
         # Repalce the original columns with the robust scaled columns
         data_X_robust_scaled = pd.DataFrame(array_robust_scaled, columns=columns)
         
-        return data_X_robust_scaled
+        return data_X_robust_scaled, scaler
     
     def determine_gaussian_columns(self, data_X, database) -> list:
         # Determine the columns with a Gaussian distribution
@@ -117,12 +117,12 @@ class DataScaling():
         gaussian_columns, non_gaussian_columns = self.determine_gaussian_columns(data_X, database)
         
         # Gaussian columns: scale using the standard scaler
-        data_X_standardized = self.standardize_features(data_X, database, gaussian_columns)
+        data_X_standardized, gaussian_feature_scaler = self.standardize_features(data_X, database, gaussian_columns)
         
         # Non-Gaussian columns: scale using the robust scaler
-        data_X_robust_scaled = self.robust_scale_features(data_X, database, non_gaussian_columns)
+        data_X_robust_scaled, nongaussian_feature_scaler = self.robust_scale_features(data_X, database, non_gaussian_columns)
         
         # Concatenate the standardized and robust scaled columns
         data_X_scaled = pd.concat([data_X_standardized, data_X_robust_scaled], axis=1)
         
-        return data_X_scaled
+        return data_X_scaled, gaussian_columns, gaussian_feature_scaler, non_gaussian_columns, nongaussian_feature_scaler

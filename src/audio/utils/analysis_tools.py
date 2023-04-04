@@ -183,3 +183,26 @@ def create_perma_results_folder() -> None:
     if not os.path.exists(PERMA_MODEL_RESULTS_DIR):
         os.mkdir(PERMA_MODEL_RESULTS_DIR)
 
+def transform_test_data(data_X_test, data_y_test, nan_columns, normalize_scaler, gaussian_columns, gaussian_feature_scaler, non_gaussian_columns, nongaussian_feature_scaler, unique_features):
+    
+    # Step 1: Remove nan_columns from data_X_test
+    data_X_test = data_X_test.drop(nan_columns, axis=1)
+    
+    # Step 2a: Normalize data_y_test using the normalize_scaler
+    data_y_test_array = normalize_scaler.transform(data_y_test)
+    data_y_test[["P", "E", "R", "M", "A"]] = data_y_test_array
+    
+    # Step 2b: Scale the gaussian features of data_X_Test using the gaussian_feature_scaler
+    data_X_standardized = gaussian_feature_scaler.transform(data_X_test[gaussian_columns])
+    data_X_standardized = pd.DataFrame(data_X_standardized, columns=gaussian_columns)
+    
+    # Step 2c: Scale the non-gaussian features of data_X_Test using the nongaussian_feature_scaler
+    data_X_robust_scaled = nongaussian_feature_scaler.transform(data_X_test[non_gaussian_columns])
+    data_X_robust_scaled = pd.DataFrame(data_X_robust_scaled, columns=non_gaussian_columns)
+    
+    data_X_test = pd.concat([data_X_standardized, data_X_robust_scaled], axis=1)
+    
+    # Step 3: Selecting the unique features
+    data_X_test = data_X_test[unique_features]
+    
+    return data_X_test, data_y_test
