@@ -7,6 +7,7 @@ from catboost import CatBoostClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 
+from imblearn.over_sampling import RandomOverSampler
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import LeaveOneOut
 
@@ -23,15 +24,13 @@ class PermaClassifier:
         self.data_X_train = data_X_train
         self.data_X_test = data_X_test
         self.data_y_train = data_y_train
-        self.data_y_test = data_y_test
+        self.data_y_test = data_y_test     
     
-        self.number_of_classes = 2
+        self.number_of_classes = 4
         self.labels = [i for i in range(self.number_of_classes)]   
-        # self.labels = ['low', 'medium', 'high']
+        # self.labels = ['q1', 'q2', 'q3', 'q4']
     
         self.bin_perma_pillars()
-        
-        # TODO: if necessary use oversampling to balance the data
         
         self.knn_param_grid = {
             'n_neighbors': [3, 5, 7, 9, 11, 13, 15],
@@ -64,13 +63,13 @@ class PermaClassifier:
         self.catboost_class_model = CatBoostClassifier(loss_function='MultiClass', classes_count=self.number_of_classes, verbose=False, save_snapshot=False, allow_writing_files=False, train_dir=str(PERMA_MODEL_RESULTS_DIR))
         
         # Create the lists with params and models
-        # self.model_name_list = ["random_forest", "xgboost", "catboost", "knn"]
-        # self.model_param_grid_list = [self.random_forest_param_grid, self.xgboost_param_grid, self.catboost_param_grid, self.knn_param_grid]
-        # self.class_model_list = [self.random_forest_class_model, self.xgboost_class_model, self.catboost_class_model, self.knn_class_model]
+        self.model_name_list = ["random_forest", "xgboost", "catboost", "knn"]
+        self.model_param_grid_list = [self.random_forest_param_grid, self.xgboost_param_grid, self.catboost_param_grid, self.knn_param_grid]
+        self.class_model_list = [self.random_forest_class_model, self.xgboost_class_model, self.catboost_class_model, self.knn_class_model]
         
-        self.model_name_list = ["xgboost", "knn"]
-        self.model_param_grid_list = [self.xgboost_param_grid, self.knn_param_grid]
-        self.class_model_list = [self.xgboost_class_model, self.knn_class_model]
+        # self.model_name_list = ["xgboost", "knn"]
+        # self.model_param_grid_list = [self.xgboost_param_grid, self.knn_param_grid]
+        # self.class_model_list = [self.xgboost_class_model, self.knn_class_model]
         
         self.baseline_comp_dict = {"P": {"baseline": [], "prediction": []},
                                    "E": {"baseline": [], "prediction": []},

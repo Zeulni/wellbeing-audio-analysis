@@ -57,9 +57,9 @@ class PermaRegressor:
         
         # * CatBoost Model
         self.catboost_param_grid = {
-            'max_depth': [3, 5, 7],
+            'max_depth': [5],
             'learning_rate': [0.1, 0.01],
-            'n_estimators': [100, 200]
+            'n_estimators': [200]
         }
         self.catboost_reg_model = CatBoostRegressor(loss_function='MAE' ,verbose=False, save_snapshot=False, allow_writing_files=False, train_dir=str(PERMA_MODEL_RESULTS_DIR))
         
@@ -77,11 +77,10 @@ class PermaRegressor:
         self.model_name_list = ["ridge", "lasso", "xgboost", "catboost"]
         self.model_param_grid_list = [self.ridge_param_grid, self.lasso_param_grid, self.xgboost_param_grid, self.catboost_param_grid]
         self.reg_model_list = [self.ridge_reg_model, self.lasso_reg_model, self.xgboost_reg_model, self.catboost_reg_model]
-        
-        # self.model_name_list = ["ridge", "lasso"]
-        # self.model_param_grid_list = [self.ridge_param_grid, self.lasso_param_grid]
-        # self.reg_model_list = [self.ridge_reg_model, self.lasso_reg_model]
 
+        # self.model_name_list = ["ridge"]
+        # self.model_param_grid_list = [self.ridge_param_grid]
+        # self.reg_model_list = [self.ridge_reg_model]
         
     def train_model(self, multioutput_reg_model, model_name, param_grid):        
         
@@ -130,8 +129,8 @@ class PermaRegressor:
             
                 param_grid = self.model_param_grid_list[model_i]
                 model_name = self.model_name_list[model_i]
-            
-                grid_search = GridSearchCV(reg_model, param_grid, cv=LeaveOneOut() , scoring='neg_mean_absolute_error', verbose=0, n_jobs=-1, refit='neg_mean_absolute_error')
+                #cv=LeaveOneOut()
+                grid_search = GridSearchCV(reg_model, param_grid, cv=LeaveOneOut(), scoring='neg_mean_absolute_error', verbose=0, n_jobs=-1, refit='neg_mean_absolute_error')
                 grid_search.fit(self.data_X_train[self.perma_feature_list[perma_i]], self.data_y_train.iloc[:, perma_i])
                 # models_trained.append(grid_search.best_estimator_)
                 # self.best_models.append(grid_search.best_estimator_)
