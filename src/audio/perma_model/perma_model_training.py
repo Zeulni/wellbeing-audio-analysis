@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+
 from src.audio.perma_model.data_scaling import DataScaling
 from src.audio.perma_model.exploratory_data_analysis import ExploratoryDataAnalysis
 from src.audio.perma_model.feature_reduction import FeatureReduction
@@ -32,8 +35,13 @@ class PermaModelTraining:
             data_X_full = data.iloc[:, 5:] # features
             data_y_full = data.iloc[:, :5] # targets
             
-            split_ratio = 0.2
-            data_X_train, data_X_test, data_y_train, data_y_test = train_test_split(data_X_full, data_y_full, test_size=split_ratio, random_state=42)
+            split_ratio = 0.20
+            data_X_train, data_X_test, data_y_train, data_y_test = train_test_split(data_X_full, data_y_full, test_size=split_ratio, random_state=44)
+            data_X_train = data_X_train.reset_index(drop=True)
+            data_X_test = data_X_test.reset_index(drop=True)
+            data_y_train = data_y_train.reset_index(drop=True)
+            data_y_test = data_y_test.reset_index(drop=True)
+            
             
             # * Remove NaN columns
             # TODO: Step 1 (for data_X_test)
@@ -44,6 +52,19 @@ class PermaModelTraining:
             # Only searches for outliers in X, outliers in PERMA (target) were already removed beforehand
             # Assumption: filter out ~3 outliers in the input data (data_X_train)
             data_X_train, data_y_train = self.sample_reduction.remove_outliers(data_X_train, data_y_train) # Perform it before scaling features
+            
+            # percentiles = np.linspace(0, 100, num=(5))
+            # # Iterate through the lenght of the data_y_train
+            # for perma_pillar in data_y_train:
+            #     perma_pillar_data = data_y_train[perma_pillar]
+            #     print(perma_pillar_data.value_counts().sort_index())
+            #     bin_edges = np.percentile(perma_pillar_data, percentiles)
+            #     bin_edges[0] = -np.inf
+            #     bin_edges[-1] = np.inf
+                
+            #     # Print the distribution of each class in the train set
+            #     print("Distribution of classes in train set for " + perma_pillar + ":")
+            #     print(pd.cut(perma_pillar_data, bins=bin_edges, labels=False).value_counts().sort_index())
             
             # * EDA
             # self.exp_data_analysis.plot_correlation_matrices_feature_names(data_X_train, data_y)
@@ -82,14 +103,10 @@ class PermaModelTraining:
             
             # * Model Training
             perma_regressor = PermaRegressor(data_X_train, data_X_test, data_y_train, data_y_test, perma_feature_list, database)
-            # perma_regressor.train_multiple_models_per_pillar()
-            # perma_regressor.lasso_train()
-            # perma_regressor.catboost_train()
-            # perma_regressor.xgboost_train()
+            perma_regressor.train_multiple_models_per_pillar()
             
-            # TODO: use different feature selection for classification (especially rcv?)
-            perma_classifier = PermaClassifier(data_X_train, data_X_test, data_y_train, data_y_test, perma_feature_list, database)
-            perma_classifier.train_multiple_models_per_pillar()
+            # perma_classifier = PermaClassifier(data_X_train, data_X_test, data_y_train, data_y_test, perma_feature_list, database)
+            # perma_classifier.train_multiple_models_per_pillar()
             
             
             print("--------------------------------------------------")
