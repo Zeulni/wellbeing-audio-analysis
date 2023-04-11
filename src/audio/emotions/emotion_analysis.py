@@ -123,6 +123,7 @@ class EmotionAnalysis:
 
         # It is max 5 min, because the model performs faster for shorter snippets (could be changed if using GPU for analysis)
         # TODO: maybe adapt in the future (based on paper they used 0.5s - ~35s snippets, see here https://arxiv.org/pdf/2203.07378v2.pdf)
+        # For now, the maximum length is 5 min
         chunk_length_ms = min(self.unit_of_analysis*1000, 300000)
 
         # Calculate the number of chunks needed
@@ -138,8 +139,6 @@ class EmotionAnalysis:
             chunk = np.array(chunk.get_array_of_samples(), dtype=np.float32)
             #print(self.model(chunk, sampling_rate))
             chunk_outputs.append(self.model(chunk, sampling_rate)['logits'][0])
-
-        # TODO: cutting the last chunk if it is shorter than the chunk_length_ms?
         
         # Calculate the average of the chunks
         output = np.mean(chunk_outputs, axis=0)

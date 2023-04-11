@@ -51,9 +51,6 @@ class ASDNetwork():
             # Using the "spawn" method to create a pool of worker processes and show progress with tqdm
             mp.freeze_support()
             with mp.get_context("spawn").Pool(processes=mp.cpu_count()) as pool:
-                # Map the calculate_scores_mp function to the list of tracks
-                # all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, enumerate(all_tracks)), total=len(all_tracks)))
-                # add track_frame_overview to the pool.imap function
                 all_scores = list(tqdm.tqdm(pool.imap(self.calculate_scores_mp, zip(enumerate(all_tracks), itertools.repeat(track_frame_overview))), total=len(all_tracks)))
             
         return all_scores
@@ -127,9 +124,8 @@ class ASDNetwork():
         # Instead of saving the cropped the video, call the crop_track function to return the faces (without saving them)
         # * Problem: The model might have been trained with compressed image data (as I directly load them and don't save them as intermediate step, my images are slightly different)
         video_feature = self.get_video_feature(tidx, track_frame_overview)         
-        # Remove all frames that have the value 0 (as they are not used)
-        # video_feature = video_feature[video_feature.sum(axis=(1,2)) != 0].to(self.device)      
-        # Strech the video feature by factor self.frames_face_tracking
+
+        # Reset the length of the input video to the original one (cut it to the original length, if one frame too much was added)
         video_feature = video_feature.repeat_interleave(self.frames_face_tracking, dim=0)
         video_feature = video_feature[:self.total_frames]     
 

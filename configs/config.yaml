@@ -20,7 +20,7 @@ N_DATA_LOADER_THREAD: 32
 # Scale factor for face detection, the frames will be scale to 0.25 orig
 FACE_DET_SCALE: 0.25
 
-# Number of min frames for each scene and track
+# Number of min frames for each track
 MIN_TRACK: 25
 
 # Number of missed detections allowed before tracking is stopped (e.g. 25 fps -> 1 sec)
@@ -44,7 +44,7 @@ DURATION: 0
 # Number of calculated embeddings per person to match the faces of the same person (the more the better, but also more storage necessary)
 N_EMBEDDINGS: 10
 
-# If two face tracks (see folder faces_id) belong together
+# If two face tracks (see folder faces_id) belong together (based on cosine similarity)
 THRESHOLD_SAME_PERSON: 0.30
 
 # If enabled, it will create a video for each track, where only the segments where the person is speaking are included

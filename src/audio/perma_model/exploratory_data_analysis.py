@@ -3,6 +3,7 @@ import seaborn as sns
 import pandas as pd
 
 from src.audio.utils.constants import FEATURE_NAMES
+from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
 
 class ExploratoryDataAnalysis():
     def __init__(self):
@@ -18,7 +19,12 @@ class ExploratoryDataAnalysis():
             corr = data_X_feature.corr()
             sns.heatmap(corr, annot=True, cmap="YlGnBu")
             plt.tight_layout()
+            
+            # Save the plot to a file (in folder stored in PERMA_MODEL_RESULTS_DIR)
+            plt.savefig(PERMA_MODEL_RESULTS_DIR / f"correlation_matrix_{feature_name}.png", dpi=600)
+            
             plt.show()
+
             
     def plot_correlation_matrices_feature_types(self, data_X, data_y) -> None:
 
@@ -36,6 +42,24 @@ class ExploratoryDataAnalysis():
             
     def plot_pairplots_feature_names(self, data_X, data_y) -> None:
             
+            # G: arousal_min, n-G: norm_num_overlaps_absolute_min
+            
+            # First, plot only the distributions of arousal_min
+            # Plot the histogram of col2
+            # data_X['norm_num_overlaps_absolute_min'].plot(kind='hist', edgecolor='black')
+
+            # # Add labels and title
+            # plt.xlabel('Values')
+            # plt.ylabel('Frequency')
+            # plt.title('Distribution of the norm_num_overlaps_absolute_min Feature')
+            
+            # # Save the figure
+            # plt.savefig(PERMA_MODEL_RESULTS_DIR / "norm_num_overlaps_absolute_min_distribution.png", dpi=600)
+
+            # plt.show()
+            
+            
+            
             for feature_name in FEATURE_NAMES:
                 feature_cols = [col for col in data_X.columns if feature_name in col]
                 data_X_feature = data_X[feature_cols]
@@ -47,8 +71,24 @@ class ExploratoryDataAnalysis():
     
     def plot_perma_pillars(self, data_y) -> None:
 
-        # Plot each target variable as a box plot
-        data_y.boxplot()
+        labels = ["P", "E", "R", "M", "A"]
+
+        # Plot each target variable as a box plot, using the labels
+        data_y.boxplot(labels=labels, patch_artist=True)
+
+        # Set the title
+        plt.title("Distribution of each PERMA Pillar")
+        plt.ylabel("PERMA Score")
+
+        # Increase font size of x-axis labels
+        plt.xticks(fontsize=14)
+
+        # Remove the grid
+        plt.grid(False)
+
+        # Save the figure
+        plt.savefig(PERMA_MODEL_RESULTS_DIR / "perma_scores.png", dpi=600)
+                
         plt.show()
         
     def plot_correlations_with_target(self, data_X, data_y) -> None:

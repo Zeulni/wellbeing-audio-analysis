@@ -3,6 +3,7 @@ import pickle as pkl
 import matplotlib.pyplot as plt
 import shap
 import pandas as pd
+import os
 import multiprocessing
 
 from catboost import CatBoostRegressor
@@ -310,6 +311,11 @@ class PermaRegressor:
 
         # Show the plot
         plt.show()
+        
+        # Save the plot in PERMA_MODEL_RESULTS_DIR
+        filename = os.path.join(PERMA_MODEL_RESULTS_DIR, "regression_" + self.database_name + ".png")
+        
+        plt.savefig(filename)
         
     def plot_baseline_box_plot_comparison(self):
         

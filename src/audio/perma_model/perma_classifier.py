@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,7 +17,7 @@ from sklearn.metrics import balanced_accuracy_score
 from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
 
 class PermaClassifier:
-    def __init__(self, data_X_train, data_X_test, data_y_train, data_y_test, perma_feature_list, database) -> None:
+    def __init__(self, data_X_train, data_X_test, data_y_train, data_y_test, perma_feature_list, database, number_classes) -> None:
         
         self.perma_feature_list = perma_feature_list
         self.database = database
@@ -26,7 +27,7 @@ class PermaClassifier:
         self.data_y_train = data_y_train
         self.data_y_test = data_y_test     
     
-        self.number_of_classes = 4
+        self.number_of_classes = number_classes
         self.labels = [i for i in range(self.number_of_classes)]   
         # self.labels = ['q1', 'q2', 'q3', 'q4']
     
@@ -67,9 +68,9 @@ class PermaClassifier:
         self.model_param_grid_list = [self.random_forest_param_grid, self.xgboost_param_grid, self.catboost_param_grid, self.knn_param_grid]
         self.class_model_list = [self.random_forest_class_model, self.xgboost_class_model, self.catboost_class_model, self.knn_class_model]
         
-        # self.model_name_list = ["xgboost", "knn"]
-        # self.model_param_grid_list = [self.xgboost_param_grid, self.knn_param_grid]
-        # self.class_model_list = [self.xgboost_class_model, self.knn_class_model]
+        # self.model_name_list = ["knn"]
+        # self.model_param_grid_list = [self.knn_param_grid]
+        # self.class_model_list = [self.knn_class_model]
         
         self.baseline_comp_dict = {"P": {"baseline": [], "prediction": []},
                                    "E": {"baseline": [], "prediction": []},
@@ -218,3 +219,6 @@ class PermaClassifier:
 
         # Show the plot
         plt.show()
+        
+        filename = os.path.join(PERMA_MODEL_RESULTS_DIR, "classification_" + self.database + "_nclasses_" + str(self.number_of_classes) + ".png")
+        plt.savefig(filename)

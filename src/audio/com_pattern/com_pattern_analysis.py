@@ -56,14 +56,6 @@ class ComPatternAnalysis:
                     [norm_num_turns_absolute["norm_num_turns_absolute"][speaker_id_index], norm_num_turns_relative["norm_num_turns_relative"][speaker_id_index], \
                     norm_speak_duration_absolute["norm_speak_duration_absolute"][speaker_id_index], norm_speak_duration_relative["norm_speak_duration_relative"][speaker_id_index], \
                     norm_num_overlaps_absolute["norm_num_overlaps_absolute"][speaker_id_index], norm_num_overlaps_relative["norm_num_overlaps_relative"][speaker_id_index]]})
-                # print("Speaker ID: ", speaker_id)
-                # print("norm_num_turns_absolute: ", norm_num_turns_absolute["norm_num_turns_absolute"][speaker_id_index])
-                # print("norm_num_turns_relative: ", norm_num_turns_relative["norm_num_turns_relative"][speaker_id_index])
-                # print("norm_speak_duration_absolute: ", norm_speak_duration_absolute["norm_speak_duration_absolute"][speaker_id_index])
-                # print("norm_speak_duration_relative: ", norm_speak_duration_relative["norm_speak_duration_relative"][speaker_id_index])
-                # print("norm_num_overlaps_absolute: ", norm_num_overlaps_absolute["norm_num_overlaps_absolute"][speaker_id_index])
-                # print("norm_num_overlaps_relative: ", norm_num_overlaps_relative["norm_num_overlaps_relative"][speaker_id_index])
-                # print("\n")
                 
         com_pattern_output_reform = self.parse_com_pattern_output(com_pattern_output)
         

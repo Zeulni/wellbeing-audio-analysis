@@ -326,11 +326,18 @@ class FeatureReduction():
         return reduced_data_X
     
     # Identify highly correlated features to drop them (1 feature will stay, but it removes duplicates)
-    def correlation_thresholding(self, data_X, data_y, best_param) -> pd.DataFrame:
+    def correlation_clustering(self, data_X, data_y, best_param) -> pd.DataFrame:
         
         # Plot the correlation matrix as a heatmap
         # plt.figure(figsize=(16, 9))
-        # sns.heatmap(data_X.corr(), annot=True)
+        # sns.heatmap(data_X.corr(), annot=False)
+        # plt.show()
+        
+        # Plot heatmap without showing the feature names
+        # plt.figure(figsize=(16, 9))
+        # sns.heatmap(data_X.corr(), annot=False, xticklabels=False, yticklabels=False)
+        # plt.savefig(PERMA_MODEL_RESULTS_DIR / "corr_matrix_before_corr_clustering.png", dpi=600)
+        
         # plt.show()
         
         threshold = best_param['threshold_correlation']
@@ -412,6 +419,10 @@ class FeatureReduction():
         # plt.figure(figsize=(16, 9))
         # sns.heatmap(reduced_data_X.corr(), annot=True)
         # plt.show()
+        
+        # plt.figure(figsize=(16, 9))
+        # sns.heatmap(reduced_data_X.corr(), annot=False, xticklabels=False, yticklabels=False)
+        # plt.savefig(PERMA_MODEL_RESULTS_DIR / "corr_matrix_after_corr_clustering.png", dpi=600)
         
         return reduced_data_X, correlation_overview_copy
     
@@ -511,8 +522,11 @@ class FeatureReduction():
             # plt.figure()
             # plt.xlabel("Number of features selected")
             # plt.ylabel("Cross validation score")
-            # plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), rfecv.cv_results_['mean_test_score'])
+            # # Plot every number of the x-axis, not just every 5th
+            # plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), -rfecv.cv_results_['mean_test_score'])
+            # plt.xticks(range(1, len(rfecv.cv_results_['mean_test_score']) + 1))
             # plt.tight_layout()
+            # plt.savefig(PERMA_MODEL_RESULTS_DIR / "rfe_example.png", dpi=600)
             # plt.show()
 
         print(f'Number of features after recursive feature elimination: {len(reduced_data_X_features)}')

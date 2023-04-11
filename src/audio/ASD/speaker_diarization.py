@@ -35,13 +35,13 @@ class SpeakerDiarization:
     
     def run(self, tracks, scores):
         
-        self.asd_pipeline_tools.write_to_terminal("Speaker diarization started")
+        self.asd_pipeline_tools.write_to_terminal("Scores-to-Speech Interval Transformation started")
         all_faces = [[] for i in range(self.total_frames)]
         
-        # *Pick one track (e.g. one of the 7 as in in the sample)
+        # Apply average smoothing over the scores
         for tidx, track in enumerate(tracks):
             score = scores[tidx]
-            # *Go through each frame in the selected track
+            # Loop over each frame
             for fidx, frame in enumerate(track['track']['frame'].tolist()):
                 s = score[max(fidx - 2, 0): min(fidx + 3, len(score) - 1)] # average smoothing
                 s = np.mean(s)
@@ -91,17 +91,11 @@ class SpeakerDiarization:
 
         if self.create_track_videos:
             self.asd_pipeline_tools.cut_track_videos(track_speaking_segments, self.pyavi_path, self.video_path, self.n_data_loader_thread)   
-
-        # Sidenote: 
-        # - x and y values are flipped (in contrast to normal convention)
-        # - I make the assumption people do not change the place during one video I get as input 
-        #   (-> if bounding boxes are close by and do not speak at the same time, then they are from the same person)
-        # 	To correct for that, I would have to leverage face verification
         
         # Calculate tracks that belong together based on face embeddings
         same_tracks, cluster_overview = self.cluster_tracks.cluster_tracks_face_embedding(track_speaking_faces, tracks)
         
-        self.logger.log("Cluster overview (only tracks that speak at least at one frame): " + str(cluster_overview))
+        self.logger.log("Cluster overview (only tracks of people that speak at least in one frame): " + str(cluster_overview))
         
         # Store one image per track in a folder
         self.store_face_ids(self.faces_id_path, tracks, cluster_overview)

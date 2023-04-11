@@ -12,8 +12,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 
 from src.audio.utils.constants import PERMA_MODEL_DIR
+from src.audio.utils.constants import PERMA_MODEL_RESULTS_DIR
 
-# Core functions of this script written by Moritz Müller
+# This script is based on the code from Moritz Müller: https://github.com/mo12896/perma_manager
 
 def standardize_dataframe(df, columns=None):
     """
@@ -171,11 +172,12 @@ def plot_perma(dataframe: pd.DataFrame, title: str) -> Figure:
     fig, ax = plt.subplots()
 
     labels = ["P", "E", "R", "M", "A"]
-    days = ["Day1", "Day2", "Day3", "Day4"]
-    colors = ["pink", "lightblue", "lightgreen", "lightyellow"]
-    offsets = [0.45, 0.15, -0.15, -0.45]
+    days = ["Day1", "Day3", "Day4"]
+    colors = ["pink", "lightblue", "lightgreen"]
+    offsets = [0.45, 0.15, -0.15]
 
-    for i, day in enumerate(range(10, 14)):
+    teamwork_days = [10,12,13]
+    for i, day in enumerate(teamwork_days):
         data = []
         for label in labels:
             data.append(dataframe[dataframe.Day == day][label].values)
@@ -199,6 +201,7 @@ def plot_perma(dataframe: pd.DataFrame, title: str) -> Figure:
     ]
 
     ax.legend(handles=handles, loc="lower right", fontsize=10)
+    
     plt.show()
 
 
@@ -337,6 +340,8 @@ def run():
     for column in df_merged.columns:
         print(f"{column}: {df_merged[column].min()}, {df_merged[column].max()}")
 
-    plot_total_email_counts(df_merged)
-    plot_daily_email_counts(df_merged)
+    # plot_total_email_counts(df_merged)
+    # plot_daily_email_counts(df_merged)
     plot_perma(df_merged, "PERMA Scores")
+    
+    print("test")
