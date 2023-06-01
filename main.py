@@ -6,26 +6,14 @@ from src.audio.perma_model.perma_model_training import PermaModelTraining
 
 from src.audio.perma_model.perma_scores_dataset import run
 
-# TODO: create new requirements.txt, create readme etc.
-
 # video_path is used to run with one call over multiple videos (for the normal usage this is not needed)
 def main(video_path = None) -> None:
-    # args = parse_arguments()
-    # runner = Runner(args, video_path)
-    # runner.run()
-
-    # team_list = ["team_01", "team_02", "team_04", "team_06", "team_07", 
-    #              "team_08", "team_09", "team_11", "team_12", "team_13",
-    #              "team_15", "team_16", "team_17", "team_18", "team_19",
-    #              "team_20", "team_22"]
+    args = parse_arguments()
+    runner = Runner(args, video_path)
+    runner.run()
     
-    # for team in team_list:
-    #     print(team)
-    #     calculate_features = CalculateTimeSeriesFeatures()
-    #     calculate_features.run(team)
-    
-    perma_model_training = PermaModelTraining()
-    perma_model_training.run()
+    # perma_model_training = PermaModelTraining()
+    # perma_model_training.run()
 
     # run()
 

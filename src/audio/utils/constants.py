@@ -11,6 +11,6 @@ PERMA_MODEL_DIR = root / "src" / "audio" / "perma_model"
 PERMA_MODEL_RESULTS_DIR = root / "src" / "audio" / "perma_model" / "results"
 
 FEATURE_NAMES = ['arousal', 'dominance', 'valence', 
-                'norm_num_overlaps_absolute', 'norm_num_overlaps_relative', 
-                'norm_num_turns_absolute', 'norm_num_turns_relative', 
+                'norm_num_interruptions_absolute', 'norm_num_interruptions_relative', 
+                'norm_num_utterances_absolute', 'norm_num_utterances_relative', 
                 'norm_speak_duration_absolute', 'norm_speak_duration_relative']

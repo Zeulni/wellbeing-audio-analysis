@@ -302,10 +302,13 @@ class FeatureReduction():
         scaler = MinMaxScaler()
         data_X_normalized = scaler.fit_transform(data_X)
         
-        # variances = np.var(data_X_normalized, axis=0)   
+        variances = np.var(data_X_normalized, axis=0)   
         
-        # Debugging
-        variances = pd.DataFrame({'Feature': data_X.columns, 'Variance': np.var(data_X_normalized, axis=0)})
+        # # All features lower than 0.04 will be removed (the part before it decreases) -> same value for long to guarantee a fair comparison?
+        # plt.hist(variances, bins=30)
+        
+        
+        # variances = pd.DataFrame({'Feature': data_X.columns, 'Variance': np.var(data_X_normalized, axis=0)})
         
         threshold = best_param['threshold_variance']
         
@@ -328,14 +331,9 @@ class FeatureReduction():
     # Identify highly correlated features to drop them (1 feature will stay, but it removes duplicates)
     def correlation_clustering(self, data_X, data_y, best_param) -> pd.DataFrame:
         
-        # Plot the correlation matrix as a heatmap
-        # plt.figure(figsize=(16, 9))
-        # sns.heatmap(data_X.corr(), annot=False)
-        # plt.show()
-        
         # Plot heatmap without showing the feature names
         # plt.figure(figsize=(16, 9))
-        # sns.heatmap(data_X.corr(), annot=False, xticklabels=False, yticklabels=False)
+        # sns.heatmap(data_X.corr(), annot=False, xticklabels=False, yticklabels=False, cmap="YlGnBu")
         # plt.savefig(PERMA_MODEL_RESULTS_DIR / "corr_matrix_before_corr_clustering.png", dpi=600)
         
         # plt.show()
@@ -415,13 +413,9 @@ class FeatureReduction():
         print(f'Number of features after correlation thresholding: {len(data_X.columns) - len(to_drop_new)}')
         reduced_data_X = data_X.drop(to_drop_new, axis=1)
         
-        # * No feature is anymore correlated with each other above the threshold value
+        # * No feature is anymore correlated with each other above the threshold value        
         # plt.figure(figsize=(16, 9))
-        # sns.heatmap(reduced_data_X.corr(), annot=True)
-        # plt.show()
-        
-        # plt.figure(figsize=(16, 9))
-        # sns.heatmap(reduced_data_X.corr(), annot=False, xticklabels=False, yticklabels=False)
+        # sns.heatmap(reduced_data_X.corr(), annot=False, xticklabels=False, yticklabels=False, cmap="YlGnBu")
         # plt.savefig(PERMA_MODEL_RESULTS_DIR / "corr_matrix_after_corr_clustering.png", dpi=600)
         
         return reduced_data_X, correlation_overview_copy
@@ -514,25 +508,34 @@ class FeatureReduction():
             # Create a dataframe (select the features from data_X) and append it to the list
             perma_feature_list.append(selected_features)
             
-            filename = database + "_selected_features_" + str(col) + ".pkl"
-            with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_" + str(col) + "_selected_features.pkl"), "wb") as f:
-                pkl.dump(reduced_data_X_features, f)
+            # # Convert selected features to a list
+            # selected_features_list = selected_features.tolist()
+            
+            # filename = database + "_selected_features_" + str(col) + ".pkl"
+            # with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_" + str(col) + "_selected_features.pkl"), "wb") as f:
+            #     pkl.dump(selected_features_list, f)
             
             # Plot number of features VS. cross-validation scores
-            # plt.figure()
-            # plt.xlabel("Number of features selected")
-            # plt.ylabel("Cross validation score")
-            # # Plot every number of the x-axis, not just every 5th
-            # plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), -rfecv.cv_results_['mean_test_score'])
-            # plt.xticks(range(1, len(rfecv.cv_results_['mean_test_score']) + 1))
-            # plt.tight_layout()
-            # plt.savefig(PERMA_MODEL_RESULTS_DIR / "rfe_example.png", dpi=600)
-            # plt.show()
+            plt.figure()
+            plt.xlabel("Number of features selected", fontsize=14)
+            plt.ylabel("Cross validation MAE score", fontsize=14)
+            # Plot every number of the x-axis, not just every 5th
+            plt.plot(range(1, len(rfecv.cv_results_['mean_test_score']) + 1), -rfecv.cv_results_['mean_test_score'], color='#666666')
+            plt.xticks(range(1, len(rfecv.cv_results_['mean_test_score']) + 1))
+            plt.tight_layout()
+            # Remove the grid
+            plt.grid(True, alpha=0.5)
+            plt.savefig(PERMA_MODEL_RESULTS_DIR / "rfe_example.png", dpi=600)
+            plt.show()
 
         print(f'Number of features after recursive feature elimination: {len(reduced_data_X_features)}')
 
         # Sort the features by alphabetical order
         reduced_data_X_features = sorted(reduced_data_X_features)
+        
+        # Print the features for each target variable
+        # for i, col in enumerate(data_y.columns):
+        #     print(f'Features for {col}: {perma_feature_list[i]}')
 
         # Create a new DataFrame with only the kept features
         reduced_data_X = data_X[reduced_data_X_features]
@@ -540,6 +543,18 @@ class FeatureReduction():
         # Save the selected features as pickle file
         # with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_selected_features.pkl"), "wb") as f:
         #     pkl.dump(reduced_data_X_features, f)
+        
+        # Save the reducded data_X as pickle file
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_reduced_data_X.pkl"), "wb") as f:
+            pkl.dump(reduced_data_X, f)
+            
+        # Save the perma_feature_list as pickle file
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_perma_feature_list.pkl"), "wb") as f:
+            pkl.dump(perma_feature_list, f)
+            
+        # Save the reduced_data_X_features as pickle file
+        with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_reduced_data_X_features.pkl"), "wb") as f:
+            pkl.dump(reduced_data_X_features, f)
 
         return reduced_data_X, perma_feature_list, reduced_data_X_features
             

@@ -9,7 +9,7 @@ RUN_PIPELINE_PARTS: [4]
 # -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
 # Name of the input file to be processed (.mp4 or .avi) two_min_snippet
-VIDEO_NAME: "team_13_day_1_1_fr_sk_2_laggy_a_v"
+VIDEO_NAME: "clip_2_8171_11216"
 
 # Path for the pretrained TalkNet model
 PRETRAINED_ASD_MODEL: "pretrain_TalkSet.model"

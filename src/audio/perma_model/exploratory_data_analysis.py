@@ -42,21 +42,24 @@ class ExploratoryDataAnalysis():
             
     def plot_pairplots_feature_names(self, data_X, data_y) -> None:
             
-            # G: arousal_min, n-G: norm_num_overlaps_absolute_min
+            # G: arousal_min, n-G: norm_num_interruptions_absolute_min
             
             # First, plot only the distributions of arousal_min
             # Plot the histogram of col2
-            # data_X['norm_num_overlaps_absolute_min'].plot(kind='hist', edgecolor='black')
+            data_X['arousal_min'].plot(kind='hist', edgecolor='black', color='#666666')
 
-            # # Add labels and title
-            # plt.xlabel('Values')
-            # plt.ylabel('Frequency')
-            # plt.title('Distribution of the norm_num_overlaps_absolute_min Feature')
+            # Add labels and title
+            plt.xlabel('arousal_min', fontsize=14)
+            plt.ylabel('Frequency', fontsize=14)
+            # plt.title('Distribution of the arousal_min Feature', fontsize=12)
             
-            # # Save the figure
-            # plt.savefig(PERMA_MODEL_RESULTS_DIR / "norm_num_overlaps_absolute_min_distribution.png", dpi=600)
+            # Remove the grid
+            plt.grid(True, alpha=0.5)
+            
+            # Save the figure
+            plt.savefig(PERMA_MODEL_RESULTS_DIR / "arousal_min_distribution.png", dpi=600)
 
-            # plt.show()
+            plt.show()
             
             
             
@@ -73,28 +76,32 @@ class ExploratoryDataAnalysis():
 
         labels = ["P", "E", "R", "M", "A"]
 
+        # Define properties for the median line
+        medianprops = dict(linestyle='-', linewidth=1, color='#000000')
+
         # Plot each target variable as a box plot, using the labels
-        data_y.boxplot(labels=labels, patch_artist=True)
+        data_y.boxplot(labels=labels, patch_artist=True, color='#666666', medianprops=medianprops)
 
         # Set the title
-        plt.title("Distribution of each PERMA Pillar")
-        plt.ylabel("PERMA Score")
+        # plt.title("Distribution of each PERMA Pillar")
+        plt.ylabel("Score", fontsize=14)
+        plt.xlabel("PERMA pillars", fontsize=14)
 
         # Increase font size of x-axis labels
         plt.xticks(fontsize=14)
 
         # Remove the grid
-        plt.grid(False)
+        plt.grid(True, alpha=0.5)
 
         # Save the figure
-        plt.savefig(PERMA_MODEL_RESULTS_DIR / "perma_scores.png", dpi=600)
+        plt.savefig(PERMA_MODEL_RESULTS_DIR / "perma_scores_distribution.png", dpi=600)
                 
         plt.show()
         
-    def plot_correlations_with_target(self, data_X, data_y) -> None:
+    def plot_correlations_with_target(self, data_X, data_y, perma_feature_list) -> None:
         
         # Plot correlations based on data_X, data_y and feature_importance_dict
-        plt.figure(figsize=(16,10))
+        plt.figure(figsize=(16,6))
         
         target_values = ["P", "E", "R", "M", "A"]
         
@@ -106,8 +113,10 @@ class ExploratoryDataAnalysis():
             # Only use the most important features for X
             # X = data_X[[feature[0] for feature in list_feature_importance]]
             
+            X = data_X[perma_feature_list[i]]
+            
             # Plot with all features (not just the important ones), as all features are used for the model later on
-            X = data_X
+            # X = data_X
             
             # create a correlation matrix for the features and target variable
             corr_matrix = X.corrwith(y)
@@ -117,10 +126,24 @@ class ExploratoryDataAnalysis():
             
             # plot the heatmap
             ax = plt.subplot(2, 3, i+1)
-            sns.heatmap(corr_matrix.to_frame(), annot=True, cmap='coolwarm', vmin=-1, vmax=1, ax=ax)
-            plt.title(f"Correlation with Target {target}")
-            plt.tight_layout()
             
+            sns.heatmap(corr_matrix.to_frame(), annot=True, cmap='coolwarm', vmin=-1, vmax=1, ax=ax, yticklabels=True)
+            # sns.set(font_scale=1.5)
+            ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+            ax.set_xticklabels([])        
+            # Adjust tick parameters to ensure that ticks are visible
+            ax.tick_params(axis='both', which='both', length=0, width=0, pad=3)
+            ax.tick_params(axis='y', which='major', length=6, width=1)
+            # ax.set_yticklabels([])  
+            # plt.title(f"Correlation with Pillar {target}")
+            # Have a bold title
+            plt.title(f"Correlation with Pillar {target}", fontweight="bold", pad=10)
+            # plt.tight_layout()
+            # Add some space between the subplots
+            plt.subplots_adjust(left=0.21, right=0.96, top=0.9, wspace=2.5, hspace=0.3)
+        
+        # Save the plot to a file (in folder stored in PERMA_MODEL_RESULTS_DIR)
+        plt.savefig(PERMA_MODEL_RESULTS_DIR / "selected_feature_perma_correlations.png", dpi=900)
         plt.show()
         
     def plot_pairplot_final_features(self, data_X, data_y, feature_importance_dict) -> None:

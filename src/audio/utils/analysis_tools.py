@@ -16,7 +16,11 @@ def write_results_to_csv(emotions_output, com_pattern_output, csv_path, video_na
                 data_emotions_output.append([speaker_id, col_name, v])
 
     df_emotions_output = pd.DataFrame(data_emotions_output, columns=["Speaker ID", "Emotion", "Value"])
+    # Store the original order of the columns before the pivot
+    original_emotions_order = df_emotions_output['Emotion'].unique()
     df_emotions_output = df_emotions_output.pivot(index="Speaker ID", columns="Emotion", values="Value")
+    # Reorder the columns using the original order
+    df_emotions_output = df_emotions_output.reindex(columns=original_emotions_order)
     
     data_com_pattern_output = []
     for speaker_id, values in com_pattern_output.items():
@@ -26,7 +30,9 @@ def write_results_to_csv(emotions_output, com_pattern_output, csv_path, video_na
                 data_com_pattern_output.append([speaker_id, col_name, v])
 
     df_com_pattern_output = pd.DataFrame(data_com_pattern_output, columns=["Speaker ID", "ComPattern", "Value"])
+    original_ComPattern_order = df_com_pattern_output['ComPattern'].unique()
     df_com_pattern_output = df_com_pattern_output.pivot(index="Speaker ID", columns="ComPattern", values="Value")  
+    df_com_pattern_output = df_com_pattern_output.reindex(columns=original_ComPattern_order)
     
     
     df = df_emotions_output.join(df_com_pattern_output, on="Speaker ID")
@@ -71,6 +77,8 @@ def visualize_emotions(csv_path, unit_of_analysis, video_name):
     # # Compute the range of the y-axis
     intermediate_df = df[[col for col in df.columns if col.startswith('dominance') or col.startswith('arousal') or col.startswith('valence')]]
     values = intermediate_df.values.flatten()
+    # Drop the NaN values
+    values = values[~np.isnan(values)]
     y_min = np.min(values)
     y_max = np.max(values)
 
@@ -97,6 +105,8 @@ def visualize_emotions(csv_path, unit_of_analysis, video_name):
 
     # Adjust spacing between subplots
     plt.tight_layout()
+    
+    plt.savefig(PERMA_MODEL_RESULTS_DIR / 'emotions_test_plot.png', dpi=600)
 
     # Show the plot
     plt.show()
@@ -127,7 +137,11 @@ def visualize_com_pattern(csv_path, unit_of_analysis, video_name, plotted_featur
     values = intermediate_df.values.flatten()
     y_min = np.min(values)
     y_max = np.max(values)
-
+    
+    # In the list "plotted_features", replace "turns" with "utterances" and "overlaps" with "interruptions"
+    # plotted_features = [col.replace("turns", "utterances") for col in plotted_features]
+    # plotted_features = [col.replace("overlaps", "interruptions") for col in plotted_features]
+    
     # Create subplots for each speaker
     fig, axs = plt.subplots(com_pattern_df.shape[0], 1, figsize=(10, 2*com_pattern_df.shape[0]))
     for i, speaker_id in enumerate(list(df["Speaker ID"])):
@@ -151,11 +165,13 @@ def visualize_com_pattern(csv_path, unit_of_analysis, video_name, plotted_featur
 
     # Adjust spacing between subplots
     plt.tight_layout()
+    
+    plt.savefig(PERMA_MODEL_RESULTS_DIR / 'com_pattern_test_plot.png', dpi=600)
 
     # Show the plot
     plt.show()
     
-def read_final_database(folder) -> None:
+def read_final_database(folder) -> pd.DataFrame:
     # Read the csvs as dataframes (just run everytime again instead of checking if csv is available -> always up to date)
     data_folder = PERMA_MODEL_DIR / folder
     
@@ -172,9 +188,51 @@ def read_final_database(folder) -> None:
     
     # Reset the index
     data = data.reset_index(drop=True)
+    
+    # * This is only done to correct for some feature names afterwards - in the future this does not have to be done
+    # In every column header where "turns" is in the name, replace it with "utterances"
+    data.columns = [col.replace("turns", "utterances") for col in data.columns]
+    data.columns = [col.replace("overlaps", "interruptions") for col in data.columns]
 
     # Save the dataframe as csv
     data.to_csv(os.path.join(PERMA_MODEL_DIR, folder + ".csv"))
+    
+    return data
+
+def create_dataset_for_sdm_plots(folder) -> None:
+    # Read the csvs as dataframes (just run everytime again instead of checking if csv is available -> always up to date)
+    data_folder = PERMA_MODEL_DIR / folder
+    
+    # Read all the csvs in the data folder as dataframes and append them in one dataframe
+    data = pd.DataFrame()
+    
+    # Create a list of all csv files in data_folder and sort them
+    csv_files = sorted([file for file in data_folder.glob("*.csv")])
+    for file in csv_files:
+        data = pd.concat([data, pd.read_csv(file)], axis=0)
+        
+    # * This is only done to correct for some feature names afterwards - in the future this does not have to be done
+    # In every column header where "turns" is in the name, replace it with "utterances"
+    data.columns = [col.replace("turns", "utterances") for col in data.columns]
+    data.columns = [col.replace("overlaps", "interruptions") for col in data.columns]
+    
+    data = data.drop(["Unnamed: 0", "Alias", "Day", "P", "E", "R", "M", "A"], axis=1)
+    
+    # Remove the rows "Unnamed: 0", "E-Mail-Adresse", "Alias", "First Name", "Last Name/Surname", "Day"
+    # data = data.drop(["Unnamed: 0", "E-Mail-Adresse", "Alias", "First Name", "Last Name/Surname", "Day"], axis=1)
+    
+    grouped = data.groupby(["E-Mail-Adresse", "First Name", "Last Name/Surname"])
+    
+    # Apply mean to all other columns and reset index
+    new_df = grouped.mean().reset_index()
+    
+    # Now only keep the columns "arousal_std", "norm_num_interruptions_relative_median", "norm_speak_duration_relative_mean"
+    new_df = new_df[["E-Mail-Adresse", "First Name", "Last Name/Surname", "arousal_std", "norm_num_interruptions_relative_median", "norm_speak_duration_relative_mean"]]
+
+    # Save the dataframe as csv
+    new_df.to_csv(os.path.join(PERMA_MODEL_DIR, "audio_sdm_data" + ".csv"))
+    
+    # TODO: Notes: data is not normalized, "only" have 36 speakers for audio features
     
     return data
 
