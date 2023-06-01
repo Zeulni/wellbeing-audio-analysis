@@ -52,6 +52,11 @@ class Runner:
         self.total_frames = self.asd_pipeline_tools.get_num_total_frames(self.video_path)
         self.length_video = int(self.total_frames / self.num_frames_per_sec)
         
+        # If the video length is shorter than 2x the unit of analysis, then set the unit of analysis to the half of the video length
+        if self.length_video < 2 * self.unit_of_analysis:
+            self.unit_of_analysis = int(self.length_video / 2)
+            self.logger.log("Unit of analysis set to " + str(self.unit_of_analysis) + ", as otherwise only 1 data point.")
+        
         # RTTM File Preparation
         self.rttm_file_preparation = RTTMFilePreparation(self.video_name, self.unit_of_analysis, self.length_video, self.save_path, self.asd_pipeline_tools)
         
@@ -80,7 +85,7 @@ class Runner:
     def run(self):
         
         try:
-            # Perform combined Active Speaker Detection and Speaker Diarization - if selected in config file
+            # Perform audiovisual speaker diarization
             if 1 in self.run_pipeline_parts:
                 self.asd_pipeline.run()
 

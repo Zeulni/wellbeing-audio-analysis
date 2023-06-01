@@ -9,7 +9,7 @@ RUN_PIPELINE_PARTS: [4]
 # -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
 # Name of the input file to be processed (.mp4 or .avi) two_min_snippet
-VIDEO_NAME: "clip_2_8171_11216"
+VIDEO_NAME: "001"
 
 # Path for the pretrained TalkNet model
 PRETRAINED_ASD_MODEL: "pretrain_TalkSet.model"
@@ -56,6 +56,7 @@ INCLUDE_VISUALIZATION: False
 # -- PART 2: THE FOLLOWING CONFIGS ARE ALL USED FOR Analysing the audio files
 
 # This is the amount of seconds in which the audio is split and analyzed (300s means in chunks of 5 min)
+# Note: If the video length is shorter than the unit of analysis, then this number will be set to video length / 2  
 UNIT_OF_ANALYSIS: 300
 
 # -- PART 2: THE FOLLOWING CONFIGS ARE ALL USED FOR Inferencing the PERMA values

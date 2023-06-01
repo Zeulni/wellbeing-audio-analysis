@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib.image as mpimg
 from PIL import Image
+import cv2
 
 from src.audio.utils.time_series_features import TimeSeriesFeatures
 
@@ -161,12 +162,15 @@ class PermaModelInferencing:
             speaker_id = str(row.name).split()[-1]
             file_name = [f for f in os.listdir(self.faces_id_path) if speaker_id in f][0]
             img = mpimg.imread(os.path.join(self.faces_id_path, file_name))
+            
+            # Resize the image to be 100x100
+            img = cv2.resize(img, (100, 100))
 
             # Define the bbox of the current ax to use it to place the image
             Bbox = ax.get_position()
 
             # Create new axes for the image at the top of the current axes
-            ax_image = fig.add_axes([Bbox.x0, Bbox.y1+0.1, Bbox.width, 0.2], anchor='S') # Change 0.1 to change the height of the image's axes
+            ax_image = fig.add_axes([Bbox.x0, Bbox.y1+0.06, Bbox.width, 0.18], anchor='S') # Change 0.1 to change the height of the image's axes
 
             # Hide the spines, ticks, and labels of the image's axes
             ax_image.axis("off")
