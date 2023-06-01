@@ -103,8 +103,8 @@ class Runner:
             # Visualize the results
             if 3 in self.run_pipeline_parts:    
                 visualize_emotions(self.csv_path, self.unit_of_analysis, self.video_name)
-                visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_turns_relative', 'norm_speak_duration_relative', 'norm_num_overlaps_relative'])
-                visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_turns_absolute', 'norm_speak_duration_absolute', 'norm_num_overlaps_absolute'])
+                visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_utterances_relative', 'norm_speak_duration_relative', 'norm_num_interruptions_relative'])
+                visualize_com_pattern(self.csv_path, self.unit_of_analysis, self.video_name, ['norm_num_utterances_absolute', 'norm_speak_duration_absolute', 'norm_num_interruptions_absolute'])
                 
             # PERMA model inference
             if 4 in self.run_pipeline_parts:

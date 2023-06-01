@@ -4,7 +4,7 @@
 # 3: Visualize the results (input: csv file, output: plots)
 # 4: Inference -> predict the PERMA values
 # [1,2,3,4] means run all parts
-RUN_PIPELINE_PARTS: [4]
+RUN_PIPELINE_PARTS: [2,3,4]
 
 # -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 

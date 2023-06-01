@@ -2,9 +2,9 @@ import statistics
 
 from src.audio.utils.analysis_tools import write_results_to_csv, visualize_individual_speaking_shares
 
-from src.audio.com_pattern.turn_taking import TurnTaking
+from src.audio.com_pattern.utterances import Utterances
 from src.audio.com_pattern.speaking_duration import SpeakingDuration
-from src.audio.com_pattern.overlaps import Overlaps
+from src.audio.com_pattern.interruptions import Interruptions
 
 
 # Perform certain communication pattern evaluations on the rttm file
@@ -15,9 +15,9 @@ class ComPatternAnalysis:
         self.unit_of_analysis = unit_of_analysis
         
         # Initialize the communication pattern classes
-        self.turn_taking = TurnTaking()
+        self.utterances = Utterances()
         self.speaking_duration = SpeakingDuration()
-        self.overlaps = Overlaps()
+        self.interruptions = Interruptions()
             
     def run(self, splitted_speaker_overview, block_length, num_speakers) -> None:
         
@@ -26,36 +26,36 @@ class ComPatternAnalysis:
         # For each unit of analysis (block) perform the following calculations
         for block_id, speaker_overview in enumerate(splitted_speaker_overview):
             
-            # * absolute = x per minute (for each speaker), e.g. 2.5 overlaps per minute
+            # * absolute = x per minute (for each speaker), e.g. 2.5 interruptions per minute
             # * relative = x in relation to team members (1 is avg., lower means under average, higher means above average)
             
-            # Turn Taking features
-            number_turns = self.turn_taking.calculate_number_turns(speaker_overview)
-            norm_num_turns_absolute = self.calc_norm_absolute_features(block_length[block_id], number_turns, "number_turns", "norm_num_turns_absolute")           
-            norm_num_turns_relative = self.calc_norm_relative_features(number_turns, "number_turns", "norm_num_turns_relative")
+            # Utterances features
+            number_utterances = self.utterances.calculate_number_utterances(speaker_overview)
+            norm_num_utterances_absolute = self.calc_norm_absolute_features(block_length[block_id], number_utterances, "number_utterances", "norm_num_utterances_absolute")           
+            norm_num_utterances_relative = self.calc_norm_relative_features(number_utterances, "number_utterances", "norm_num_utterances_relative")
         
             # Speaking Durations features
             speaking_duration = self.speaking_duration.calculate_speaking_duration(speaker_overview)
             norm_speak_duration_absolute = self.calc_norm_absolute_features(block_length[block_id], speaking_duration, "speaking_duration", "norm_speak_duration_absolute")
             norm_speak_duration_relative = self.calc_norm_relative_features(speaking_duration, "speaking_duration", "norm_speak_duration_relative")
         
-            # Overlap features
-            # * defined as: how often did I fall into a word of someone else (he/she is starting, then I have an overlap afterwards)
-            num_overlaps = self.overlaps.calculate_number_overlaps(speaker_overview)
-            norm_num_overlaps_absolute = self.calc_norm_absolute_features(block_length[block_id], num_overlaps, "num_overlaps", "norm_num_overlaps_absolute")
-            norm_num_overlaps_relative = self.calc_norm_relative_features(num_overlaps, "num_overlaps", "norm_num_overlaps_relative")
+            # Interruption features
+            # * defined as: how often did I fall into a word of someone else (he/she is starting, then I have an interruption afterwards)
+            num_interruptions = self.interruptions.calculate_number_interruptions(speaker_overview)
+            norm_num_interruptions_absolute = self.calc_norm_absolute_features(block_length[block_id], num_interruptions, "num_interruptions", "norm_num_interruptions_absolute")
+            norm_num_interruptions_relative = self.calc_norm_relative_features(num_interruptions, "num_interruptions", "norm_num_interruptions_relative")
             
             #print("\n")
             
             # Loop through each speaker and then add the communication pattern features to the output list
-            for speaker_id in number_turns["speaker"]:
-                # Get the index of the speaker ID from the number_turns list
-                speaker_id_index = number_turns["speaker"].index(speaker_id)
-                # com_pattern_output[block_id].append({speaker_id: [norm_num_turns_relative["norm_num_turns_relative"][speaker_id_index], ind_speaking_shares_unit["ind_speaking_share_unit"][speaker_id_index], ind_speaking_shares_team["ind_speaking_share_team"][speaker_id_index]]})
+            for speaker_id in number_utterances["speaker"]:
+                # Get the index of the speaker ID from the number_utterances list
+                speaker_id_index = number_utterances["speaker"].index(speaker_id)
+                # com_pattern_output[block_id].append({speaker_id: [norm_num_utterances_relative["norm_num_utterances_relative"][speaker_id_index], ind_speaking_shares_unit["ind_speaking_share_unit"][speaker_id_index], ind_speaking_shares_team["ind_speaking_share_team"][speaker_id_index]]})
                 com_pattern_output[block_id].append({speaker_id: \
-                    [norm_num_turns_absolute["norm_num_turns_absolute"][speaker_id_index], norm_num_turns_relative["norm_num_turns_relative"][speaker_id_index], \
+                    [norm_num_utterances_absolute["norm_num_utterances_absolute"][speaker_id_index], norm_num_utterances_relative["norm_num_utterances_relative"][speaker_id_index], \
                     norm_speak_duration_absolute["norm_speak_duration_absolute"][speaker_id_index], norm_speak_duration_relative["norm_speak_duration_relative"][speaker_id_index], \
-                    norm_num_overlaps_absolute["norm_num_overlaps_absolute"][speaker_id_index], norm_num_overlaps_relative["norm_num_overlaps_relative"][speaker_id_index]]})
+                    norm_num_interruptions_absolute["norm_num_interruptions_absolute"][speaker_id_index], norm_num_interruptions_relative["norm_num_interruptions_relative"][speaker_id_index]]})
                 
         com_pattern_output_reform = self.parse_com_pattern_output(com_pattern_output)
         
@@ -67,16 +67,16 @@ class ComPatternAnalysis:
             for speaker_dict in block:
                 speaker_id = list(speaker_dict.keys())[0]
                 if speaker_id not in com_pattern_output_reform:
-                    com_pattern_output_reform[speaker_id] = {'norm_num_turns_absolute': [], 'norm_num_turns_relative': [], 'norm_speak_duration_absolute': [], \
-                        'norm_speak_duration_relative': [], 'norm_num_overlaps_absolute': [], 'norm_num_overlaps_relative': []}
+                    com_pattern_output_reform[speaker_id] = {'norm_num_utterances_absolute': [], 'norm_num_utterances_relative': [], 'norm_speak_duration_absolute': [], \
+                        'norm_speak_duration_relative': [], 'norm_num_interruptions_absolute': [], 'norm_num_interruptions_relative': []}
                 values = speaker_dict[speaker_id]
 
-                com_pattern_output_reform[speaker_id]['norm_num_turns_absolute'].append(values[0])
-                com_pattern_output_reform[speaker_id]['norm_num_turns_relative'].append(values[1])
+                com_pattern_output_reform[speaker_id]['norm_num_utterances_absolute'].append(values[0])
+                com_pattern_output_reform[speaker_id]['norm_num_utterances_relative'].append(values[1])
                 com_pattern_output_reform[speaker_id]['norm_speak_duration_absolute'].append(values[2])
                 com_pattern_output_reform[speaker_id]['norm_speak_duration_relative'].append(values[3])
-                com_pattern_output_reform[speaker_id]['norm_num_overlaps_absolute'].append(values[4])
-                com_pattern_output_reform[speaker_id]['norm_num_overlaps_relative'].append(values[5])
+                com_pattern_output_reform[speaker_id]['norm_num_interruptions_absolute'].append(values[4])
+                com_pattern_output_reform[speaker_id]['norm_num_interruptions_relative'].append(values[5])
                     
         return com_pattern_output_reform  
     

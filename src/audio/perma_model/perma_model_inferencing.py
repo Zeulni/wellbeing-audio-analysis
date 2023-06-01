@@ -22,16 +22,13 @@ class PermaModelInferencing:
         self.logger = logger
         self.times_series_features = TimeSeriesFeatures()
         
+            
+    def load_data(self):
         # * Load the csv file
         if os.path.isfile(self.csv_path):
             self.time_series_df = pd.read_csv(self.csv_path)
         else:
             raise FileNotFoundError(f"{self.csv_path} does not exist.")
-    
-        # * This is only done to correct for some feature names afterwards - in the future this does not have to be done
-        # In every column header where "turns" is in the name, replace it with "utterances", same for "overlaps" -> "interruptions"
-        self.time_series_df.columns = [col.replace("turns", "utterances") for col in self.time_series_df.columns]
-        self.time_series_df.columns = [col.replace("overlaps", "interruptions") for col in self.time_series_df.columns]
         
         # * Load the columns and scaler for the gaussian features
         with open(PERMA_MODEL_RESULTS_DIR / "small_data_gaussian_columns.pkl", 'rb') as f:
@@ -65,8 +62,8 @@ class PermaModelInferencing:
     
     def run(self):
         
-        # Debugging
-        # self.time_series_df.to_csv(os.path.join(self.save_path, "time_series_df.csv"))
+        # Load all necessary data
+        self.load_data()
     
         # Calculate the time series features (long vs. short)
         feature_df, long_feature_df = self.times_series_features.calc_time_series_features(self.time_series_df, FEATURE_NAMES)
@@ -136,11 +133,8 @@ class PermaModelInferencing:
         self.logger.log(f"Saved classification PERMA scores to {csv_classification_path}")
         print("Saved classification PERMA scores to: ", csv_classification_path)
 
-        # Visualize the results (filling bar chart)
-        # TODO: assign to correct person and plot one perma chart per person
+        # Visualize the results
         self.plot_perma_result(perma_regression_df)
-        
-        
     
     def plot_perma_result(self, perma_df):
 
