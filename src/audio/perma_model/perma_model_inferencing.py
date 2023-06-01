@@ -66,26 +66,22 @@ class PermaModelInferencing:
         self.load_data()
     
         # Calculate the time series features (long vs. short)
-        feature_df, long_feature_df = self.times_series_features.calc_time_series_features(self.time_series_df, FEATURE_NAMES)
+        small_feature_df, large_feature_df = self.times_series_features.calc_time_series_features(self.time_series_df, FEATURE_NAMES)
         
         
         # Scale the features
-        gaussian_feature_array = self.feature_std_scaler.transform(feature_df[self.gaussian_columns])
-        gaussian_feature_df = pd.DataFrame(gaussian_feature_array, index=feature_df.index, columns=self.gaussian_columns)
-        non_gaussian_feature_array = self.feature_robust_scaler.transform(feature_df[self.non_gaussian_columns])
-        non_gaussian_feature_df = pd.DataFrame(non_gaussian_feature_array, index=feature_df.index, columns=self.non_gaussian_columns)
-        feature_df = pd.concat([gaussian_feature_df, non_gaussian_feature_df], axis=1)
-        
-        # Transform to dataframe again (based on index and colum names of selftime_series_df)
-        # feature_df = pd.DataFrame(feature_array, index=feature_df.index, columns=feature_df.columns)
+        gaussian_feature_array = self.feature_std_scaler.transform(small_feature_df[self.gaussian_columns])
+        gaussian_feature_df = pd.DataFrame(gaussian_feature_array, index=small_feature_df.index, columns=self.gaussian_columns)
+        non_gaussian_feature_array = self.feature_robust_scaler.transform(small_feature_df[self.non_gaussian_columns])
+        non_gaussian_feature_df = pd.DataFrame(non_gaussian_feature_array, index=small_feature_df.index, columns=self.non_gaussian_columns)
+        small_feature_df = pd.concat([gaussian_feature_df, non_gaussian_feature_df], axis=1)
         
         # Select only columns based on feature selection algorithm from the dataframe 
-        # feature_df = feature_df[self.selected_features]
-        feature_df_P = feature_df[self.selected_features[0]]
-        feature_df_E = feature_df[self.selected_features[1]]
-        feature_df_R = feature_df[self.selected_features[2]]
-        feature_df_M = feature_df[self.selected_features[3]]
-        feature_df_A = feature_df[self.selected_features[4]]
+        feature_df_P = small_feature_df[self.selected_features[0]]
+        feature_df_E = small_feature_df[self.selected_features[1]]
+        feature_df_R = small_feature_df[self.selected_features[2]]
+        feature_df_M = small_feature_df[self.selected_features[3]]
+        feature_df_A = small_feature_df[self.selected_features[4]]
         
         # * Run the regression model    
         perma_regression_scores_P = np.expand_dims(self.perma_regression_models[0].predict(feature_df_P), axis=1)
@@ -108,7 +104,7 @@ class PermaModelInferencing:
             raise ValueError(f"perma_scale {self.perma_scale} is not supported.")
         
         # Saves the regression results to a csv file
-        perma_regression_df = pd.DataFrame(perma_regression_scores, columns=["P", "E", "R", "M", "A"],index=feature_df.index) 
+        perma_regression_df = pd.DataFrame(perma_regression_scores, columns=["P", "E", "R", "M", "A"],index=small_feature_df.index) 
         csv_regression_path = os.path.join(self.save_path, "perma_regression_scores.csv")        
         perma_regression_df.to_csv(csv_regression_path)
         self.logger.log(f"Saved regression PERMA scores to {csv_regression_path}")
@@ -127,7 +123,7 @@ class PermaModelInferencing:
         perma_classification_scores = np.where(perma_classification_scores == 0, "low", "high")
         
         # Saves the classification results to a csv file
-        perma_classification_df = pd.DataFrame(perma_classification_scores, columns=["P", "E", "R", "M", "A"],index=feature_df.index)
+        perma_classification_df = pd.DataFrame(perma_classification_scores, columns=["P", "E", "R", "M", "A"],index=small_feature_df.index)
         csv_classification_path = os.path.join(self.save_path, "perma_classification_scores.csv")
         perma_classification_df.to_csv(csv_classification_path)
         self.logger.log(f"Saved classification PERMA scores to {csv_classification_path}")

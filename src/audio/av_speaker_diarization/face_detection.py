@@ -1,7 +1,7 @@
 import cv2
 import sys
 
-from src.audio.ASD.model.faceDetector.s3fd import S3FD
+from src.audio.av_speaker_diarization.model.faceDetector.s3fd import S3FD
 
 
 class FaceDetector:

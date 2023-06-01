@@ -27,12 +27,10 @@ class Utterances:
     # Team Feature: Calculating the equality based on the number of utterances  
     def calculate_number_utterances_equality(self, number_utterances, block_id) -> float:
         
-        # TODO: Independent of number of length (as normalized by mean), but also ind. of #speakers?
         mean_time = statistics.mean(number_utterances["number_utterances"])
         stdev_time = statistics.stdev(number_utterances["number_utterances"])
         cv = (stdev_time / mean_time) * 100
         
-        # TODO: Formula see Ignacio's thesis
         # Calculating the speaker equality under the assumption, that the max speaker duration is a good proxy for the 
         # expected speaking duration that each member should take in a perfectly equal distribution
         # max_cv = (math.sqrt(self.num_speakers) - 1) / math.sqrt(self.num_speakers)

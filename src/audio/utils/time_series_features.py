@@ -8,16 +8,16 @@ class TimeSeriesFeatures:
     
     def calc_time_series_features(self, df, feature_names):        
         # Make it more modular (e.g. by providing list of features)
-        short_overall_df = pd.DataFrame()
-        long_overall_df = pd.DataFrame()
+        small_overall_df = pd.DataFrame()
+        large_overall_df = pd.DataFrame()
         for feature_name in feature_names:
-            short_feature_df = self.calc_ind_feature(df, feature_name)
-            short_overall_df = pd.concat([short_overall_df, short_feature_df], axis=1)
+            small_feature_df = self.calc_ind_feature(df, feature_name)
+            small_overall_df = pd.concat([small_overall_df, small_feature_df], axis=1)
         
-            # long_feature_df = self.calc_tsfresh_features(df, feature_name)
-            # long_overall_df = pd.concat([long_overall_df, long_feature_df], axis=1)
+            # large_feature_df = self.calc_tsfresh_features(df, feature_name)
+            # large_overall_df = pd.concat([large_overall_df, large_feature_df], axis=1)
             
-        return short_overall_df, long_overall_df
+        return small_overall_df, large_overall_df
     
     def calc_ind_feature(self, df, feature_name):
                 

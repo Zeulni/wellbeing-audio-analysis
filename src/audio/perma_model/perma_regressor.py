@@ -79,10 +79,6 @@ class PermaRegressor:
         self.model_name_list = ["Ridge", "Lasso", "XGBoost", "CatBoost"]
         self.model_param_grid_list = [self.ridge_param_grid, self.lasso_param_grid, self.xgboost_param_grid, self.catboost_param_grid]
         self.reg_model_list = [self.ridge_reg_model, self.lasso_reg_model, self.xgboost_reg_model, self.catboost_reg_model]
-
-        # self.model_name_list = ["ridge"]
-        # self.model_param_grid_list = [self.ridge_param_grid]
-        # self.reg_model_list = [self.ridge_reg_model]
         
     def train_model(self, multioutput_reg_model, model_name, param_grid):        
         
@@ -94,19 +90,10 @@ class PermaRegressor:
         print(model_name + " Best Hyperparameters:", grid_search.best_params_)
         print(model_name + " Best Score " + rmse + ": ", round(-grid_search.best_score_,3))
         
-        # Fit the MultiOutputRegressor object with the best hyperparameters
-        # multioutput_reg_model.set_params(**grid_search.best_params_)
-        # multioutput_reg_model.fit(self.data_X, self.data_y)
-        
         multioutput_reg_model = grid_search.best_estimator_
-        
         
         # Print baseline RMSE and MAE
         self.calc_baseline(multioutput_reg_model, model_name)
-        
-        # TODO: bring back
-        # self.plot_and_save_feature_importance(multioutput_reg_model, model_name)
-        # self.plot_and_save_shap_values(multioutput_reg_model, model_name)
     
         # Save models dict to pickle file
         model_file_name = self.database_name + '_' + model_name + '_perma_model.pkl'
@@ -189,16 +176,9 @@ class PermaRegressor:
     def train_multiple_models_per_pillar(self):
         
         self.train_ind_models()
-        
-        # Use multiprocessing to train the models in parallel
-        # with multiprocessing.Pool() as pool:
-        #     pool.starmap(self.train_ind_models, zip(self.reg_model_list, self.model_name_list, self.model_param_grid_list))
-
         self.plot_and_save_feature_importance()
-        # self.plot_and_save_shap_values()
-        # self.transform_to_classification()
-        # print("Best params: ", self.best_params)
-        # self.plot_baseline_bar_plot_comparison()
+        self.plot_and_save_shap_values()
+        self.plot_baseline_bar_plot_comparison()
         
     # define a function that measures the imbalance of the classes
     def imbalance(self, border, col):
@@ -222,11 +202,6 @@ class PermaRegressor:
             # * Quantile-Based Binning (other option: equal-width binning), not optimal for skewed distributions
             percentiles = np.linspace(0, 100, num=(number_of_classes+1))
             bin_edges = np.percentile(data_y_train, percentiles)
-
-            
-            # result = minimize_scalar(lambda x: self.imbalance(x, data_y_train), bounds=(np.percentile(data_y_train, 40), np.percentile(data_y_train, 60)), method='bounded')
-            # border = result.x
-            # bin_edges = np.array([0, border, 1])
             
             # Add a lower bound to the first bin edge and an upper bound to the last bin edge
             bin_edges[0] = -np.inf

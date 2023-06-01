@@ -104,8 +104,7 @@ class PermaClassifier:
     def train_multiple_models_per_pillar(self):
         
         self.train_ind_models()
-        
-        # self.plot_and_save_shap_values()
+        self.plot_and_save_shap_values()
         self.plot_baseline_bar_plot_comparison()
         # print("Best params: ", self.best_params)
         # print("---------------------")
@@ -150,11 +149,6 @@ class PermaClassifier:
             self.best_params.append(pillar_best_params[best_model_i])
             
             self.calc_baseline_comparison(self.best_models[perma_i], self.best_models_names[perma_i], perma_i)
-            
-        #     perma_pillar = str(self.data_y_train.columns[perma_i])
-        #     model_file_name = self.database_name + '_' + self.best_models_names[perma_i] + '_' + perma_pillar + '_perma_model.pkl'
-        #     with open(PERMA_MODEL_RESULTS_DIR / model_file_name, 'wb') as f:
-        #         pkl.dump(self.best_models[perma_i], f)
         
         self.save_results()
         
@@ -396,7 +390,7 @@ class PermaClassifier:
             shap_values = np.where(np.isposinf(shap_values), 1e10, shap_values)
             shap_values = list(np.nan_to_num(shap_values))
 
-
+            # TODO: has to be changed for the classification case
             # shap_class = 2
             # shap_values = shap_values[shap_class]
             shap.summary_plot(shap_values, self.data_X_train[self.perma_feature_list[i]], feature_names = feature_names, show=False)

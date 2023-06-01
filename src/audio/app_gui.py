@@ -4,7 +4,7 @@ from typing import Any
 import yaml
 
 from src.audio.utils.constants import CONFIG_DIR
-from src.audio.ASD.utils.asd_pipeline_tools import ASDPipelineTools
+from src.audio.av_speaker_diarization.utils.asd_pipeline_tools import ASDPipelineTools
 
 
 def parse_arguments() -> dict:

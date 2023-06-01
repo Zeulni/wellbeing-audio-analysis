@@ -9,7 +9,7 @@ import math
 import multiprocessing as mp
 from pydub import AudioSegment
 
-from src.audio.ASD.talkNet import talkNet
+from src.audio.av_speaker_diarization.talknet import talkNet
 
 
 class ASDNetwork():

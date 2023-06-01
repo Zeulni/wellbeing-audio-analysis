@@ -12,11 +12,11 @@ import time
 # Disabled scene detection for now, because cutted teamwork videos have no change in scene 
 # if you want to add it later, have a look at the original repo: https://github.com/TaoRuijie/TalkNet-ASD
 
-from src.audio.ASD.face_detection import FaceDetector
-from src.audio.ASD.face_tracking import FaceTracker
-from src.audio.ASD.asd_network import ASDNetwork
-from src.audio.ASD.crop_tracks import CropTracks
-from src.audio.ASD.speaker_diarization import SpeakerDiarization
+from src.audio.av_speaker_diarization.face_detection import FaceDetector
+from src.audio.av_speaker_diarization.face_tracking import FaceTracker
+from src.audio.av_speaker_diarization.asd_network import ASDNetwork
+from src.audio.av_speaker_diarization.crop_tracks import CropTracks
+from src.audio.av_speaker_diarization.speaker_diarization import SpeakerDiarization
 
 from src.audio.utils.constants import ASD_DIR
 
@@ -70,10 +70,6 @@ class ASDSpeakerDirPipeline:
 		
 		# Extract the video from the start time to the duration
 		self.video_path = self.asd_pipeline_tools.extract_video(self.pyavi_path, self.video_path, self.duration, self.n_data_loader_thread, self.start, self.num_frames_per_sec)	
-     
-		# TODO: Check if that's nevertheless necessary based on UX
-		# if os.path.exists(save_path):
-		# 	rmtree(save_path)
 
 		if not os.path.exists(self.pywork_path): # Save the results in this process by the pckl method
 			os.makedirs(self.pywork_path)

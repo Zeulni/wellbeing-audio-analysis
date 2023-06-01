@@ -232,8 +232,6 @@ def create_dataset_for_sdm_plots(folder) -> None:
     # Save the dataframe as csv
     new_df.to_csv(os.path.join(PERMA_MODEL_DIR, "audio_sdm_data" + ".csv"))
     
-    # TODO: Notes: data is not normalized, "only" have 36 speakers for audio features
-    
     return data
 
 def create_perma_results_folder() -> None:

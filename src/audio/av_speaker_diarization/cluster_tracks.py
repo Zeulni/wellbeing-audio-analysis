@@ -92,17 +92,8 @@ class ClusterTracks:
         
         # Downloading smaller model manually if want to use it (but worse performance)
         # buffalo_sc https://drive.google.com/file/d/19I-MZdctYKmVf3nu5Da3HS6KH5LBfdzG/view?usp=sharing
-        # TODO: only temporary solution (I just clear the console, although it throws an error)
-        # Check if a file naming "model.pkl" exists in the folder faces_id_path (if yes, then load the pkl file), otherwise initialize the model        
-        # model_path = ASD_DIR / "model" / 'model.pkl'
+
         model_folder = ASD_DIR / "model"
-        
-        # if os.path.isfile(model_path):
-        #     model = pickle.load(open(model_path, 'rb'))
-        # else:
-        #     model = FaceAnalysis("buffalo_l", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
-        #     model.prepare(ctx_id=0, det_size=(224, 224))
-        #     pickle.dump(model, open(model_path, 'wb'))
         model = FaceAnalysis("buffalo_l", root=model_folder, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         
         

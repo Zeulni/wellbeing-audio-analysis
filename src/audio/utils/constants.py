@@ -4,7 +4,7 @@ from pathlib import Path
 root = Path.cwd()
 
 CONFIG_DIR = root / "configs"
-ASD_DIR = root / "src" / "audio" / "ASD"
+ASD_DIR = root / "src" / "audio" / "av_speaker_diarization"
 VIDEOS_DIR = root / "src" / "audio" / "videos"
 EMOTIONS_DIR = root / "src" / "audio" / "emotions"
 PERMA_MODEL_DIR = root / "src" / "audio" / "perma_model"

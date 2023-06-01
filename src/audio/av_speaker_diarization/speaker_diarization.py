@@ -6,7 +6,7 @@ import math
 import cv2
 #import insightface
 
-from src.audio.ASD.cluster_tracks import ClusterTracks
+from src.audio.av_speaker_diarization.cluster_tracks import ClusterTracks
 
 class SpeakerDiarization:
     def __init__(self, pyavi_path, video_path, video_name, n_data_loader_thread, threshold_same_person, create_track_videos, 

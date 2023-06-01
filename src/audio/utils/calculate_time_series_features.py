@@ -64,10 +64,10 @@ class CalculateTimeSeriesFeatures:
                 # print(team_day_features)
                 # team_day_features.to_csv(VIDEOS_DIR / 'test_team_day_features.csv')
 
-                short_feature_df, long_feature_df = self.times_series_features.calc_time_series_features(team_day_features, FEATURE_NAMES)
+                small_feature_df, large_feature_df = self.times_series_features.calc_time_series_features(team_day_features, FEATURE_NAMES)
                 
-                self.merge_with_perma(short_feature_df, "short_overall_df", day_folder, team_folder, team)
-                self.merge_with_perma(long_feature_df, "long_overall_df", day_folder, team_folder, team)
+                self.merge_with_perma(small_feature_df, "small_overall_df", day_folder, team_folder, team)
+                self.merge_with_perma(large_feature_df, "large_overall_df", day_folder, team_folder, team)
 
     
     def custom_sort(self, folder_name):
@@ -81,23 +81,23 @@ class CalculateTimeSeriesFeatures:
         # Return a tuple to define the sorting order
         return (clip_num, start_frame)
     
-    def merge_with_perma(self, short_feature_df, file_name, day_folder, team_folder, team): 
+    def merge_with_perma(self, small_feature_df, file_name, day_folder, team_folder, team): 
         perma_path = PERMA_MODEL_DIR / "perma_scores_dataset.csv"
         df_perma = pd.read_csv(perma_path)
         
         # One day is e.g. "2023-01-10" -> extract the 10
         day = int(day_folder.split("-")[2])
         
-        # In short_feature_df_team, the column "Speaker ID", which is also the index, contains the alias 
+        # In small_feature_df_team, the column "Speaker ID", which is also the index, contains the alias 
         # Filter the df_perma for the day 
-        # Then do a left join on the alias, where df_perma is the left df which is the basis and the short_feature_df_team is the right df which is the one that is added
+        # Then do a left join on the alias, where df_perma is the left df which is the basis and the small_feature_df_team is the right df which is the one that is added
         df_perma_filtered = df_perma[(df_perma['Day'] == day)]
         # print(df_perma_filtered)
 
         # Then, perform a left join on the Alias column
-        merged_df = pd.merge(df_perma_filtered, short_feature_df, left_on='Alias', right_index=True, how='left')
+        merged_df = pd.merge(df_perma_filtered, small_feature_df, left_on='Alias', right_index=True, how='left')
         # Only drop the row if all columns (apart from the ones form the left df) are NaN
-        merged_df = merged_df.dropna(how='all', subset=short_feature_df.columns)
+        merged_df = merged_df.dropna(how='all', subset=small_feature_df.columns)
         # print(merged_df)
                         
         # Save files with day_folder in the name

@@ -116,8 +116,6 @@ class FeatureReduction():
         # Print the selected features
         print(f"Amount selected features: {len(data_X_new.columns)}")
 
-        # TODO: store the features used for each pillar, not the overall ones
-
         # Save the selected features as a pickle file (to use it for inference later on)
         with open(os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_selected_features_mutual.pkl"), "wb") as f:
             pkl.dump(data_X_new.columns, f)
@@ -127,17 +125,10 @@ class FeatureReduction():
     # Rule of thumb: 1 feature per 10 samples -> 8-9 features have to be selected
     def select_features_regression(self, data_X, data_y, database) -> pd:
 
-        # TODO: values for normalized features
         if database == "short_data":
             alpha = 0.025
         elif database == "long_data":
             alpha = 0.05
-        
-        # TODO: values for standardized features
-        # if database == "short_data":
-        #     alpha = 0.1
-        # elif database == "long_data":
-        #     alpha = 0.2
 
         # Use MultiOutputRegressor to select the features for all target variables at once (0.1 original alpha value)
         selector = SelectFromModel(Lasso(alpha=alpha, max_iter=10000))

@@ -8,10 +8,6 @@ class RTTMFilePreparation:
         self.length_video = length_video
         self.save_path = save_path
         self.asd_pipeline_tools = asd_pipeline_tools
-        
-        # TODO: Testing
-        # self.length_video = 100
-        
         self.num_speakers = None
         
     def get(self, attribute):
@@ -109,9 +105,6 @@ class RTTMFilePreparation:
             speaker[0] = faces_ids_renaming_dict[speaker[0]]
         
         self.asd_pipeline_tools.write_to_terminal(f"The following IDs will be analyzed: {[speaker[0] for speaker in self.speaker_overview]}")
-        
-        # TODO: Testing
-        # self.speaker_overview = [['0', [0, 90], [10, 100]], ['1', [5], [15]], ['2', [50], [80]], ['3', [75], [95]]]
         
         self.block_speaker_overview = self.split_speaker_overview()
         

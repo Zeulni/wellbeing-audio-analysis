@@ -30,7 +30,6 @@ class PermaModelTraining:
     
     def run(self): 
 
-        # TODO: revert rs assigment!
         # database_list = ["small_data", "large_data"]
         database_list = ["small_data"]
         
@@ -62,7 +61,6 @@ class PermaModelTraining:
             data_y_test = data_y_test.reset_index(drop=True)
             
             # * Remove NaN columns
-            # TODO: Step 1 (for data_X_test)
             data_X_train, nan_columns = self.feature_reduction.remove_nan_columns(data_X_train, database)
         
             # * Outlier Removal
@@ -71,18 +69,6 @@ class PermaModelTraining:
             # Assumption: filter out ~3 outliers in the input data (data_X_train)
             data_X_train, data_y_train = self.sample_reduction.remove_outliers(data_X_train, data_y_train) # Perform it before scaling features
             
-            # percentiles = np.linspace(0, 100, num=(5))
-            # # Iterate through the lenght of the data_y_train
-            # for perma_pillar in data_y_train:
-            #     perma_pillar_data = data_y_train[perma_pillar]
-            #     print(perma_pillar_data.value_counts().sort_index())
-            #     bin_edges = np.percentile(perma_pillar_data, percentiles)
-            #     bin_edges[0] = -np.inf
-            #     bin_edges[-1] = np.inf
-                
-            #     # Print the distribution of each class in the train set
-            #     print("Distribution of classes in train set for " + perma_pillar + ":")
-            #     print(pd.cut(perma_pillar_data, bins=bin_edges, labels=False).value_counts().sort_index())
             
             # * EDA
             # self.exp_data_analysis.plot_correlation_matrices_feature_names(data_X_train, data_y_train)
@@ -92,18 +78,14 @@ class PermaModelTraining:
             # self.exp_data_analysis.plot_perma_pillars(data_y_train)
 
             # * Scaling
-            # TODO: Step 2 (for data_X_test and data_y_test)
             data_y_train, normalize_scaler = self.data_scaling.normalize_targets(data_y_train)       
             # data_y_train = self.scaling_data.standardize_targets(data_y)     
             data_X_train, gaussian_columns, gaussian_feature_scaler, non_gaussian_columns, nongaussian_feature_scaler = self.data_scaling.scale_features(data_X_train, database)
             
             
             # * Feature Selection 
-            # TODO: Step 3 (for data_X_test)
             data_X_train = self.feature_reduction.variance_thresholding(data_X_train, best_param[database])
             data_X_train, correlated_features = self.feature_reduction.correlation_clustering(data_X_train, data_y_train, best_param[database])
-            # data_X_train = self.feature_reduction.perform_pca(data_X_train, database, 10)
-            # data_X_train, perma_feature_list = self.feature_reduction.select_features_mutual_info(data_X_train, data_y_train, database, 6)
             
             data_X_train_file = os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_reduced_data_X.pkl")
             perma_feature_list_file = os.path.join(PERMA_MODEL_RESULTS_DIR, database + "_perma_feature_list.pkl")

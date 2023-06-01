@@ -3,9 +3,9 @@ import os
 
 from src.audio.utils.rttm_file_preparation import RTTMFilePreparation
 from src.audio.utils.logger import Logger
-from src.audio.ASD.utils.asd_pipeline_tools import ASDPipelineTools
+from src.audio.av_speaker_diarization.utils.asd_pipeline_tools import ASDPipelineTools
 
-from src.audio.ASD.speaker_diar_pipeline import ASDSpeakerDirPipeline
+from src.audio.av_speaker_diarization.speaker_diar_pipeline import ASDSpeakerDirPipeline
 from src.audio.com_pattern.com_pattern_analysis import ComPatternAnalysis
 from src.audio.emotions.emotion_analysis import EmotionAnalysis
 from src.audio.perma_model.perma_model_inferencing import PermaModelInferencing
