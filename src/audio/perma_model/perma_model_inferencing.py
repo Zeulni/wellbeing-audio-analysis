@@ -90,8 +90,7 @@ class PermaModelInferencing:
         feature_df_M = feature_df[self.selected_features[3]]
         feature_df_A = feature_df[self.selected_features[4]]
         
-        # Run the regression model    
-        # perma_scores = self.perma_model.predict(feature_df)
+        # * Run the regression model    
         perma_regression_scores_P = np.expand_dims(self.perma_regression_models[0].predict(feature_df_P), axis=1)
         perma_regression_scores_E = np.expand_dims(self.perma_regression_models[1].predict(feature_df_E), axis=1)
         perma_regression_scores_R = np.expand_dims(self.perma_regression_models[2].predict(feature_df_R), axis=1)
@@ -111,16 +110,35 @@ class PermaModelInferencing:
         else:
             raise ValueError(f"perma_scale {self.perma_scale} is not supported.")
         
-        # Saves the results to a csv file
-        perma_df = pd.DataFrame(perma_regression_scores, columns=["P", "E", "R", "M", "A"],index=feature_df.index) 
-        csv_path = os.path.join(self.save_path, "perma_regression_scores.csv")        
-        perma_df.to_csv(csv_path)
-        self.logger.log(f"Saved perma scores to {csv_path}")
-        print("Saved perma scores to: ", csv_path)
+        # Saves the regression results to a csv file
+        perma_regression_df = pd.DataFrame(perma_regression_scores, columns=["P", "E", "R", "M", "A"],index=feature_df.index) 
+        csv_regression_path = os.path.join(self.save_path, "perma_regression_scores.csv")        
+        perma_regression_df.to_csv(csv_regression_path)
+        self.logger.log(f"Saved regression PERMA scores to {csv_regression_path}")
+        print("Saved regression PERMA scores to: ", csv_regression_path)
+        
+        # * Run the classification model
+        perma_classification_scores_P = np.expand_dims(self.perma_classification_models[0].predict(feature_df_P), axis=1)
+        perma_classification_scores_E = np.expand_dims(self.perma_classification_models[1].predict(feature_df_E), axis=1)
+        perma_classification_scores_R = np.expand_dims(self.perma_classification_models[2].predict(feature_df_R), axis=1)
+        perma_classification_scores_M = np.expand_dims(self.perma_classification_models[3].predict(feature_df_M), axis=1)
+        perma_classification_scores_A = np.expand_dims(self.perma_classification_models[4].predict(feature_df_A), axis=1)
+        
+        # Concatenate the results
+        perma_classification_scores = np.concatenate([perma_classification_scores_P, perma_classification_scores_E, perma_classification_scores_R, perma_classification_scores_M, perma_classification_scores_A], axis=1)
+        # Change all 0 to "low" and 1 to "high"
+        perma_classification_scores = np.where(perma_classification_scores == 0, "low", "high")
+        
+        # Saves the classification results to a csv file
+        perma_classification_df = pd.DataFrame(perma_classification_scores, columns=["P", "E", "R", "M", "A"],index=feature_df.index)
+        csv_classification_path = os.path.join(self.save_path, "perma_classification_scores.csv")
+        perma_classification_df.to_csv(csv_classification_path)
+        self.logger.log(f"Saved classification PERMA scores to {csv_classification_path}")
+        print("Saved classification PERMA scores to: ", csv_classification_path)
 
         # Visualize the results (filling bar chart)
         # TODO: assign to correct person and plot one perma chart per person
-        self.plot_perma_result(perma_df)
+        self.plot_perma_result(perma_regression_df)
         
         
     
