@@ -22,7 +22,7 @@
   <a href="#license">License</a>
 </p>
 
-<img src="./docs/audio_AI_toolkit_overview.jpeg" widt="920" height="500" alt="audio AI toolkit overview" />
+<img src="./docs/audio_wellbeing_analysis_overview.svg" widt="920" height="500" alt="audio AI toolkit overview" />
 
 ## Key Features
 
