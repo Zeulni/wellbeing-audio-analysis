@@ -31,6 +31,9 @@ exps/
 # Folder for emotion model cache
 cache/
 
+# VS studio cache
+.vscode/
+
 # Video folder (ignore everything inside, apart from the test video)
 src/audio/videos/*
 !src/audio/videos/001.avi

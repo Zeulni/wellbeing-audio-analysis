@@ -4,7 +4,7 @@
 # 3: Visualize the results (input: csv file, output: plots)
 # 4: Inference -> predict the PERMA values
 # [1,2,3,4] means run all parts
-RUN_PIPELINE_PARTS: [4]
+RUN_PIPELINE_PARTS: [1,2,3,4]
 
 # -- PART 1: THE FOLLOWING CONFIGS ARE ALL USED FOR ACTIVE SPEAKER DETECTION 
 
@@ -59,7 +59,7 @@ INCLUDE_VISUALIZATION: False
 # Note: If the video length is shorter than the unit of analysis, then this number will be set to video length / 2  
 UNIT_OF_ANALYSIS: 300
 
-# -- PART 2: THE FOLLOWING CONFIGS ARE ALL USED FOR Inferencing the PERMA values
+# -- PART 4: THE FOLLOWING CONFIGS ARE ALL USED FOR Inferencing the PERMA values
 
 # Chossing the scale of the final PERMA values (either "norm": 0 - 1, or "defaul": 0 - 7)
 PERMA_SCALE: "norm"
