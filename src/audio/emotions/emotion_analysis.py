@@ -4,10 +4,12 @@ import audonnx
 import numpy as np
 import torch
 import math
+import os
+import ssl
 
 from pydub import AudioSegment
 
-from src.audio.utils.constants import EMOTIONS_DIR
+from src.audio.utils.constants import EMOTIONS_DIR, EMOTION_MODEL_URL
 
 class EmotionAnalysis:
     def __init__(self, audio_file_path, unit_of_analysis) -> None:
@@ -18,8 +20,8 @@ class EmotionAnalysis:
         model_name = 'model'
         self.model_root = os.path.join(EMOTIONS_DIR, model_name)   
         
-        # TODO: to be tested, extracting did not work for me -> copy and paste URL into browser and download and extract manually
-        #self.download_model() 
+        # url = 'https://zenodo.org/record/6221127/files/w2v2-L-robust-12.6bc4a7fd-1.1.0.zip'
+        self.download_model() 
         
         # When GPU available, use 'cuda' instead of 'cpu'
         if torch.cuda.is_available():
@@ -38,14 +40,14 @@ class EmotionAnalysis:
         def cache_path(file):
             return os.path.join(cache_root, file)
 
-        url = 'https://zenodo.org/record/6221127/files/w2v2-L-robust-12.6bc4a7fd-1.1.0.zip'
         dst_path = cache_path('model.zip')
 
+        ssl._create_default_https_context = ssl._create_unverified_context
         if not os.path.exists(dst_path):
-            audeer.download_url(url, dst_path, verbose=True)
+            audeer.download_url(EMOTION_MODEL_URL, dst_path, verbose=True)
             
-        if not os.path.exists(self.model_root):
-            audeer.extract_archive(dst_path, self.model_root, verbose=True)       
+        if not os.path.exists(os.path.join(self.model_root, "model.onnx")):
+            audeer.extract_archive(dst_path, self.model_root, verbose=True)
 
     def run(self, splitted_speaker_overview) -> None:
         

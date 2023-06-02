@@ -28,6 +28,8 @@ exps/
 !src/audio/perma_model/results/classification_n2_small_data_best_models.pkl
 !src/audio/perma_model/results/perma_norm_scaler.pkl
 
+# Folder for emotion model cache
+cache/
 
 # Video folder (ignore everything inside, apart from the test video)
 src/audio/videos/*
