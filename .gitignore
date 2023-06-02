@@ -18,6 +18,20 @@ data/
 tests/
 exps/
 
+# Emotion model for inference
+# src/audio/emotions/model/model.onnx
+
+# Perma model for inference (+ other data)
+!src/audio/perma_model/small_data_gaussian_columns.pkl
+!src/audio/perma_model/small_data_feature_std_scaler.pkl
+!src/audio/perma_model/small_data_non_gaussian_columns.pkl
+!src/audio/perma_model/small_data_feature_robust_scaler.pkl
+!src/audio/perma_model/small_data_perma_feature_list.pkl
+!src/audio/perma_model/regression_small_data_best_models.pkl
+!src/audio/perma_model/classification_n2_small_data_best_models.pkl
+!src/audio/perma_model/perma_norm_scaler.pkl
+
+
 # Video folder (ignore everything inside)
 src/audio/videos/*
 

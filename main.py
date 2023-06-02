@@ -10,6 +10,7 @@ def main(video_path = None) -> None:
     runner = Runner(args, video_path)
     runner.run()
     
+    
     # perma_model_training = PermaModelTraining()
     # perma_model_training.run()
 
