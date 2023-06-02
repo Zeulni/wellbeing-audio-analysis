@@ -18,9 +18,6 @@ data/
 tests/
 exps/
 
-# Emotion model for inference
-# src/audio/emotions/model/model.onnx
-
 # Perma model for inference (+ other data)
 !src/audio/perma_model/results/small_data_gaussian_columns.pkl
 !src/audio/perma_model/results/small_data_feature_std_scaler.pkl
