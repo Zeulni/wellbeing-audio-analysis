@@ -1,6 +1,6 @@
-torch==2.0.0.dev20230206
-torchvision==0.15.0.dev20230206
-torchaudio==2.0.0.dev20230206
+torch==2.0.0
+torchvision==0.15.0
+torchaudio==2.0.0
 numpy==1.23.5
 scipy==1.10.0
 scikit-learn==1.2.1
