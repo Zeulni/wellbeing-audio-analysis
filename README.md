@@ -28,7 +28,7 @@ The entire pipeline (see image below) and final models are provided in this GitH
 
 ## :star: Key Features
 
-The four main building blocks of this toolbox are shown in the figure below (with the corresponding outputs).
+The four main building blocks of this toolbox are shown in the figure below.
 [<img src="./docs/audio_wellbeing_analysis_overview.svg" alt="audio AI toolkit overview" />](./docs/audio_wellbeing_analysis_overview.svg)
 
 
@@ -39,9 +39,12 @@ The four main building blocks of this toolbox are shown in the figure below (wit
     - Ideally 25 fps (otherwise processing takes longer)
 1. Output of Audiovisual Speaker Diarization:
     - 1 folder with the same name as the video, containing all current and future results
-    - 3 important files in this folder: (1) RTTM file (“who spoke when”), (2) log file (for troubleshooting), and (3) “faces_id” folder, which contains all recognized speaker and their corresponding ID from the RTTM file
+    - 3 important files in this folder:
+        1. RTTM file (“who spoke when”)
+        2. Log file (for troubleshooting)
+        3. “faces_id” folder, which contains all recognized speaker and their corresponding ID from the RTTM file
 2. Output of Communication Pattern & Emotion Feature Calculation:
-    - A csv file named *VIDEONAME*_audio_analysis_results.csv` containing one row for each speaker with the corresponding features values over time as columns
+    - 1 csv file named "*VIDEONAME*_audio_analysis_results.csv" containing one row for each speaker with the corresponding features values over time as columns
 3. Output of Feature Visualization:
     - 3 line charts for visualization of the feature values contained in the csv file
     - 3 features are plotted per chart (i.e., 9 time series in total)
@@ -108,6 +111,8 @@ The parts can be run separately if, for example, the prediction of well-being is
     depending on your Python installation.
 
 Note: Running the script on a GPU can accelerate it by a factor of 4x-8x.
+
+Have fun! :sunglasses:
 
 If you encounter any issues, please reach out to me or open a new issue.
 
