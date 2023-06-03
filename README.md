@@ -31,7 +31,27 @@ The entire pipeline (see image below) and final models are provided in this GitH
 The four main building blocks of this toolbox are shown in the figure below (with the corresponding outputs).
 [<img src="./docs/audio_wellbeing_analysis_overview.svg" alt="audio AI toolkit overview" />](./docs/audio_wellbeing_analysis_overview.svg)
 
-The final output of the pipeline is the prediction of well-being, which is done using regression (between 0-1 or 0-7) and classification (low vs. high). The parts can be run separately if, for example, the prediction of well-being is not required but other downstream tasks such as the prediction of team performance are.
+
+0. Input Video:
+    - mp4 or avi file
+    - Stored in `src/audio/videos`
+    - Filename provided in `configs/config.yaml`
+    - Ideally 25 fps (otherwise processing takes longer)
+1. Output of Audiovisual Speaker Diarization:
+    - 1 folder with the same name as the video, containing all current and future results
+    - 3 important files in this folder: (1) RTTM file (“who spoke when”), (2) log file (for troubleshooting), and (3) “faces_id” folder, which contains all recognized speaker and their corresponding ID from the RTTM file
+2. Output of Communication Pattern & Emotion Feature Calculation:
+    - A csv file named *VIDEONAME*_audio_analysis_results.csv` containing one row for each speaker with the corresponding features values over time as columns
+3. Output of Feature Visualization:
+    - 3 line charts for visualization of the feature values contained in the csv file
+    - 3 features are plotted per chart (i.e., 9 time series in total)
+4. Output of Well-Being Prediction:
+    - 1 csv for the PERMA classification results (low/high well-being)
+    - 1 csv for the PERMA regression results (continuous well-being scores either between 0-1 or 1-7)
+    - 1 plot to visualize the regression results (also saved as “perma_spider_charts.png”)
+
+
+The parts can be run separately if, for example, the prediction of well-being is not required but other downstream tasks such as the prediction of team performance are.
 
 ## :gear: How To Use
 
