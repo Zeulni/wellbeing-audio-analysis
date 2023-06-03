@@ -114,6 +114,8 @@ class Runner:
             # PERMA model inference
             if 4 in self.run_pipeline_parts:
                 self.perma_model_inferencing.run()
+                
+            self.asd_pipeline_tools.write_to_terminal("------- Pipeline finished successfully -------\n")
             
         except Exception as e:
             self.logger.log(str(e), level="ERROR")

@@ -105,8 +105,6 @@ def visualize_emotions(csv_path, unit_of_analysis, video_name):
 
     # Adjust spacing between subplots
     plt.tight_layout()
-    
-    plt.savefig(PERMA_MODEL_RESULTS_DIR / 'emotions_test_plot.png', dpi=600)
 
     # Show the plot
     plt.show()
@@ -165,8 +163,6 @@ def visualize_com_pattern(csv_path, unit_of_analysis, video_name, plotted_featur
 
     # Adjust spacing between subplots
     plt.tight_layout()
-    
-    plt.savefig(PERMA_MODEL_RESULTS_DIR / 'com_pattern_test_plot.png', dpi=600)
 
     # Show the plot
     plt.show()

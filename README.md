@@ -38,7 +38,7 @@ The four main building blocks of this toolbox are shown in the figure below.
     - Filename provided in `configs/config.yaml`
     - Ideally 25 fps (otherwise processing takes longer)
 1. Output of Audiovisual Speaker Diarization:
-    - 1 folder with the same name as the video, containing all current and future results
+    - 1 folder with the same name as the video (`src/audio/videos/VIDEONAME`), containing all current and future results
     - 3 important files in this folder:
         1. RTTM file (“who spoke when”)
         2. Log file (for troubleshooting)
@@ -49,8 +49,8 @@ The four main building blocks of this toolbox are shown in the figure below.
     - 3 line charts for visualization of the feature values contained in the csv file
     - 3 features are plotted per chart (i.e., 9 time series in total)
 4. Output of Well-Being Prediction:
-    - 1 csv for the PERMA classification results (low/high well-being)
-    - 1 csv for the PERMA regression results (continuous well-being scores either between 0-1 or 1-7)
+    - 1 csv file for the PERMA classification results (low/high well-being)
+    - 1 csv file for the PERMA regression results (continuous well-being scores either between 0-1 or 1-7)
     - 1 plot to visualize the regression results (also saved as “perma_spider_charts.png”)
 
 
@@ -120,7 +120,9 @@ If you want to change the name of a person from the ID to the real name, you can
     ```
     depending on your Python installation.
 
-Note: Running the script on a GPU can accelerate it by a factor of 4x-8x.
+Notes:
+- When running the script for the first time, all required machine learning models will be downloaded automatically
+- Running the script on a GPU can accelerate the runtime by a factor of 4x-8x (the script recognizes automatically if a CUDA device is available)
 
 Have fun! :sunglasses:
 
