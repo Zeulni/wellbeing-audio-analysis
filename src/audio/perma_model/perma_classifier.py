@@ -10,7 +10,6 @@ from catboost import CatBoostClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 
-from imblearn.over_sampling import RandomOverSampler
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import LeaveOneOut
 from sklearn.base import clone
