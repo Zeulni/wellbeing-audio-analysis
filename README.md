@@ -56,6 +56,16 @@ The four main building blocks of this toolbox are shown in the figure below.
 
 The parts can be run separately if, for example, the prediction of well-being is not required but other downstream tasks such as the prediction of team performance are.
 
+If you wish to exclude an individual from the analysis (e.g. either random person in the background or no informed consent), you can do so by:
+1. performing only step 1 of the pipeline.
+2. deleting the person's image in the `src/audio/videos/VIDEONAME/faces_id` folder.
+3. perform the remaining steps of the pipeline (2,3,4). From now on, the corresponding person will be excluded from the analysis
+
+If you want to change the name of a person from the ID to the real name, you can do it as follows:
+1. perform only step 1 of the pipeline
+2. rename the corresponding file name in the folder `src/audio/videos/VIDEONAME/faces_id` by adding two underscores after the ID followed by the name (e.g. change the name from "2.jpg" to "2__john.jpg")
+3. execute the remaining steps of the pipeline (2,3,4). From now on, the analysis will use the real name, not the ID
+
 ## :gear: How To Use
 
 1. I recommend using the same Python version as me to avoid conflicts (3.8.10). I also recommend to set up a new virtual environment using the venv module.
