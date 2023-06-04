@@ -102,6 +102,11 @@ If you want to change the name of a person from the ID to the real name, you can
     ```
     pip install -r requirements.txt
     ```
+    or
+    ```
+    pip3 install -r requirements.txt
+    ```
+    depending on your Python installation.
 
 4. To process a video using this tool, follow the steps below (if you use it for the first time, you can leave the initial value in the configuration file (001) and go directly to the next step):
 
