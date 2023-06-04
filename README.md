@@ -68,7 +68,7 @@ If you want to change the name of a person from the ID to the real name, you can
 
 ## :gear: How To Use
 
-1. I recommend using the same Python version as me to avoid conflicts (3.8.10). After cloning this GitHub repo, I also recommend to set up a new virtual environment using the venv module (in the same directly as the "main.py" file).
+1. I recommend using the same Python version as me to avoid conflicts (3.8.10). After cloning this GitHub repo, I also recommend to set up a new virtual environment using the venv module (in the same directory as the "main.py" file).
 
     <details>
     <summary>How to set up a virtual environment in Python 3 using the venv module (Windows)</summary>
