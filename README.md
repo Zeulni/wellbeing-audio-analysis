@@ -121,6 +121,7 @@ If you want to change the name of a person from the ID to the real name, you can
     depending on your Python installation.
 
 Notes:
+- Should you face errors indicating a problem with multiprocessing, then set "MULTIPROCESSING" to "False" in the Config file
 - When running the script for the first time, all required machine learning models will be downloaded automatically
 - Running the script on a GPU can accelerate the runtime by a factor of 4x-8x (the script recognizes automatically if a CUDA device is available)
 

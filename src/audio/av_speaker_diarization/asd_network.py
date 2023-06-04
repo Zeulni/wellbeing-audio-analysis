@@ -13,12 +13,13 @@ from src.audio.av_speaker_diarization.talknet import talkNet
 
 
 class ASDNetwork():
-    def __init__(self, device, pretrain_model, num_frames_per_sec, frames_face_tracking, folder_frames_storage, total_frames) -> None:
+    def __init__(self, device, pretrain_model, num_frames_per_sec, frames_face_tracking, folder_frames_storage, total_frames, multiprocessing) -> None:
         self.device = device
         self.pretrain_model = pretrain_model
         self.num_frames_per_sec = num_frames_per_sec
         self.frames_face_tracking = frames_face_tracking
         self.total_frames = total_frames
+        self.multiprocessing = multiprocessing
         
         self.faces_frames = None
         self.audio_file_path = None
@@ -34,15 +35,13 @@ class ASDNetwork():
         sys.stderr.write("Model %s loaded from previous state! \r\n"%self.pretrain_model)
         s.eval()	
         
-        #self.faces_frames = faces_frames.to(self.device)
         self.audio_file_path = audio_file_path
         self.s = s
         
         self.number_tracks = len(all_tracks)
 
-        if self.device.type == 'cuda':            
-            # Show a progress bar using tqdm (based on the function above)
-            # *Multiprocessing for GPU did not work on Colab
+        if self.device.type == 'cuda' or self.multiprocessing == False:            
+            # Multiprocessing for GPU did not work on Colab
             all_scores = []
             for tidx, track in enumerate(tqdm.tqdm(all_tracks)):
                 track_scores = self.calculate_scores(tidx, track, track_frame_overview)

@@ -41,6 +41,9 @@ START: 0
 # The duration of the video, when set as 0, will extract the whole video
 DURATION: 0
 
+# Enable or disable multiprocessing for the active speaker detection (disable if you face errors)
+MULTIPROCESSING: True
+
 # Number of calculated embeddings per person to match the faces of the same person (the more the better, but also more storage necessary)
 N_EMBEDDINGS: 10
 

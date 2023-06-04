@@ -16,7 +16,7 @@ from src.audio.av_speaker_diarization.face_detection import FaceDetector
 from src.audio.av_speaker_diarization.face_tracking import FaceTracker
 from src.audio.av_speaker_diarization.asd_network import ASDNetwork
 from src.audio.av_speaker_diarization.crop_tracks import CropTracks
-from src.audio.av_speaker_diarization.speaker_diarization import SpeakerDiarization
+from src.audio.av_speaker_diarization.scores_to_speech_segments import SpeakerDiarization
 
 from src.audio.utils.constants import ASD_DIR
 
@@ -39,6 +39,7 @@ class ASDSpeakerDirPipeline:
 		self.create_track_videos = args.get("CREATE_TRACK_VIDEOS",True)
 		self.include_visualization = args.get("INCLUDE_VISUALIZATION",True)
 		self.n_embeddings = args.get("N_EMBEDDINGS",10)
+		self.multiprocessing = args.get("MULTIPROCESSING",True)
   
 		self.asd_pipeline_tools = asd_pipeline_tools
 		self.logger = self.asd_pipeline_tools.get_logger()
@@ -91,16 +92,19 @@ class ASDSpeakerDirPipeline:
 		self.track_frame_overview = None
    
 		# Initialize the face detector
-		self.face_detector = FaceDetector(self.device, self.video_path, self.frames_face_tracking, self.face_det_scale, self.pywork_path, self.total_frames)
+		self.face_detector = FaceDetector(self.device, self.video_path, self.frames_face_tracking, self.face_det_scale, 
+                                    		self.pywork_path, self.total_frames)
   
 		# Initialize the face tracker
 		self.face_tracker = FaceTracker(self.num_failed_det, self.min_track, self.min_face_size)
   
 		# Initialize the track cropper
-		self.track_cropper = CropTracks(self.video_path, self.total_frames, self.frames_face_tracking, self.crop_scale, self.asd_pipeline_tools)
+		self.track_cropper = CropTracks(self.video_path, self.total_frames, self.frames_face_tracking, self.crop_scale, 
+                                  		self.asd_pipeline_tools)
   
 		# Initialize the ASD network
-		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec, self.frames_face_tracking, self.pywork_path, self.total_frames)
+		self.asd_network = ASDNetwork(self.device, self.pretrain_model, self.num_frames_per_sec, self.frames_face_tracking, 
+                                		self.pywork_path, self.total_frames, self.multiprocessing)
   
 		# Initialize the speaker diarization
 		self.speaker_diarization = SpeakerDiarization(self.pyavi_path, self.video_path, self.video_name, self.n_data_loader_thread, self.threshold_same_person, 
